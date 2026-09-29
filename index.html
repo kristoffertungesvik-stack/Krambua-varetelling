@@ -222,7 +222,7 @@
 <body>
 <div class="wrap">
   <header class="top">
-    <h1>Krambua — Varetelling</h1>
+    <div style="display:flex;align-items:center;gap:14px;flex-wrap:wrap;"><img src="logo.png" alt="Krambua Bensin &amp; Storkiosk as" style="height:44px;width:auto;"><h1 style="margin:0">Varetelling</h1></div>
     <div style="display:flex;align-items:center;gap:12px;">
       <a href="#" id="changeTokenLink" class="muted" style="text-decoration:underline;font-size:.78rem;">Endre GitHub-token</a>
     </div>
@@ -321,25 +321,49 @@
   <!-- OPPLYSNINGAR -->
   <section class="panel" id="panel-info">
     <div class="card">
-      <h2>Opplysningar om varetellinga</h2>
-      <p class="sub">Vert med i samandraget og Word-rapporten. Lagrar seg automatisk.</p>
+      <h2>Om tellinga</h2>
+      <p class="sub">Vert med i Word-samandraget og revisor-dokumentet. Lagrar seg automatisk.</p>
       <div class="grid2">
-        <div><label class="field" for="iDato">Dato for telling</label><input type="date" id="iDato"></div>
-        <div><label class="field" for="iAvanse">Avanse / forteneste (%)</label><input type="number" id="iAvanse" step="0.1" min="0" max="90"></div>
+        <div><label class="field" for="iDato">Dato for telling (balansedato)</label><input type="date" id="iDato"></div>
+        <div><label class="field" for="iTid">Tidspunkt</label><input type="text" id="iTid" placeholder="T.d. etter stenging kl. 16–21"></div>
+        <div><label class="field" for="iTalt">Talt av</label><input type="text" id="iTalt" placeholder="Namn"></div>
+        <div><label class="field" for="iGodkj">Godkjent av (dagleg leiar)</label><input type="text" id="iGodkj" placeholder="Namn"></div>
+        <div><label class="field" for="iOrgnr">Org.nr.</label><input type="text" id="iOrgnr" inputmode="numeric" placeholder="9 siffer"></div>
         <div><label class="field" for="iKontant">Kontantbehaldning (kr)</label><input type="text" id="iKontant" inputmode="decimal" placeholder="0,00"></div>
-        <div><label class="field" for="iTalt">Talt av</label><input type="text" id="iTalt"></div>
-        <div><label class="field" for="iGodkj">Godkjent av</label><input type="text" id="iGodkj"></div>
       </div>
-      <div style="margin-top:14px;"><label class="field" for="iMerk">Merknader</label><textarea id="iMerk" placeholder="T.d. svinn, avvik som vart retta, endringar i sortiment …"></textarea></div>
+    </div>
+    <div class="card">
+      <h2>Verdsetjing</h2>
+      <p class="sub">Tellelistene er i utsalspris. Appen trekkjer frå mva og avanse for å kome fram til kostpris. Ukurante varer skal skrivast ned.</p>
+      <div class="grid2">
+        <div><label class="field" for="iAvanse">Gjennomsnittleg avanse (%)</label><input type="number" id="iAvanse" step="0.1" min="0" max="90"></div>
+        <div><label class="field" for="iUkurans">Nedskriving ukurante varer (kr, kostpris)</label><input type="text" id="iUkurans" inputmode="decimal" placeholder="0,00"></div>
+        <div><label class="field" for="iDrivstoff">Drivstofflager (kr, kostpris eks. mva)</label><input type="text" id="iDrivstoff" inputmode="decimal" placeholder="Berre om Krambua eig drivstoffet"></div>
+      </div>
+      <div class="grid2" style="margin-top:14px;">
+        <div><label class="field" for="iUkuransMerk">Kva er nedskrive og kvifor</label><textarea id="iUkuransMerk" placeholder="T.d. utgåtte varer, skadd emballasje, sesongvarer"></textarea></div>
+        <div><label class="field" for="iDrivstoffMerk">Drivstoff – liter og grunnlag</label><textarea id="iDrivstoffMerk" placeholder="T.d. 95 blyfri 4 200 l, diesel 6 100 l, snittpris frå siste faktura"></textarea></div>
+      </div>
+    </div>
+    <div class="card">
+      <h2>Avgrensing</h2>
+      <div class="grid2">
+        <div><label class="field" for="iIkkjeMed">Varer som ikkje er med i tellinga</label><textarea id="iIkkjeMed" placeholder="T.d. kommisjonsvarer som ikkje er Krambua sine: Norsk Tipping, telefonkort/gåvekort, drivstoff eigd av leverandør"></textarea></div>
+        <div><label class="field" for="iCutoff">Varemottak rundt teljedatoen</label><textarea id="iCutoff" placeholder="T.d. «ASKO-levering 30.12 er talt med og fakturert 2026. Levering 2.1 er ikkje med.»"></textarea></div>
+      </div>
+      <span class="field" style="margin-top:16px;">Kontrollpunkt</span>
+      <div id="sjekkList" style="display:grid;gap:8px;"></div>
+      <div style="margin-top:14px;"><label class="field" for="iMerk">Andre merknader</label><textarea id="iMerk" placeholder="T.d. svinn, avvik som vart retta, endringar i sortiment …"></textarea></div>
     </div>
   </section>
 
   <!-- EKSPORT -->
   <section class="panel" id="panel-exp">
     <div class="exp">
-      <div class="card"><h2>Word-samandrag</h2><p class="muted">Rapport med nøkkeltal, tabell per mva-sats, samanlikning med i fjor, merknader og signaturfelt.</p>
-        <label class="chk" for="xVedlegg"><input type="checkbox" id="xVedlegg" checked> Ta med alle sider som vedlegg</label>
-        <button class="primary" id="xWord">Last ned Word</button></div>
+      <div class="card"><h2>Word-samandrag</h2><p class="muted">Kort oversikt på éi side med dei viktigaste tala, fordeling på mva-satsar og signatur.</p>
+        <button class="primary" id="xWord">Last ned samandrag</button></div>
+      <div class="card"><h2>Revisor / rekneskap</h2><p class="muted">Oppgåve over varelager til rekneskapen: verdsetjing, utrekning, kontrollpunkt, avgrensing, stadfesting med signatur og alle tellingssider som vedlegg.</p>
+        <button class="primary" id="xRevisor">Last ned revisor-dokument</button></div>
       <div class="card"><h2>Excel</h2><p class="muted">Arbeidsbok med samandrag og alle tellelister, klar for rekneskapsføraren.</p>
         <button class="primary" id="xExcel">Last ned Excel</button></div>
       <div class="card"><h2>Sikkerheitskopi</h2><p class="muted">Alle data for året som éi fil. Kan lesast inn att her om noko skulle skje.</p>
@@ -722,13 +746,28 @@ async function toggleOk(id){
 }
 
 // ---------- opplysningar ----------
+const SJEKK=[
+  ['alle','Alle lagerområde er talde (butikk, lager, kjøl/frys, uteområde)'],
+  ['listar','Alle tellelister er summerte og kontrollerte'],
+  ['ukurans','Ukurante og skadde varer er skilde ut og vurderte'],
+  ['kommisjon','Kommisjonsvarer og varer som ikkje er Krambua sine er haldne utanfor'],
+  ['cutoff','Varer motteke etter teljedatoen er ikkje med'],
+  ['arkiv','Originale tellelister er signerte og arkiverte']];
+const TXT=[['iDato','dato'],['iTid','tidspunkt'],['iTalt','talt'],['iGodkj','godkjent'],['iOrgnr','orgnr'],['iMerk','merknad'],['iUkuransMerk','ukuransMerk'],['iDrivstoffMerk','drivstoffMerk'],['iIkkjeMed','ikkjeMed'],['iCutoff','cutoff']];
+const AMT=[['iKontant','kontant'],['iUkurans','ukurans'],['iDrivstoff','drivstoff']];
+const numTxt=v=>v!=null?String(v).replace('.',','):'';
 function fillInfo(){
-  $('iDato').value=doc.dato||''; $('iAvanse').value=doc.avanse!=null?round2(doc.avanse*100):'';
-  $('iKontant').value=doc.kontant!=null?String(doc.kontant).replace('.',','):''; $('iTalt').value=doc.talt||''; $('iGodkj').value=doc.godkjent||''; $('iMerk').value=doc.merknad||'';
+  TXT.forEach(([id,k])=>$(id).value=doc[k]||'');
+  AMT.forEach(([id,k])=>$(id).value=numTxt(doc[k]));
+  $('iAvanse').value=doc.avanse!=null?round2(doc.avanse*100):'';
+  const sj=doc.sjekk||{};
+  $('sjekkList').innerHTML=SJEKK.map(([k,l])=>`<label class="chk" for="sj_${k}"><input type="checkbox" id="sj_${k}" data-sj="${k}" ${sj[k]?'checked':''} ${doc.locked?'disabled':''}> ${esc(l)}</label>`).join('');
 }
-[['iDato','dato'],['iTalt','talt'],['iGodkj','godkjent'],['iMerk','merknad']].forEach(([id,k])=>$(id).addEventListener('input',()=>{ if(doc.locked) return; doc[k]=$(id).value; doc.infoUpdatedAt=Date.now(); touch(); render(); }));
-$('iAvanse').addEventListener('input',()=>{ if(doc.locked) return; const v=parseFloat($('iAvanse').value); if(isNaN(v)||v<0||v>=90) return; doc.avanse=round2(v)/100; doc.infoUpdatedAt=Date.now(); touch(); render(); });
-$('iKontant').addEventListener('input',()=>{ if(doc.locked) return; const r=parseAmount($('iKontant').value); doc.kontant=r.empty?null:(r.error?doc.kontant:r.value); doc.infoUpdatedAt=Date.now(); touch(); render(); });
+const infoChanged=()=>{ doc.infoUpdatedAt=Date.now(); touch(); render(); };
+TXT.forEach(([id,k])=>$(id).addEventListener('input',()=>{ if(doc.locked) return; doc[k]=$(id).value; infoChanged(); }));
+AMT.forEach(([id,k])=>$(id).addEventListener('input',()=>{ if(doc.locked) return; const r=parseAmount($(id).value); doc[k]=r.empty?null:(r.error?doc[k]:r.value); infoChanged(); }));
+$('iAvanse').addEventListener('input',()=>{ if(doc.locked) return; const v=parseFloat($('iAvanse').value); if(isNaN(v)||v<0||v>=90) return; doc.avanse=round2(v)/100; infoChanged(); });
+$('sjekkList').addEventListener('change',e=>{ const k=e.target.dataset.sj; if(!k||doc.locked) return; doc.sjekk=Object.assign({},doc.sjekk,{[k]:e.target.checked}); infoChanged(); });
 
 // ---------- utrekning ----------
 function summarize(d){
@@ -736,7 +775,9 @@ function summarize(d){
   const pages=livePages(d), av=d.avanse??0.38;
   const byRate=RATES.map(r=>{ const p=pages.filter(x=>x.rate===r); const inkl=round2(p.reduce((a,x)=>a+x.sum,0)); const eks=inkl/(1+r); return {rate:r,pages:p.length,inkl,eks,mva:inkl-eks,netto:eks*(1-av)}; });
   const t=k=>byRate.reduce((a,x)=>a+x[k],0);
-  return {byRate, inkl:t('inkl'), eks:t('eks'), mva:t('mva'), avanseKr:t('eks')*av, netto:t('netto'), pages:pages.length, controlled:pages.filter(p=>p.ok).length, kontant:d.kontant, avanse:av};
+  const netto=t('netto'), ukurans=d.ukurans||0, drivstoff=d.drivstoff||0;
+  return {byRate, inkl:t('inkl'), eks:t('eks'), mva:t('mva'), avanseKr:t('eks')*av, netto, ukurans, drivstoff, balanse:netto-ukurans+drivstoff,
+    pages:pages.length, controlled:pages.filter(p=>p.ok).length, kontant:d.kontant, avanse:av};
 }
 function calcRows(c,p){
   const g=f=>p?f(p):null;
@@ -748,7 +789,10 @@ function calcRows(c,p){
   rows.push({l:'Varelager utan MVA', c:c.eks, p:g(x=>x.eks)},
     {l:'MVA totalt', c:c.mva, p:g(x=>x.mva)},
     {l:`Avanse / forteneste (${round2(c.avanse*100).toLocaleString('nb-NO')} %)`, c:c.avanseKr, p:g(x=>x.avanseKr)},
-    {l:'Netto varelager', c:c.netto, p:g(x=>x.netto), cls:'net'},
+    {l:'Varelager etter telling (kostpris)', c:c.netto, p:g(x=>x.netto)});
+  if(c.ukurans||(p&&p.ukurans)) rows.push({l:'− Nedskriving ukurante varer', c:-c.ukurans, p:g(x=>-x.ukurans)});
+  if(c.drivstoff||(p&&p.drivstoff)) rows.push({l:'+ Drivstofflager', c:c.drivstoff, p:g(x=>x.drivstoff)});
+  rows.push({l:'Varelager til balansen', c:c.balanse, p:g(x=>x.balanse), cls:'net'},
     {l:'Kontantbehaldning', c:c.kontant, p:g(x=>x.kontant)});
   return rows;
 }
@@ -759,7 +803,7 @@ function render(){
   const locked=!!doc.locked;
   $('lockedBanner').style.display=locked?'flex':'none';
   $('entryCard').style.display=locked?'none':'';
-  ['iDato','iAvanse','iKontant','iTalt','iGodkj','iMerk'].forEach(id=>$(id).disabled=locked);
+  [...TXT,...AMT].forEach(([id])=>$(id).disabled=locked); $('iAvanse').disabled=locked;
   $('lockBtn').textContent=locked?'Varetellinga er låst':'🔒 Lås varetelling'; $('lockBtn').disabled=locked;
   $('pathLbl').textContent=`${DIR}/${doc.year}.json`;
   document.title=`Varetelling ${doc.year} – Krambua`;
@@ -785,10 +829,10 @@ function render(){
 
   // samandrag
   const c=summarize(doc), pv=summarize(prevDoc);
-  const d=pv?c.netto-pv.netto:null;
+  const d=pv?c.balanse-pv.balanse:null;
   const kp=[
-    ['Netto varelager',kr0(c.netto),`utan mva, etter ${round2(c.avanse*100).toLocaleString('nb-NO')} % avanse`],
-    ['Endring mot '+(doc.year-1),pv?pct(pv.netto?c.netto/pv.netto-1:null):'–',pv?(d>=0?'▲ ':'▼ ')+kr0(Math.abs(d)):'Ingen varetelling for '+(doc.year-1),pv&&d<0],
+    ['Varelager til balansen',kr0(c.balanse),`kostpris, etter ${round2(c.avanse*100).toLocaleString('nb-NO')} % avanse${c.ukurans||c.drivstoff?' og justeringar':''}`],
+    ['Endring mot '+(doc.year-1),pv?pct(pv.balanse?c.balanse/pv.balanse-1:null):'–',pv?(d>=0?'▲ ':'▼ ')+kr0(Math.abs(d)):'Ingen varetelling for '+(doc.year-1),pv&&d<0],
     ['Varer inkl. mva',kr0(c.inkl),`${c.pages} sider`],
     ['Kontrollerte sider',c.pages?Math.round(c.controlled/c.pages*100)+' %':'–',`${c.controlled} av ${c.pages}`]];
   $('kpis').innerHTML=kp.map(([l,v,s,neg])=>`<div class="kpi"><div class="label">${esc(l)}</div><div class="value${neg?' neg':''}">${esc(v)}</div><div class="muted" style="font-size:.75rem;margin-top:4px">${esc(s)}</div></div>`).join('');
@@ -798,7 +842,9 @@ function render(){
   const gaps=[]; const mx=Math.max(0,...sides); for(let i=1;i<=mx;i++) if(!sides.includes(i)) gaps.push(i);
   if(gaps.length&&gaps.length<=30) al.push(['',`Manglar sidenummer: ${gaps.join(', ')}. Er alle sider lagt inn?`]);
   if(c.kontant==null) al.push(['','Kontantbehaldning er ikkje fylt inn (fana Opplysningar).']);
-  if(pv&&pv.netto&&Math.abs(c.netto/pv.netto-1)>0.25&&c.pages>=pv.pages*0.8) al.push(['',`Netto varelager har endra seg meir enn 25 % frå i fjor. Dobbeltsjekk om det stemmer.`]);
+  const sjOk=SJEKK.filter(([k])=>(doc.sjekk||{})[k]).length;
+  if(c.pages&&sjOk<SJEKK.length) al.push(['',`${SJEKK.length-sjOk} av ${SJEKK.length} kontrollpunkt er ikkje kryssa av (fana Opplysningar).`]);
+  if(pv&&pv.balanse&&Math.abs(c.balanse/pv.balanse-1)>0.25&&c.pages>=pv.pages*0.8) al.push(['',`Netto varelager har endra seg meir enn 25 % frå i fjor. Dobbeltsjekk om det stemmer.`]);
   if(!al.length&&c.pages) al.push(['ok','Alle sider er kontrollerte, og ingenting ser feil ut.']);
   $('alerts').innerHTML=al.map(([k,t])=>`<div class="alert ${k}">${esc(t)}</div>`).join('');
 
@@ -823,7 +869,7 @@ $('filterRate').addEventListener('change',render); $('sortSel').addEventListener
 $('lockBtn').addEventListener('click',async()=>{
   const c=summarize(doc);
   const extra=c.controlled<c.pages?` NB: ${c.pages-c.controlled} side(r) er ikkje kontrollert.`:'';
-  if(!await askConfirm(`Låse varetelling ${doc.year}? Netto varelager: ${kr(c.netto)} (${c.pages} sider).${extra}`)) return;
+  if(!await askConfirm(`Låse varetelling ${doc.year}? Varelager til balansen: ${kr(c.balanse)} (${c.pages} sider).${extra}`)) return;
   doc.locked=true; doc.lockedAt=new Date().toISOString(); doc.lockUpdatedAt=Date.now(); touch(); render(); toast('Varetellinga er låst.');
 });
 $('unlockBtn').addEventListener('click',async()=>{
@@ -874,7 +920,7 @@ $('xExcel').addEventListener('click',()=>{
   S.push([],['MVA-sats','Sider','Sum inkl. mva','Eks. mva','MVA','Netto etter avanse']);
   c.byRate.forEach(r=>{ money.push([S.length,[2,3,4,5]]); S.push([rateLbl(r.rate)+' MVA',r.pages,round2(r.inkl),round2(r.eks),round2(r.mva),round2(r.netto)]); });
   money.push([S.length,[2,3,4,5]]); S.push(['Totalt',c.pages,round2(c.inkl),round2(c.eks),round2(c.mva),round2(c.netto)]);
-  S.push([],['Kontrollerte sider',`${c.controlled} av ${c.pages}`],['Godkjent av',doc.godkjent||''],['Merknader',doc.merknad||''],['Status',doc.locked?'Avslutta og låst':'Utkast']);
+  S.push([],['Kontrollerte sider',`${c.controlled} av ${c.pages}`],['Talt av',doc.talt||''],['Godkjent av',doc.godkjent||''],['Nedskriving ukurans',doc.ukuransMerk||''],['Drivstoff',doc.drivstoffMerk||''],['Ikkje med i tellinga',doc.ikkjeMed||''],['Varemottak rundt teljedato',doc.cutoff||''],['Merknader',doc.merknad||''],['Status',doc.locked?'Avslutta og låst':'Utkast']);
   const ws1=XLSX.utils.aoa_to_sheet(S); ws1['!cols']=[{wch:44},{wch:16},{wch:16},{wch:16},{wch:14},{wch:18}];
   money.forEach(([r,cols])=>cols.forEach(ci=>{ const cell=ws1[XLSX.utils.encode_cell({r,c:ci})]; if(cell&&typeof cell.v==='number') cell.z='#,##0.00'; }));
   const rows=[['Side','Avdeling','MVA-sats','Sum inkl. mva','Eks. mva','MVA','Kontrollert','Kommentar']];
@@ -889,58 +935,135 @@ $('xExcel').addEventListener('click',()=>{
   saveFile(new Blob([out],{type:'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet'}),`Krambua_varetelling_${y}.xlsx`);
 });
 
-$('xWord').addEventListener('click',async()=>{
-  try{ const blob=await docx.Packer.toBlob(buildDocx()); saveFile(blob,`Krambua_varetelling_${doc.year}.docx`); }
+$('xWord').addEventListener('click',()=>makeDoc(buildSamandrag,`Krambua_varetelling_${doc.year}_samandrag.docx`));
+$('xRevisor').addEventListener('click',()=>makeDoc(buildRevisor,`Krambua_varelager_${doc.year}_revisor.docx`));
+let LOGO=null;
+async function loadLogo(){ if(LOGO) return LOGO; try{ const r=await fetch('logo.png'); if(r.ok) LOGO=await r.arrayBuffer(); }catch(e){} return LOGO; }
+async function makeDoc(builder,name){
+  try{ await loadLogo(); const blob=await docx.Packer.toBlob(builder()); saveFile(blob,name); }
   catch(e){ console.error(e); toast('Klarte ikkje lage Word-dokumentet: '+e.message); }
-});
+}
 
-function buildDocx(){
-  const D=window.docx; const {Document,Paragraph,TextRun,Table,TableRow,TableCell,WidthType,AlignmentType,BorderStyle,ShadingType,HeadingLevel,Footer,PageNumber}=D;
-  const GREEN='2F5D50', INK='20303D', SOFT='DCE7E1', GREY='5B6B72';
-  const bd={style:BorderStyle.SINGLE,size:4,color:'CFC9B8'};
+// Felles byggjeklossar for Word
+function W(){
+  const D=window.docx; const {Paragraph,TextRun,Table,TableRow,TableCell,WidthType,AlignmentType,BorderStyle,ShadingType,ImageRun,Footer,PageNumber}=D;
+  const RED='C8202B', INK='20303D', SOFT='F3F1EC', GREY='5B6B72';
+  const bd={style:BorderStyle.SINGLE,size:4,color:'D6D1C4'};
   const borders={top:bd,bottom:bd,left:bd,right:bd,insideHorizontal:bd,insideVertical:bd};
   const NONE={style:BorderStyle.NONE,size:0,color:'FFFFFF'};
-  const P=(text,o={})=>new Paragraph({spacing:{after:o.after??120,before:o.before??0},alignment:o.align,children:[new TextRun({text:String(text),bold:o.bold,size:o.size??21,color:o.color,italics:o.italic,font:'Arial'})]});
-  const cell=(text,o={})=>new TableCell({width:{size:o.w,type:WidthType.DXA},shading:o.fill?{type:ShadingType.CLEAR,color:'auto',fill:o.fill}:undefined,margins:{top:70,bottom:70,left:110,right:110},
-    children:[new Paragraph({alignment:o.right?AlignmentType.RIGHT:AlignmentType.LEFT,children:[new TextRun({text:String(text),bold:o.bold,color:o.color,size:o.size??19,font:'Arial'})]})]});
+  const noB={top:NONE,bottom:NONE,left:NONE,right:NONE,insideHorizontal:NONE,insideVertical:NONE};
+  const run=(t,o={})=>new TextRun({text:String(t??''),bold:o.bold,size:o.size??21,color:o.color,italics:o.italic,font:'Arial'});
+  const P=(t,o={})=>new Paragraph({spacing:{after:o.after??120,before:o.before??0,line:o.line},alignment:o.align,keepNext:o.keepNext,children:Array.isArray(t)?t:[run(t,o)]});
+  const cell=(t,o={})=>new TableCell({width:{size:o.w,type:WidthType.DXA},columnSpan:o.span,shading:o.fill?{type:ShadingType.CLEAR,color:'auto',fill:o.fill}:undefined,
+    margins:{top:80,bottom:80,left:120,right:120},children:String(t??'').split('\n').map(line=>new Paragraph({alignment:o.right?AlignmentType.RIGHT:AlignmentType.LEFT,children:[run(line,{bold:o.bold,color:o.color,size:o.size??19})]}))});
   const table=(head,rows,widths)=>new Table({width:{size:widths.reduce((a,b)=>a+b,0),type:WidthType.DXA},columnWidths:widths,borders,
-    rows:[new TableRow({tableHeader:true,children:head.map((h,i)=>cell(h,{w:widths[i],fill:INK,color:'FFFFFF',bold:true,right:i>0,size:18}))}),
-      ...rows.map(r=>new TableRow({cantSplit:true,children:r.cells.map((t,i)=>cell(t,{w:widths[i],right:i>0,bold:r.bold,fill:r.fill,color:r.color}))}))]});
-  const H=t=>new Paragraph({heading:HeadingLevel.HEADING_2,keepNext:true,spacing:{before:280,after:120},children:[new TextRun({text:t,bold:true,size:26,color:GREEN,font:'Arial'})]});
-  const c=summarize(doc), p=summarize(prevDoc), y=doc.year;
-  const ch=[P(FIRMA.toUpperCase(),{size:18,color:GREY,bold:true,after:40}),
-    new Paragraph({spacing:{after:60},children:[new TextRun({text:'Varetelling '+y,bold:true,size:44,color:INK,font:'Arial'})]}),
-    P([doc.dato?'Telling per '+fmtDato(doc.dato):'',doc.talt?'Talt av '+doc.talt:'',doc.locked?'Avslutta og låst':'Utkast – ikkje låst'].filter(Boolean).join('   ·   '),{color:GREY,after:240})];
-  const diff=p?c.netto-p.netto:null;
-  ch.push(table(['Nøkkeltal','Beløp'],[
-    {cells:['Netto varelager '+y,kr(c.netto)],bold:true,fill:SOFT},
-    {cells:['Varelager utan mva',kr(c.eks)]},
-    {cells:['Varer etter telling inkl. forteneste og mva',kr(c.inkl)]},
-    ...(p?[{cells:['Endring netto varelager mot '+(y-1),(diff>=0?'+':'')+kr(diff)+'  ('+pct(p.netto?c.netto/p.netto-1:null)+')']}]:[]),
-    ...(c.kontant!=null?[{cells:['Kontantbehaldning',kr(c.kontant)]}]:[])],[6000,3360]));
-  ch.push(H('Varelager etter MVA-sats'));
+    rows:[...(head?[new TableRow({tableHeader:true,children:head.map((h,i)=>cell(h,{w:widths[i],fill:INK,color:'FFFFFF',bold:true,right:i>0,size:18}))})]:[]),
+      ...rows.map(r=>new TableRow({cantSplit:true,children:r.cells.map((t,i)=>cell(t,{w:widths[i],right:!r.left&&i>0&&/(kr|%)$|^[\d\s−\-+,.()]+$/.test(String(t)),bold:r.bold,fill:r.fill,color:r.color}))}))]});
+  const H=(t,num)=>new Paragraph({keepNext:true,spacing:{before:300,after:120},border:{bottom:{style:BorderStyle.SINGLE,size:6,color:RED,space:3}},
+    children:[run((num?num+'. ':'')+t,{bold:true,size:25,color:INK})]});
+  const logo=()=>LOGO?new Paragraph({spacing:{after:200},children:[new ImageRun({data:LOGO,transformation:{width:190,height:58}})]}):P(FIRMA,{bold:true,size:28,color:RED});
+  const footer=(txt)=>({default:new Footer({children:[new Paragraph({alignment:AlignmentType.RIGHT,children:[run(txt+' · side ',{size:16,color:GREY}),new TextRun({children:[PageNumber.CURRENT],size:16,color:GREY,font:'Arial'})]})]})});
+  const sigRow=(labels)=>new Table({width:{size:9360,type:WidthType.DXA},columnWidths:labels.map(()=>Math.floor(9360/labels.length)),borders:noB,
+    rows:[new TableRow({cantSplit:true,children:labels.map(([lab,name])=>new TableCell({width:{size:Math.floor(9360/labels.length),type:WidthType.DXA},borders:{top:NONE,bottom:NONE,left:NONE,right:NONE},margins:{top:80,bottom:80,left:0,right:300},
+      children:[P(' ',{after:420}),new Paragraph({border:{top:{style:BorderStyle.SINGLE,size:6,color:'333333',space:4}},children:[run(lab,{size:17,bold:true})]}),P(name||'Namn:',{size:17,color:GREY,after:40}),P('Stad og dato:',{size:17,color:GREY})]}))})]});
+  const page={size:{width:11906,height:16838},margin:{top:1000,bottom:1000,left:1270,right:1270}};
+  return {D,RED,INK,SOFT,GREY,run,P,cell,table,H,logo,footer,sigRow,page,noB};
+}
+const pctTxt=v=>round2(v*100).toLocaleString('nb-NO')+' %';
+function rateTable(w,c){
   const rr=c.byRate.filter(r=>r.pages||r.rate!==0);
-  ch.push(table(['MVA-sats','Sider','Sum inkl. mva','Eks. mva','MVA'],[...rr.map(r=>({cells:[rateLbl(r.rate)+' MVA',String(r.pages),kr(r.inkl),kr(r.eks),kr(r.mva)]})),
-    {cells:['Totalt',String(c.pages),kr(c.inkl),kr(c.eks),kr(c.mva)],bold:true,fill:SOFT}],[2160,1000,2100,2100,2000]));
-  ch.push(H('Utrekning av netto varelager'));
-  ch.push(table(['',String(y),String(y-1),'Endring'],calcRows(c,p).map(r=>({cells:[(r.cls==='sub'?'   ':'')+r.l,kr(r.c),kr(r.p),(r.p==null||r.c==null)?'–':kr(r.c-r.p)],bold:r.cls==='net',fill:r.cls==='net'?SOFT:undefined,color:r.cls==='sub'?GREY:undefined})),[3960,1800,1800,1800]));
-  ch.push(P(`Eks. mva = sum inkl. mva ÷ (1 + mva-sats). Netto varelager = varelager utan mva − ${round2(c.avanse*100).toLocaleString('nb-NO')} % avanse.`,{size:16,color:GREY,italic:true,before:80}));
-  ch.push(H('Kontroll'));
-  ch.push(table(['',String(y),String(y-1)],[{cells:['Tal tellingssider',String(c.pages),p?String(p.pages):'–']},{cells:['Kontrollerte sider',`${c.controlled} av ${c.pages}`,p?`${p.controlled} av ${p.pages}`:'–']},{cells:['Snitt per side inkl. mva',c.pages?kr(c.inkl/c.pages):'–',p&&p.pages?kr(p.inkl/p.pages):'–']}],[4560,2400,2400]));
-  if((doc.merknad||'').trim()){ ch.push(H('Merknader')); doc.merknad.split(/\n+/).forEach(l=>ch.push(P(l))); }
-  ch.push(H('Signatur'));
-  const sig=(lab,name)=>new TableCell({width:{size:4680,type:WidthType.DXA},borders:{top:NONE,left:NONE,right:NONE,bottom:NONE},margins:{top:80,bottom:80,left:0,right:240},
-    children:[P(' ',{after:300}),new Paragraph({border:{top:{style:BorderStyle.SINGLE,size:6,color:'333333',space:4}},children:[new TextRun({text:lab+(name?': '+name:''),size:18,font:'Arial'})]}),P('Dato:',{size:18,color:GREY,before:120})]});
-  ch.push(new Table({width:{size:9360,type:WidthType.DXA},columnWidths:[4680,4680],borders:{top:NONE,bottom:NONE,left:NONE,right:NONE,insideHorizontal:NONE,insideVertical:NONE},rows:[new TableRow({cantSplit:true,children:[sig('Talt av',doc.talt),sig('Godkjent av',doc.godkjent)]})]}));
-  const page={size:{width:11906,height:16838},margin:{top:1134,bottom:1134,left:1273,right:1273}};
-  const footers={default:new Footer({children:[new Paragraph({alignment:AlignmentType.RIGHT,children:[new TextRun({text:`${FIRMA} · Varetelling ${y} · side `,size:16,color:GREY,font:'Arial'}),new TextRun({children:[PageNumber.CURRENT],size:16,color:GREY,font:'Arial'})]})]})};
-  const sections=[{properties:{page},footers,children:ch}];
-  if($('xVedlegg').checked&&c.pages){
-    const rows=livePages(doc).slice().sort((a,b)=>a.side-b.side).map(x=>({cells:[String(x.side),x.avd||'',rateLbl(x.rate),kr(x.sum),x.ok?'Ja':'Nei']}));
-    sections.push({properties:{page},footers,children:[new Paragraph({spacing:{after:160},children:[new TextRun({text:'Vedlegg: Tellingssider '+y,bold:true,size:30,color:INK,font:'Arial'})]}),
-      table(['Side','Avdeling','MVA','Sum inkl. mva','Kontr.'],rows,[900,3060,1200,2700,1500]),P(`Totalt ${c.pages} sider · ${kr(c.inkl)} inkl. mva`,{bold:true,before:160})]});
-  }
-  return new Document({creator:FIRMA,title:'Varetelling '+y,styles:{default:{document:{run:{font:'Arial',size:21}}}},sections});
+  return w.table(['MVA-sats','Sider','Sum inkl. mva','Eks. mva','MVA','Kostpris'],[
+    ...rr.map(r=>({cells:[rateLbl(r.rate),String(r.pages),kr(r.inkl),kr(r.eks),kr(r.mva),kr(r.netto)]})),
+    {cells:['Totalt',String(c.pages),kr(c.inkl),kr(c.eks),kr(c.mva),kr(c.netto)],bold:true,fill:w.SOFT}],[1300,800,1900,1850,1650,1860]);
+}
+
+// ---------- Word: kort samandrag (ingen samanlikning) ----------
+function buildSamandrag(){
+  const w=W(), c=summarize(doc), y=doc.year;
+  const ch=[w.logo(),
+    w.P('Varetelling '+y,{bold:true,size:40,color:w.INK,after:40}),
+    w.P([doc.dato?'Telling per '+fmtDato(doc.dato):'',doc.talt?'Talt av '+doc.talt:'',doc.locked?'Avslutta':'Utkast'].filter(Boolean).join('   ·   '),{color:w.GREY,after:260}),
+    w.table(null,[
+      {cells:['Varer talt (utsalspris inkl. mva)',kr(c.inkl)]},
+      {cells:['Varelager utan mva',kr(c.eks)]},
+      {cells:[`Varelager til kostpris (− ${pctTxt(c.avanse)} avanse)`,kr(c.netto)]},
+      ...(c.ukurans?[{cells:['− Nedskriving ukurante varer',kr(-c.ukurans)]}]:[]),
+      ...(c.drivstoff?[{cells:['+ Drivstofflager',kr(c.drivstoff)]}]:[]),
+      {cells:['Varelager til balansen',kr(c.balanse)],bold:true,fill:w.SOFT},
+      ...(c.kontant!=null?[{cells:['Kontantbehaldning',kr(c.kontant)]}]:[]),
+      {cells:['Tellingssider (kontrollerte)',`${c.pages} (${c.controlled})`]}],[6000,3360]),
+    w.H('Fordeling på mva-sats'), rateTable(w,c)];
+  if((doc.merknad||'').trim()){ ch.push(w.H('Merknader')); doc.merknad.split(/\n+/).forEach(l=>ch.push(w.P(l))); }
+  ch.push(w.sigRow([['Talt av',doc.talt],['Godkjent av',doc.godkjent]]));
+  return new w.D.Document({creator:FIRMA,title:'Varetelling '+y,styles:{default:{document:{run:{font:'Arial',size:21}}}},
+    sections:[{properties:{page:w.page},footers:w.footer(`${FIRMA} · Varetelling ${y}`),children:ch}]});
+}
+
+// ---------- Word: revisor / rekneskap ----------
+function buildRevisor(){
+  const w=W(), c=summarize(doc), y=doc.year, d=fmtDato(doc.dato)||('31.12.'+y);
+  const txt=(v,fallback)=>(v||'').trim()||fallback;
+  const sj=doc.sjekk||{};
+  const ch=[w.logo(),
+    w.P('Oppgåve over varelager',{bold:true,size:40,color:w.INK,after:40}),
+    w.P(`Rekneskapsåret ${y}  ·  Balansedato ${d}`,{size:23,color:w.GREY,after:240}),
+    w.table(null,[
+      {cells:['Selskap',FIRMA],left:true},
+      {cells:['Org.nr.',txt(doc.orgnr,'–')],left:true},
+      {cells:['Teljedato og tidspunkt',[d,doc.tidspunkt].filter(Boolean).join(', ')],left:true},
+      {cells:['Talt av',txt(doc.talt,'–')],left:true},
+      {cells:['Godkjent av',txt(doc.godkjent,'–')],left:true},
+      {cells:['Tal tellingssider',`${c.pages}, av desse ${c.controlled} kontrollerte`],left:true},
+      {cells:['Status',doc.locked?`Avslutta og låst ${doc.lockedAt?fmtDato(doc.lockedAt.slice(0,10)):''}`.trim():'Utkast – ikkje låst'],left:true}],[3000,6360]),
+
+    w.H('Varelager til balansen',1),
+    w.table(null,[
+      {cells:['Varelager til balansen per '+d,kr(c.balanse)],bold:true,fill:w.SOFT}],[6000,3360]),
+
+    w.H('Verdsetjingsprinsipp',2),
+    w.P(`Varene er talde fysisk og førte opp til utsalspris inkl. mva på tellelister. Verdien er rekna om til kostpris ved å trekkje frå meirverdiavgift etter sats (25 %, 15 % og 0 %) og ein gjennomsnittleg avanse på ${pctTxt(c.avanse)} av utsalspris eks. mva. Varelageret er vurdert til den lågaste av innkjøpskost og verkeleg verdi. Ukurante og skadde varer er skrivne ned særskilt.`),
+
+    w.H('Utrekning',3),
+    w.table(['Post','Beløp'],[
+      {cells:['Varer talt til utsalspris inkl. mva',kr(c.inkl)]},
+      {cells:['− Utgåande mva',kr(-c.mva)]},
+      {cells:['= Varer til utsalspris eks. mva',kr(c.eks)],bold:true},
+      {cells:[`− Avanse ${pctTxt(c.avanse)}`,kr(-c.avanseKr)]},
+      {cells:['= Varelager etter telling, kostpris',kr(c.netto)],bold:true},
+      {cells:['− Nedskriving ukurante varer',kr(-c.ukurans)]},
+      {cells:['+ Drivstofflager (kostpris)',kr(c.drivstoff)]},
+      {cells:['= Varelager til balansen',kr(c.balanse)],bold:true,fill:w.SOFT}],[6000,3360]),
+
+    w.H('Spesifikasjon per mva-sats',4), rateTable(w,c),
+
+    w.H('Justeringar',5),
+    w.table(['Post','Beløp','Grunnlag'],[
+      {cells:['Nedskriving ukurante varer',kr(c.ukurans),txt(doc.ukuransMerk,c.ukurans?'–':'Ingen nedskriving')]},
+      {cells:['Drivstofflager',kr(c.drivstoff),txt(doc.drivstoffMerk,c.drivstoff?'–':'Ikkje med / eigd av leverandør')]}],[2800,1900,4660]),
+
+    w.H('Avgrensing',6),
+    w.table(null,[
+      {cells:['Varer som ikkje er med',txt(doc.ikkjeMed,'Ingen opplyst')],left:true},
+      {cells:['Varemottak rundt teljedatoen',txt(doc.cutoff,'Ingen opplyst')],left:true}],[3000,6360]),
+
+    w.H('Kontrollpunkt',7),
+    w.table(null,SJEKK.map(([k,l])=>({cells:[(sj[k]?'☑ ':'☐ ')+l, sj[k]?'Ja':'Ikkje stadfesta'],color:sj[k]?undefined:'B2452F'})),[7360,2000]),
+
+    w.H('Kontantbehaldning',8),
+    w.table(null,[{cells:['Kontantbehaldning per '+d,c.kontant==null?'Ikkje oppgitt':kr(c.kontant)]}],[6000,3360])];
+  if((doc.merknad||'').trim()){ ch.push(w.H('Merknader',9)); doc.merknad.split(/\n+/).forEach(l=>ch.push(w.P(l))); }
+  ch.push(w.H('Stadfesting'),
+    w.P(`Undertekna stadfestar at varetellinga per ${d} er gjennomført ved fysisk teljing av alle varer som tilhøyrer selskapet, at tellelistene er kontrollerte, og at oppgåva over gir eit korrekt uttrykk for varebehaldninga.`),
+    w.sigRow([['Teljeansvarleg',doc.talt],['Dagleg leiar',doc.godkjent]]));
+
+  const pages=livePages(doc).slice().sort((a,b)=>a.side-b.side);
+  const vedlegg=[w.P('Vedlegg: Tellingssider '+y,{bold:true,size:30,color:w.INK,after:160}),
+    w.table(['Side','Avdeling','MVA','Sum inkl. mva','Kostpris','Kontr.'],
+      pages.map(x=>({cells:[String(x.side),x.avd||'',rateLbl(x.rate),kr(x.sum),kr(x.sum/(1+x.rate)*(1-c.avanse)),x.ok?'Ja':'Nei']})).concat([{cells:['Sum','','',kr(c.inkl),kr(c.netto),''],bold:true,fill:w.SOFT}]),
+      [800,2700,900,2000,1960,1000])];
+  const foot=w.footer(`${FIRMA} · Varelager ${y}`);
+  return new w.D.Document({creator:FIRMA,title:'Oppgåve over varelager '+y,styles:{default:{document:{run:{font:'Arial',size:21}}}},
+    sections:[{properties:{page:w.page},footers:foot,children:ch},{properties:{page:w.page},footers:foot,children:vedlegg}]});
 }
 
 setRate(0.25);
