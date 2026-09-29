@@ -535,7 +535,8 @@ async function reconnect(){
   render(); statusIdle(); if(dirty) saveNow();
 }
 async function refreshYears(){
-  if(online){ try{ const list=await ghGet(DIR); if(Array.isArray(list)) list.map(f=>parseInt(f.name)).filter(n=>n>2000).forEach(y=>{ if(!years.includes(y)) years.push(y); }); }catch(e){} }
+  if(online){ try{ const list=await ghGet(DIR); remoteYears=Array.isArray(list)?list.map(f=>parseInt(f.name)).filter(n=>n>2000):[]; remoteYears.forEach(y=>{ if(!years.includes(y)) years.push(y); }); }catch(e){} }
+  await ensureSeed();
   years.sort((a,b)=>a-b); renderYears();
 }
 // lagrar ein kopi av andre år lokalt (utan å overskrive ulagra endringar), så samanlikning fungerer utan nett
@@ -576,12 +577,15 @@ function seedDoc2025(){
     locked:true, lockedAt:'2025-12-31T12:00:00Z', lockUpdatedAt:t, infoUpdatedAt:t, created:'2025-12-31T12:00:00Z',
     pages:SEED_2025.map(([rate,sum],i)=>({id:'2025-'+String(i+1).padStart(3,'0'),createdAt:t+i,updatedAt:t+i,side:i+1,avd:'',rate,sum,input:'',ok:true,kommentar:''}))};
 }
+let remoteYears=null; // år som finst i repoet (null = ukjent/fråkopla)
 async function ensureSeed(){
-  if(years.includes(2025)) return;
   const d=seedDoc2025();
-  if(online){ try{ await ghPut(`${DIR}/2025.json`, JSON.stringify(d,null,1), undefined, 'Varetelling 2025 overført frå Excel (173 sider)'); }catch(e){ console.error(e); } }
   if(!lsGet(draftKey(2025))) lsSet(draftKey(2025),{doc:d,sha:null,dirty:false,at:Date.now()});
-  years.push(2025);
+  if(!years.includes(2025)) years.push(2025);
+  if(online && remoteYears && !remoteYears.includes(2025)){
+    try{ await ghPut(`${DIR}/2025.json`, JSON.stringify(d,null,1), undefined, 'Varetelling 2025 overført frå Excel (173 sider)'); remoteYears.push(2025); }
+    catch(e){ console.error('Kunne ikkje lagre 2025-data:',e); }
+  }
 }
 
 async function init(){
@@ -589,7 +593,7 @@ async function init(){
   else online=await checkGitHub();
   years=[];
   if(online){
-    try{ const list=await ghGet(DIR); if(Array.isArray(list)) years=list.map(f=>parseInt(f.name)).filter(n=>n>2000); }catch(e){}
+    try{ const list=await ghGet(DIR); remoteYears=Array.isArray(list)?list.map(f=>parseInt(f.name)).filter(n=>n>2000):[]; years=remoteYears.slice(); }catch(e){}
   }
   try{ for(let i=0;i<localStorage.length;i++){ const k=localStorage.key(i); const m=k&&k.match(/^krambua-varetelling-(\d{4})$/); if(m&&!years.includes(+m[1])) years.push(+m[1]); } }catch(e){}
   await ensureSeed();
@@ -601,9 +605,13 @@ async function init(){
   $('yearSel').value=doc.year;
 }
 async function checkGitHub(){
+  if(!getToken()) return false;
   try{
     const r=await fetch(`${GH_API}/repos/${GH_OWNER}/${GH_REPO}`,{headers:ghHeaders()});
-    if(r.ok){ hideWarn(); return true; }
+    if(r.ok){
+      const info=await r.json();
+      if(info.permissions && info.permissions.push===false){ showWarn('Tokenet har ikkje skrivetilgang til Krambua-varetelling-repoet. Gi tokenet tilgang (Contents: Read and write) eller lim inn eit nytt via «Endre GitHub-token». Inntil vidare blir alt lagra lokalt på denne eininga.'); return false; }
+      hideWarn(); return true; }
     if(r.status===401) showWarn('GitHub avviste tokenet (ugyldig eller utgått). Trykk «Endre GitHub-token» øvst. Inntil vidare vert alt lagra lokalt på denne eininga.');
     else showWarn(`GitHub svarte ${r.status}. Inntil vidare vert alt lagra lokalt på denne eininga.`);
   }catch(e){ showWarn('Får ikkje kontakt med GitHub (ingen nett?). Alt vert lagra lokalt og sendt opp når nettet er tilbake.'); }
