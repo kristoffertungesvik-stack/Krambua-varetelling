@@ -1,0 +1,925 @@
+<!DOCTYPE html>
+<html lang="nn">
+<head>
+<meta charset="UTF-8">
+<title>Krambua – Varetelling</title>
+<meta name="description" content="Varetelling for Krambua Bensin &amp; Storkiosk">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
+<link rel="manifest" href="manifest.json">
+<meta name="theme-color" content="#20303D">
+<link rel="icon" href="icon-192.png">
+<link rel="apple-touch-icon" href="apple-touch-icon.png">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<meta name="apple-mobile-web-app-title" content="Varetelling">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@500;600;700&family=Inter:wght@400;500;600;700&family=IBM+Plex+Mono:wght@400;500;600&display=swap" rel="stylesheet">
+<style>
+  :root{
+    --paper:#EDEAE1; --paper-2:#E4E0D4; --ink:#20303D; --ink-soft:#5B6B72; --line:#CFC9B8;
+    --accent:#2F5D50; --accent-soft:#DCE7E1; --bad:#AE4534; --bad-soft:#F3E0DA; --white:#F8F7F2;
+    --warn:#9C7A1F; --warn-soft:#F1E7CE;
+    --mono:'IBM Plex Mono',monospace; --display:'Space Grotesk',sans-serif; --sans:'Inter',sans-serif;
+  }
+  *{box-sizing:border-box;}
+  body{margin:0;background:var(--paper);color:var(--ink);font-family:var(--sans);-webkit-font-smoothing:antialiased;}
+  .wrap{max-width:1080px;margin:0 auto;padding:24px 18px 90px;}
+  header.top{display:flex;align-items:baseline;justify-content:space-between;flex-wrap:wrap;gap:8px;margin-bottom:18px;border-bottom:2px solid var(--ink);padding-bottom:14px;}
+  header.top h1{font-family:var(--display);font-weight:700;font-size:1.55rem;margin:0;letter-spacing:-0.01em;}
+  header.top .tag{font-family:var(--mono);font-size:.7rem;color:var(--ink-soft);text-transform:uppercase;letter-spacing:.08em;}
+
+  nav.tabs{display:flex;gap:4px;margin-bottom:20px;background:var(--paper-2);padding:4px;border-radius:10px;width:fit-content;overflow-x:auto;max-width:100%;}
+  nav.tabs button{border:none;background:transparent;padding:9px 15px;font-family:var(--sans);font-weight:600;font-size:.86rem;
+    color:var(--ink-soft);border-radius:7px;cursor:pointer;transition:.15s;white-space:nowrap;}
+  nav.tabs button.active{background:var(--ink);color:var(--white);}
+  .panel{display:none;} .panel.active{display:block;animation:fade .2s ease;}
+  @keyframes fade{from{opacity:0;transform:translateY(3px);}to{opacity:1;transform:translateY(0);}}
+
+  .card{background:var(--white);border:1px solid var(--line);border-radius:12px;padding:18px 20px;margin-bottom:16px;}
+  .card h2{font-family:var(--display);font-size:1rem;margin:0 0 4px;}
+  .card .sub{color:var(--ink-soft);font-size:.8rem;margin:0 0 14px;}
+  .muted{color:var(--ink-soft);font-size:.85rem;}
+
+  .kpi-row{display:grid;grid-template-columns:repeat(auto-fit,minmax(150px,1fr));gap:12px;margin-bottom:16px;}
+  .kpi{background:var(--white);border:1px solid var(--line);border-radius:12px;padding:14px 16px;}
+  .kpi .label{font-family:var(--sans);font-size:.72rem;text-transform:uppercase;letter-spacing:.05em;color:var(--ink-soft);margin-bottom:6px;}
+  .kpi .value{font-family:var(--mono);font-size:1.35rem;font-weight:600;color:var(--ink);}
+  .kpi .delta{margin-top:6px;}
+
+  .dropzone{border:2px dashed var(--line);border-radius:10px;padding:26px;text-align:center;cursor:pointer;transition:.15s;background:var(--paper);}
+  .dropzone:hover,.dropzone.drag{border-color:var(--accent);background:var(--accent-soft);}
+  .dropzone input{display:none;}
+  .dropzone .big{font-family:var(--display);font-weight:600;font-size:1rem;margin-bottom:4px;}
+
+  label.field{display:block;font-size:.75rem;font-weight:600;color:var(--ink-soft);margin-bottom:5px;text-transform:uppercase;letter-spacing:.04em;}
+  input[type=number],input[type=text],select{font-family:var(--mono);font-size:.9rem;padding:8px 10px;border:1px solid var(--line);
+    border-radius:7px;background:var(--white);color:var(--ink);width:100%;}
+  input[type=text]{font-family:var(--sans);}
+  .row{display:flex;gap:14px;flex-wrap:wrap;margin-bottom:14px;align-items:end;}
+  .row > div{flex:1;min-width:140px;}
+
+  button.primary{background:var(--accent);color:var(--white);border:none;padding:10px 18px;border-radius:8px;
+    font-family:var(--sans);font-weight:600;font-size:.86rem;cursor:pointer;transition:.15s;}
+  button.primary:hover{background:#254a40;}
+  button.primary:disabled{background:var(--line);cursor:not-allowed;}
+  button.ghost{background:transparent;border:1px solid var(--line);padding:7px 12px;border-radius:7px;
+    font-family:var(--sans);font-size:.78rem;cursor:pointer;color:var(--ink-soft);}
+  button.ghost:hover{border-color:var(--bad);color:var(--bad);}
+  button.ghost.toggle-active{background:var(--accent);color:var(--white);border-color:var(--accent);}
+  button.ghost.toggle-active:hover{background:var(--accent);color:var(--white);border-color:var(--accent);}
+  button.small{padding:5px 10px;font-size:.74rem;}
+  .btnrow{display:flex;gap:10px;flex-wrap:wrap;}
+
+  table{width:100%;border-collapse:collapse;font-size:.84rem;}
+  th{text-align:left;font-family:var(--sans);font-weight:600;font-size:.7rem;text-transform:uppercase;
+     letter-spacing:.05em;color:var(--ink-soft);padding:6px 8px;border-bottom:1px solid var(--ink);white-space:nowrap;}
+  th.sortable{cursor:pointer;user-select:none;}
+  th.sortable:hover{color:var(--accent);}
+  td{padding:7px 8px;border-bottom:1px dotted var(--line);font-family:var(--mono);}
+  td.name{font-family:var(--sans);}
+  tr:hover td{background:var(--accent-soft);}
+  .num{text-align:right;font-variant-numeric:tabular-nums;}
+
+  .pill{display:inline-block;font-family:var(--mono);font-size:.7rem;padding:2px 8px;border-radius:20px;background:var(--paper-2);color:var(--ink-soft);}
+  .delta{font-family:var(--mono);font-weight:600;font-size:.8rem;padding:2px 7px;border-radius:5px;white-space:nowrap;display:inline-block;}
+  .delta.up{background:var(--accent-soft);color:var(--accent);}
+  .delta.down{background:var(--bad-soft);color:var(--bad);}
+  .delta.flat{background:var(--paper-2);color:var(--ink-soft);}
+  .delta.warn{background:var(--warn-soft);color:var(--warn);}
+  #pRowsTable input{width:100%;font-family:var(--mono);font-size:.82rem;padding:5px 6px;border:1px solid var(--line);border-radius:6px;background:var(--white);}
+  #pRowsTable td{padding:4px 6px;}
+  #pRowsTable .rmRow{background:none;border:none;color:var(--bad);cursor:pointer;font-size:.9rem;}
+
+  .period-item{display:flex;align-items:center;justify-content:space-between;padding:10px 4px;border-bottom:1px solid var(--line);gap:10px;}
+  .period-item:last-child{border-bottom:none;}
+  .period-item .meta{font-family:var(--mono);font-size:.78rem;color:var(--ink-soft);}
+  .period-item .name{font-family:var(--sans);font-weight:600;}
+
+  .checkgrid{display:flex;flex-wrap:wrap;gap:8px;margin-bottom:10px;}
+  .checkgrid label{display:flex;align-items:center;gap:6px;background:var(--paper);border:1px solid var(--line);
+     border-radius:20px;padding:5px 12px;font-family:var(--mono);font-size:.76rem;cursor:pointer;}
+  .checkgrid input{margin:0;}
+
+  .empty{text-align:center;padding:38px 20px;color:var(--ink-soft);}
+  .empty .glyph{font-size:1.7rem;margin-bottom:8px;}
+
+  #toast{position:fixed;bottom:20px;left:50%;transform:translateX(-50%);background:var(--ink);color:var(--white);
+    padding:10px 18px;border-radius:8px;font-size:.84rem;opacity:0;pointer-events:none;transition:.25s;font-family:var(--sans);z-index:50;max-width:90%;text-align:center;}
+  #toast.show{opacity:1;transform:translateX(-50%) translateY(-4px);}
+
+  .spin{width:16px;height:16px;border:2px solid var(--paper-2);border-top-color:var(--accent);border-radius:50%;
+    display:inline-block;animation:spin .7s linear infinite;vertical-align:-3px;margin-right:6px;}
+  @keyframes spin{to{transform:rotate(360deg);}}
+
+  details.preview summary{cursor:pointer;font-family:var(--sans);font-weight:600;font-size:.84rem;color:var(--accent);margin:10px 0;}
+
+  .catbar-row{display:flex;align-items:center;gap:10px;margin-bottom:8px;font-size:.82rem;}
+  .catbar-row .cname{width:150px;flex-shrink:0;font-family:var(--sans);font-weight:600;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;}
+  .catbar-track{flex:1;background:var(--paper-2);border-radius:5px;height:16px;overflow:hidden;}
+  .catbar-fill{background:var(--accent);height:100%;border-radius:5px;}
+  .catbar-val{width:120px;flex-shrink:0;text-align:right;font-family:var(--mono);font-size:.78rem;color:var(--ink-soft);}
+
+  .mover-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(230px,1fr));gap:14px;}
+  .mover-list{list-style:none;margin:0;padding:0;}
+  .mover-list li{display:flex;justify-content:space-between;align-items:center;gap:8px;padding:7px 0;border-bottom:1px dotted var(--line);cursor:pointer;}
+  .mover-list li:last-child{border-bottom:none;}
+  .mover-list li:hover{color:var(--accent);}
+  .mover-list .mname{font-size:.82rem;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;max-width:150px;}
+
+  .product-card{border:1px solid var(--line);border-radius:10px;padding:14px 16px;margin-bottom:14px;}
+  .product-head{display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:8px;margin-bottom:8px;}
+  .product-head strong{font-family:var(--sans);font-size:.95rem;}
+  .sparkwrap{display:flex;align-items:center;gap:10px;margin:6px 0 10px;}
+
+  .purch-card{border:1px solid var(--line);border-radius:10px;padding:14px 16px;margin-bottom:14px;}
+  .purch-head{display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:8px;margin-bottom:6px;}
+  .purch-head strong{font-family:var(--display);font-size:1rem;}
+  .purch-meta{font-family:var(--mono);font-size:.78rem;color:var(--ink-soft);margin-bottom:10px;}
+  .purch-missing{background:var(--warn-soft);color:var(--warn);border:1px solid var(--warn);border-radius:8px;
+    padding:9px 12px;font-size:.82rem;font-family:var(--sans);margin:8px 0;}
+  .purch-notat{background:var(--paper);border:1px solid var(--line);border-radius:8px;padding:9px 12px;
+    font-size:.8rem;color:var(--ink-soft);margin-top:8px;font-style:italic;}
+  .purch-artnr{color:var(--ink-soft);font-size:.78rem;}
+
+  .lager-card{border:1px solid var(--line);border-radius:10px;padding:14px 16px;margin-bottom:14px;}
+  .lager-head{display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:8px;margin-bottom:6px;}
+  .lager-head strong{font-family:var(--display);font-size:1rem;}
+  .lager-meta{font-family:var(--mono);font-size:.78rem;color:var(--ink-soft);margin-bottom:6px;}
+  .lager-balance{font-family:var(--display);font-size:1.6rem;margin:4px 0;}
+  .lager-balance.neg{color:var(--bad);}
+  .lager-sub{display:flex;gap:18px;font-size:.82rem;color:var(--ink-soft);font-family:var(--sans);flex-wrap:wrap;}
+  .lager-unmapped{border:1px dashed var(--line);border-radius:8px;padding:9px 12px;font-size:.82rem;
+    font-family:var(--sans);color:var(--ink-soft);margin-bottom:10px;}
+  .lager-form{border:1px solid var(--line);border-radius:10px;padding:14px 16px;margin-top:18px;}
+  .lager-form h3{margin:0 0 10px;font-family:var(--display);font-size:.95rem;}
+  .lager-form .grid2{display:grid;grid-template-columns:1fr 1fr;gap:10px;}
+  .lager-form label{display:block;font-size:.76rem;color:var(--ink-soft);font-family:var(--sans);margin-bottom:3px;}
+  .lager-pending{background:var(--warn-soft);color:var(--warn);border:1px solid var(--warn);border-radius:6px;
+    padding:2px 8px;font-size:.72rem;font-family:var(--sans);display:inline-block;}
+
+  #modalOverlay{display:none;position:fixed;inset:0;background:rgba(32,48,61,.45);z-index:60;align-items:center;justify-content:center;}
+  #modalOverlay .box{background:var(--white);border-radius:12px;padding:22px;max-width:340px;width:90%;box-shadow:0 12px 40px rgba(0,0,0,.2);}
+
+  @media (max-width:640px){
+    .kpi-row{grid-template-columns:1fr 1fr;}
+    .catbar-row .cname{width:90px;}
+    .catbar-val{width:90px;}
+  }
+
+  /* ---- Varetelling ---- */
+  header.top a.back{font-size:.78rem;color:var(--ink-soft);}
+  .savebar{display:flex;align-items:center;gap:10px;flex-wrap:wrap;margin:-6px 0 16px;font-size:.82rem;}
+  .dot{width:9px;height:9px;border-radius:50%;background:var(--line);display:inline-block;flex:none;}
+  .dot.ok{background:var(--accent);} .dot.busy{background:var(--warn);} .dot.err{background:var(--bad);}
+  .yearbar{display:flex;gap:12px;align-items:end;flex-wrap:wrap;}
+  .yearbar > div{min-width:130px;}
+  span.field{display:block;font-size:.75rem;font-weight:600;color:var(--ink-soft);margin-bottom:5px;text-transform:uppercase;letter-spacing:.04em;}
+  td.num,.pill{white-space:nowrap;}
+  .seg{display:inline-flex;background:var(--paper-2);border-radius:9px;padding:3px;gap:3px;}
+  .seg button{border:none;background:transparent;font-family:var(--mono);font-weight:600;font-size:.95rem;padding:9px 16px;border-radius:7px;color:var(--ink-soft);cursor:pointer;}
+  .seg button.on{background:var(--ink);color:var(--white);}
+  .seg button:focus-visible, button:focus-visible, input:focus-visible, select:focus-visible, textarea:focus-visible{outline:2px solid var(--accent);outline-offset:2px;}
+  .entry{display:grid;grid-template-columns:90px 1fr auto;gap:12px;align-items:end;}
+  .entry .sum{grid-column:1 / -1;}
+  #fSum{font-size:1.5rem;padding:12px 14px;font-family:var(--mono);}
+  .preview{font-family:var(--mono);font-size:.9rem;color:var(--ink-soft);min-height:1.3em;margin-top:6px;}
+  .preview.bad{color:var(--bad);}
+  .entry-foot{display:flex;gap:12px;align-items:center;flex-wrap:wrap;margin-top:12px;}
+  .chk{display:flex;gap:7px;align-items:center;font-size:.85rem;}
+  .chk input{width:18px;height:18px;accent-color:var(--accent);}
+  textarea{font-family:var(--sans);font-size:.9rem;padding:8px 10px;border:1px solid var(--line);border-radius:7px;background:var(--white);color:var(--ink);width:100%;min-height:70px;resize:vertical;}
+  input[type=date]{font-family:var(--mono);font-size:.9rem;padding:8px 10px;border:1px solid var(--line);border-radius:7px;background:var(--white);color:var(--ink);width:100%;}
+  .scroll{overflow-x:auto;}
+  td.num, th.num{text-align:right;}
+  tr.tot td{font-weight:700;background:var(--accent-soft);}
+  tr.net td{font-weight:700;color:var(--accent);border-bottom:2px solid var(--accent);}
+  tr.sub td{color:var(--ink-soft);}
+  tr.sub td:first-child{padding-left:22px;}
+  tr.editing td{background:var(--warn-soft);}
+  tr.flag td{background:var(--bad-soft);}
+  .alerts{display:grid;gap:8px;margin-bottom:16px;}
+  .alert{padding:10px 14px;border-radius:8px;font-size:.84rem;background:var(--warn-soft);color:var(--warn);border:1px solid var(--warn);}
+  .alert.bad{background:var(--bad-soft);color:var(--bad);border-color:var(--bad);}
+  .alert.ok{background:var(--accent-soft);color:var(--accent);border-color:var(--accent);}
+  .locked-banner{background:var(--ink);color:var(--white);border-radius:10px;padding:12px 16px;margin-bottom:16px;display:flex;justify-content:space-between;align-items:center;gap:10px;flex-wrap:wrap;font-size:.88rem;}
+  .kpi .value.neg{color:var(--bad);}
+  .exp{display:grid;grid-template-columns:repeat(auto-fit,minmax(230px,1fr));gap:12px;}
+  .exp .card{margin:0;display:flex;flex-direction:column;gap:10px;}
+  .exp .card p{margin:0;}
+  .exp .card button{margin-top:auto;align-self:flex-start;}
+  .grid2{display:grid;grid-template-columns:repeat(auto-fit,minmax(200px,1fr));gap:14px;}
+  .listhead{display:flex;justify-content:space-between;align-items:baseline;gap:10px;flex-wrap:wrap;margin-bottom:10px;}
+  .listhead .tot{font-family:var(--mono);font-weight:600;}
+  @media (max-width:640px){
+    .entry{grid-template-columns:80px 1fr;}
+    .entry .mva{grid-column:1 / -1;}
+    td.hide-sm, th.hide-sm{display:none;}
+  }
+  @media (prefers-reduced-motion:reduce){ *{animation:none!important;transition:none!important;} }
+</style>
+</head>
+<body>
+<div class="wrap">
+  <header class="top">
+    <h1>Krambua — Varetelling</h1>
+    <div style="display:flex;align-items:center;gap:12px;">
+      <a href="#" id="changeTokenLink" class="muted" style="text-decoration:underline;font-size:.78rem;">Endre GitHub-token</a>
+    </div>
+  </header>
+
+  <div class="savebar" role="status" aria-live="polite">
+    <span class="dot" id="saveDot"></span><span id="saveText">Hentar data …</span>
+  </div>
+  <div id="storageWarning" class="alert bad" style="display:none;margin-bottom:12px;"></div>
+
+  <div class="card">
+    <div class="yearbar">
+      <div><label class="field" for="yearSel">Varetelling</label><select id="yearSel"></select></div>
+      <div style="flex:1"></div>
+      <button class="ghost" id="newYearBtn">+ Start ny varetelling</button>
+    </div>
+  </div>
+
+  <div class="locked-banner" id="lockedBanner" style="display:none;">
+    <span>🔒 Denne varetellinga er avslutta og låst. Tala kan ikkje endrast ved eit uhell.</span>
+    <button class="ghost small" id="unlockBtn" style="color:var(--white);border-color:var(--white);">Lås opp</button>
+  </div>
+
+  <nav class="tabs">
+    <button data-tab="reg" class="active">Registrer sider</button>
+    <button data-tab="sum">Samandrag</button>
+    <button data-tab="info">Opplysningar</button>
+    <button data-tab="exp">Eksport og avslutning</button>
+  </nav>
+
+  <!-- REGISTRER -->
+  <section class="panel active" id="panel-reg">
+    <div class="card" id="entryCard">
+      <h2 id="entryTitle">Legg inn tellingsside</h2>
+      <p class="sub">Skriv summen frå sida (inkl. mva og forteneste). Du kan skrive reknestykke, t.d. <code>12 450 + 3 210,50</code>. Trykk Enter for å lagre.</p>
+      <form id="entryForm" autocomplete="off">
+        <div class="entry">
+          <div><label class="field" for="fSide">Side nr</label><input type="number" id="fSide" min="1" step="1" inputmode="numeric"></div>
+          <div><label class="field" for="fAvd">Avdeling (valfritt)</label><input type="text" id="fAvd" list="avdList" placeholder="T.d. Kiosk, Lager, Kjøl"></div>
+          <div class="mva"><span class="field">MVA-sats</span>
+            <div class="seg" id="fRate" role="radiogroup" aria-label="MVA-sats">
+              <button type="button" data-r="0.25" role="radio">25 %</button>
+              <button type="button" data-r="0.15" role="radio">15 %</button>
+              <button type="button" data-r="0" role="radio">0 %</button>
+            </div>
+          </div>
+          <div class="sum"><label class="field" for="fSum">Sum på sida (kr)</label>
+            <input type="text" id="fSum" inputmode="decimal" placeholder="0,00">
+            <div class="preview" id="fPreview"></div>
+          </div>
+        </div>
+        <div class="row" style="margin:12px 0 0;">
+          <div style="flex:3"><label class="field" for="fKom">Kommentar (valfritt)</label><input type="text" id="fKom"></div>
+        </div>
+        <div class="entry-foot">
+          <label class="chk" for="fOk"><input type="checkbox" id="fOk"> Kontrollert (dobbeltsjekka)</label>
+          <div style="flex:1"></div>
+          <button type="button" class="ghost" id="cancelEdit" style="display:none;">Avbryt endring</button>
+          <button type="submit" class="primary" id="addBtn">Legg til side</button>
+        </div>
+      </form>
+      <datalist id="avdList"></datalist>
+    </div>
+
+    <div class="card">
+      <div class="listhead">
+        <h2 style="margin:0">Tellelister</h2>
+        <span class="tot" id="listTot"></span>
+      </div>
+      <div class="row" style="margin-bottom:10px;">
+        <div><label class="field" for="filterRate">Vis</label>
+          <select id="filterRate"><option value="all">Alle sider</option><option value="0.25">25 % MVA</option><option value="0.15">15 % MVA</option><option value="0">0 % MVA</option><option value="nok">Ikkje kontrollerte</option></select></div>
+        <div><label class="field" for="sortSel">Sorter</label>
+          <select id="sortSel"><option value="side">Side nr</option><option value="new">Sist lagt inn</option><option value="sum">Største sum</option></select></div>
+      </div>
+      <div class="scroll"><table id="pageTable"></table></div>
+    </div>
+  </section>
+
+  <!-- SAMANDRAG -->
+  <section class="panel" id="panel-sum">
+    <div class="kpi-row" id="kpis"></div>
+    <div class="alerts" id="alerts"></div>
+    <div class="card">
+      <h2>Varelager etter MVA-sats</h2>
+      <p class="sub">Eks. mva = sum ÷ (1 + mva-sats).</p>
+      <div class="scroll"><table id="tRate"></table></div>
+    </div>
+    <div class="card">
+      <h2 id="calcTitle">Netto varelager – i år mot i fjor</h2>
+      <p class="sub" id="calcSub"></p>
+      <div class="scroll"><table id="tCalc"></table></div>
+    </div>
+  </section>
+
+  <!-- OPPLYSNINGAR -->
+  <section class="panel" id="panel-info">
+    <div class="card">
+      <h2>Opplysningar om varetellinga</h2>
+      <p class="sub">Vert med i samandraget og Word-rapporten. Lagrar seg automatisk.</p>
+      <div class="grid2">
+        <div><label class="field" for="iDato">Dato for telling</label><input type="date" id="iDato"></div>
+        <div><label class="field" for="iAvanse">Avanse / forteneste (%)</label><input type="number" id="iAvanse" step="0.1" min="0" max="90"></div>
+        <div><label class="field" for="iKontant">Kontantbehaldning (kr)</label><input type="text" id="iKontant" inputmode="decimal" placeholder="0,00"></div>
+        <div><label class="field" for="iTalt">Talt av</label><input type="text" id="iTalt"></div>
+        <div><label class="field" for="iGodkj">Godkjent av</label><input type="text" id="iGodkj"></div>
+      </div>
+      <div style="margin-top:14px;"><label class="field" for="iMerk">Merknader</label><textarea id="iMerk" placeholder="T.d. svinn, avvik som vart retta, endringar i sortiment …"></textarea></div>
+    </div>
+  </section>
+
+  <!-- EKSPORT -->
+  <section class="panel" id="panel-exp">
+    <div class="exp">
+      <div class="card"><h2>Word-samandrag</h2><p class="muted">Rapport med nøkkeltal, tabell per mva-sats, samanlikning med i fjor, merknader og signaturfelt.</p>
+        <label class="chk" for="xVedlegg"><input type="checkbox" id="xVedlegg" checked> Ta med alle sider som vedlegg</label>
+        <button class="primary" id="xWord">Last ned Word</button></div>
+      <div class="card"><h2>Excel</h2><p class="muted">Arbeidsbok med samandrag og alle tellelister, klar for rekneskapsføraren.</p>
+        <button class="primary" id="xExcel">Last ned Excel</button></div>
+      <div class="card"><h2>Sikkerheitskopi</h2><p class="muted">Alle data for året som éi fil. Kan lesast inn att her om noko skulle skje.</p>
+        <div class="btnrow"><button class="ghost" id="xJson">Last ned kopi</button><button class="ghost" id="xImport">Les inn fil …</button></div>
+        <input type="file" id="importFile" accept=".json,.xlsx" hidden></div>
+    </div>
+    <div class="card" style="margin-top:16px;">
+      <h2>Avslutt varetellinga</h2>
+      <p class="sub">Når alle sider er lagt inn og kontrollerte: lås året. Då kan ingen endre tala ved eit uhell, og året vert brukt som samanlikning neste år.</p>
+      <div class="btnrow"><button class="primary" id="lockBtn">🔒 Lås varetelling</button></div>
+    </div>
+    <p class="muted">Alle endringar vert lagra i GitHub-repoet (<code id="pathLbl"></code>) med full historikk, og i tillegg lokalt i nettlesaren. Ingenting forsvinn sjølv om nettet fell ut.</p>
+  </section>
+</div>
+
+<div id="toast"></div>
+<div id="modalOverlay">
+  <div class="box">
+    <p id="modalMsg" style="margin:0 0 16px;font-family:var(--sans);font-size:.92rem;color:var(--ink);"></p>
+    <div style="display:flex;gap:10px;justify-content:flex-end;">
+      <button class="ghost" id="modalCancel">Avbryt</button>
+      <button class="primary" id="modalOk">Ja, gjer det</button>
+    </div>
+  </div>
+</div>
+<div id="tokenGateOverlay" style="display:none;position:fixed;inset:0;background:rgba(32,48,61,.6);z-index:70;align-items:center;justify-content:center;">
+  <div class="box" style="max-width:420px;">
+    <h2 style="margin-top:0;">GitHub-token</h2>
+    <p class="sub" id="tokenGateMsg" style="margin-bottom:10px;">Lim inn GitHub-tokenet for Krambua-varetelling-repoet. Det blir berre lagra i denne nettlesaren, på denne eininga.</p>
+    <input type="text" id="tokenGateInput" placeholder="ghp_... eller github_pat_..." style="margin-bottom:14px;">
+    <div style="display:flex;gap:10px;justify-content:flex-end;">
+      <button class="ghost" id="tokenGateSkip">Berre lokalt no</button>
+      <button class="primary" id="tokenGateSave">Lagre token</button>
+    </div>
+  </div>
+</div>
+
+<script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/docx@8.5.0/build/index.umd.js"></script>
+<script>
+// ============================================================
+// Krambua — Varetelling
+// Data: data/<år>.json i GitHub-repoet (full historikk via commits)
+//       + lokal kopi i nettlesaren (localStorage) som vernar mot nettbrot.
+// Kvar side har ein unik id og updatedAt; slettingar vert merka (deleted:true),
+// slik at to einingar som lagrar samstundes vert slått saman utan tap.
+// ============================================================
+const GH_OWNER='kristoffertungesvik-stack', GH_REPO='Krambua-varetelling', GH_BRANCH='main';
+const GH_API='https://api.github.com', GH_TOKEN_KEY='krambua-varetelling-gh-token';
+const DIR='data';
+const RATES=[0.25,0.15,0];
+const FIRMA='Krambua Bensin & Storkiosk AS';
+
+const $=id=>document.getElementById(id);
+const getToken=()=>{ try{return (localStorage.getItem(GH_TOKEN_KEY)||'').trim();}catch(e){return '';} };
+const setToken=v=>{ try{localStorage.setItem(GH_TOKEN_KEY,(v||'').trim());}catch(e){} };
+const lsGet=k=>{ try{ const v=localStorage.getItem(k); return v?JSON.parse(v):null; }catch(e){ return null; } };
+const lsSet=(k,v)=>{ try{ localStorage.setItem(k,JSON.stringify(v)); return true; }catch(e){ return false; } };
+const draftKey=y=>'krambua-varetelling-'+y;
+
+function utf8ToBase64(s){ return btoa(unescape(encodeURIComponent(s))); }
+function base64ToUtf8(b){ return decodeURIComponent(escape(atob(b.replace(/\n/g,'')))); }
+const ghHeaders=x=>Object.assign({Authorization:`token ${getToken()}`,Accept:'application/vnd.github+json'},x||{});
+async function ghGet(path){
+  const r=await fetch(`${GH_API}/repos/${GH_OWNER}/${GH_REPO}/contents/${path}?ref=${GH_BRANCH}&t=${Date.now()}`,{headers:ghHeaders(),cache:'no-store'});
+  if(r.status===404) return null;
+  if(!r.ok) throw new Error(`GitHub svarte ${r.status}`);
+  const d=await r.json();
+  if(Array.isArray(d)) return d;
+  return {content:base64ToUtf8(d.content),sha:d.sha};
+}
+async function ghPut(path,content,sha,msg){
+  const body={message:msg,content:utf8ToBase64(content),branch:GH_BRANCH}; if(sha) body.sha=sha;
+  const r=await fetch(`${GH_API}/repos/${GH_OWNER}/${GH_REPO}/contents/${path}`,{method:'PUT',headers:ghHeaders({'Content-Type':'application/json'}),body:JSON.stringify(body)});
+  if(r.status===409||r.status===422){ const e=new Error('conflict'); e.conflict=true; throw e; }
+  if(!r.ok) throw new Error(`GitHub svarte ${r.status}`);
+  return (await r.json()).content.sha;
+}
+
+// ---------- tal ----------
+const nf2=new Intl.NumberFormat('nb-NO',{minimumFractionDigits:2,maximumFractionDigits:2});
+const nf0=new Intl.NumberFormat('nb-NO',{maximumFractionDigits:0});
+const kr=v=>(v==null||!isFinite(v))?'–':nf2.format(v)+' kr';
+const kr0=v=>(v==null||!isFinite(v))?'–':nf0.format(v)+' kr';
+const pct=v=>(v==null||!isFinite(v))?'–':(v>0?'+':'')+(v*100).toLocaleString('nb-NO',{minimumFractionDigits:1,maximumFractionDigits:1})+' %';
+const rateLbl=r=>Math.round(r*100)+' %';
+const esc=s=>String(s??'').replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
+const round2=v=>Math.round(v*100)/100;
+
+// Tolkar "12 450,50", "12450.5", "1 200 + 340,5", "3 * 199" utan eval.
+function parseAmount(str){
+  let s=String(str||'').replace(/kr/gi,'').replace(/[\s  ]/g,'');
+  if(!s) return {empty:true};
+  if(!/^[0-9.,+\-*x×]+$/i.test(s)) return {error:'Berre tal og + − × er lov'};
+  s=s.replace(/[x×]/gi,'*');
+  const terms=s.split(/(?=[+-])/);
+  let total=0;
+  for(const t of terms){
+    let sign=1, body=t;
+    if(body[0]==='+') body=body.slice(1); else if(body[0]==='-'){ sign=-1; body=body.slice(1); }
+    if(!body) return {error:'Ufullstendig reknestykke'};
+    let prod=1;
+    for(let f of body.split('*')){
+      if(!f) return {error:'Ufullstendig reknestykke'};
+      if(f.includes(',')) f=f.replace(/\./g,'').replace(',','.');
+      else if(/^\d{1,3}(\.\d{3})+$/.test(f)) f=f.replace(/\./g,'');
+      if(!/^\d+(\.\d+)?$/.test(f)) return {error:'Ugyldig tal: '+f};
+      prod*=parseFloat(f);
+    }
+    total+=sign*prod;
+  }
+  total=round2(total);
+  if(total<0) return {error:'Summen kan ikkje vere negativ'};
+  return {value:total, expr:terms.length>1||s.includes('*')};
+}
+
+// ---------- tilstand ----------
+let doc=null, sha=null, prevDoc=null, years=[], online=false;
+let dirty=false, saving=false, saveTimer=null, lastSavedAt=null, editingId=null, currentRate=0.25;
+
+function newDoc(year, prev){
+  return {schema:1, year, dato:`${year}-12-31`, avanse: prev?prev.avanse:0.38, kontant:null,
+    talt:'', godkjent:'', merknad:'', locked:false, pages:[], infoUpdatedAt:Date.now(), created:new Date().toISOString()};
+}
+const livePages=d=>(d?.pages||[]).filter(p=>!p.deleted);
+
+function mergeDocs(remote, local){
+  if(!remote) return local; if(!local) return remote;
+  const out=JSON.parse(JSON.stringify((local.infoUpdatedAt||0)>=(remote.infoUpdatedAt||0)?local:remote));
+  const map=new Map();
+  for(const p of [...remote.pages,...local.pages]){
+    const cur=map.get(p.id);
+    if(!cur || (p.updatedAt||0)>(cur.updatedAt||0)) map.set(p.id,p);
+  }
+  out.pages=[...map.values()].sort((a,b)=>(a.createdAt||0)-(b.createdAt||0));
+  const lk=(remote.lockUpdatedAt||0)>(local.lockUpdatedAt||0)?remote:local;
+  out.locked=!!lk.locked; out.lockUpdatedAt=lk.lockUpdatedAt||0; if(lk.lockedAt) out.lockedAt=lk.lockedAt;
+  return out;
+}
+
+function setStatus(kind,text){ $('saveDot').className='dot '+kind; $('saveText').textContent=text; }
+function statusIdle(){
+  if(!online){ setStatus('err', dirty?'Ikkje tilkopla GitHub – endringane er lagra lokalt på denne eininga':'Ikkje tilkopla GitHub – lagrar lokalt'); return; }
+  if(dirty) setStatus('busy','Ulagra endringar …');
+  else setStatus('ok', lastSavedAt?`Alt er lagra i GitHub · ${lastSavedAt.toLocaleTimeString('nb-NO',{hour:'2-digit',minute:'2-digit'})}`:'Alt er lagra i GitHub');
+}
+
+function touch(){
+  dirty=true;
+  lsSet(draftKey(doc.year),{doc,sha,dirty:true,at:Date.now()});
+  statusIdle();
+  clearTimeout(saveTimer); saveTimer=setTimeout(saveNow,1200);
+}
+
+async function saveNow(){
+  if(!doc||!dirty) return;
+  if(!online){ statusIdle(); return; }
+  if(saving){ clearTimeout(saveTimer); saveTimer=setTimeout(saveNow,800); return; }
+  saving=true; setStatus('busy','Lagrar …');
+  const path=`${DIR}/${doc.year}.json`;
+  try{
+    for(let attempt=0; attempt<4; attempt++){
+      const remote=await ghGet(path);
+      let toSave=doc;
+      if(remote && remote.sha!==sha){ toSave=mergeDocs(JSON.parse(remote.content),doc); }
+      const snapshot=JSON.stringify(toSave,null,1);
+      try{
+        const n=livePages(toSave).length;
+        sha=await ghPut(path,snapshot,remote?remote.sha:undefined,`Varetelling ${toSave.year}: ${n} sider (${new Date().toLocaleString('nb-NO')})`);
+        if(toSave!==doc){ doc=mergeDocs(toSave,doc); fillInfo(); render(); }
+        dirty = JSON.stringify(doc,null,1)!==snapshot;
+        lastSavedAt=new Date();
+        lsSet(draftKey(doc.year),{doc,sha,dirty,at:Date.now()});
+        break;
+      }catch(e){ if(!e.conflict||attempt===3) throw e; }
+    }
+    if(!years.includes(doc.year)){ years.push(doc.year); renderYears(); }
+  }catch(e){
+    console.error(e);
+    setStatus('err','Klarte ikkje lagre til GitHub ('+e.message+'). Lagra lokalt – prøver igjen om litt.');
+    saving=false; clearTimeout(saveTimer); saveTimer=setTimeout(()=>reconnect(),15000); return;
+  }
+  saving=false;
+  if(dirty){ clearTimeout(saveTimer); saveTimer=setTimeout(saveNow,500); }
+  statusIdle();
+}
+window.addEventListener('beforeunload',e=>{ if(dirty){ e.preventDefault(); e.returnValue=''; } });
+window.addEventListener('online',()=>{ if(getToken()) reconnect(); });
+async function reconnect(){
+  online=await checkGitHub(); if(!online||!doc) return;
+  await refreshYears();
+  try{ const r=await ghGet(`${DIR}/${doc.year-1}.json`); if(r){ prevDoc=JSON.parse(r.content); cacheDoc(prevDoc); } }catch(e){}
+  render(); statusIdle(); if(dirty) saveNow();
+}
+async function refreshYears(){
+  if(online){ try{ const list=await ghGet(DIR); if(Array.isArray(list)) list.map(f=>parseInt(f.name)).filter(n=>n>2000).forEach(y=>{ if(!years.includes(y)) years.push(y); }); }catch(e){} }
+  years.sort((a,b)=>a-b); renderYears();
+}
+// lagrar ein kopi av andre år lokalt (utan å overskrive ulagra endringar), så samanlikning fungerer utan nett
+function cacheDoc(d){ const cur=lsGet(draftKey(d.year)); if(!cur||!cur.dirty) lsSet(draftKey(d.year),{doc:d,sha:cur?.sha||null,dirty:false,at:Date.now()}); }
+document.addEventListener('visibilitychange',()=>{ if(document.visibilityState==='hidden'&&dirty) saveNow(); });
+
+// ---------- lasting ----------
+async function loadYear(year, fresh){
+  clearTimeout(saveTimer);
+  if(dirty) await saveNow();
+  setStatus('busy','Hentar varetelling '+year+' …');
+  // fjoråret (til samanlikning og som mal for avanse)
+  prevDoc=null;
+  if(online){ try{ const r=await ghGet(`${DIR}/${year-1}.json`); if(r){ prevDoc=JSON.parse(r.content); cacheDoc(prevDoc); } }catch(e){} }
+  if(!prevDoc){ const pl=lsGet(draftKey(year-1)); if(pl) prevDoc=pl.doc; }
+  let remote=null, remoteSha=null;
+  if(online){
+    try{ const r=await ghGet(`${DIR}/${year}.json`); if(r){ remote=JSON.parse(r.content); remoteSha=r.sha; } }
+    catch(e){ console.error(e); online=false; showWarn('Kunne ikkje hente frå GitHub ('+e.message+'). Viser lokal kopi.'); }
+  }
+  const local=lsGet(draftKey(year));
+  if(remote && local?.dirty){ doc=mergeDocs(remote,local.doc); sha=remoteSha; dirty=true; }
+  else if(remote){ doc=remote; sha=remoteSha; dirty=false; }
+  else if(local){ doc=local.doc; sha=local.sha||null; dirty=!!local.dirty||online; }
+  else { doc=newDoc(year, prevDoc); sha=null; dirty=!!fresh; }
+  lsSet(draftKey(year),{doc,sha,dirty,at:Date.now()});
+  $('yearSel').value=year;
+  editingId=null; resetForm(); fillInfo(); render(); statusIdle();
+  if(dirty) saveNow();
+}
+
+async function init(){
+  if(!getToken()){ showTokenGate(); online=false; }
+  else online=await checkGitHub();
+  years=[];
+  if(online){
+    try{ const list=await ghGet(DIR); if(Array.isArray(list)) years=list.map(f=>parseInt(f.name)).filter(n=>n>2000); }catch(e){}
+  }
+  try{ for(let i=0;i<localStorage.length;i++){ const k=localStorage.key(i); const m=k&&k.match(/^krambua-varetelling-(\d{4})$/); if(m&&!years.includes(+m[1])) years.push(+m[1]); } }catch(e){}
+  const thisYear=new Date().getFullYear();
+  if(!years.includes(thisYear) && !years.some(y=>y>thisYear)) years.push(thisYear);
+  years.sort((a,b)=>a-b);
+  renderYears();
+  await loadYear(years.includes(thisYear)?thisYear:years[years.length-1]);
+  $('yearSel').value=doc.year;
+}
+async function checkGitHub(){
+  try{
+    const r=await fetch(`${GH_API}/repos/${GH_OWNER}/${GH_REPO}`,{headers:ghHeaders()});
+    if(r.ok){ hideWarn(); return true; }
+    if(r.status===401) showWarn('GitHub avviste tokenet (ugyldig eller utgått). Trykk «Endre GitHub-token» øvst. Inntil vidare vert alt lagra lokalt på denne eininga.');
+    else showWarn(`GitHub svarte ${r.status}. Inntil vidare vert alt lagra lokalt på denne eininga.`);
+  }catch(e){ showWarn('Får ikkje kontakt med GitHub (ingen nett?). Alt vert lagra lokalt og sendt opp når nettet er tilbake.'); }
+  return false;
+}
+function showWarn(t){ $('storageWarning').textContent=t; $('storageWarning').style.display='block'; }
+function hideWarn(){ $('storageWarning').style.display='none'; }
+function showTokenGate(msg){ if(msg) $('tokenGateMsg').textContent=msg; $('tokenGateOverlay').style.display='flex'; }
+$('tokenGateSave').addEventListener('click',async()=>{ const v=$('tokenGateInput').value.trim(); if(!v){ toast('Lim inn tokenet fyrst.'); return; } setToken(v); $('tokenGateOverlay').style.display='none'; online=await checkGitHub(); if(online&&doc){ dirty=true; await loadYear(doc.year); } else if(online) init(); });
+$('tokenGateSkip').addEventListener('click',()=>{ $('tokenGateOverlay').style.display='none'; showWarn('Ikkje kopla til GitHub – data vert berre lagra på denne eininga. Legg inn token for å lagre trygt.'); statusIdle(); });
+$('changeTokenLink').addEventListener('click',e=>{ e.preventDefault(); $('tokenGateInput').value=''; showTokenGate('Lim inn ein ny eller oppdatert token.'); });
+
+function renderYears(){
+  const sel=$('yearSel'); const cur=doc?.year;
+  sel.innerHTML=years.slice().reverse().map(y=>`<option value="${y}">Varetelling ${y}</option>`).join('');
+  if(cur) sel.value=cur;
+}
+$('yearSel').addEventListener('change',e=>loadYear(parseInt(e.target.value)));
+$('newYearBtn').addEventListener('click',async()=>{
+  const next=Math.max(...years,new Date().getFullYear()-1)+1;
+  if(years.includes(next)){ return loadYear(next); }
+  if(!await askConfirm(`Starte ny varetelling for ${next}? Varetellinga for ${next-1} vert brukt som samanlikning.`)) return;
+  years.push(next); years.sort((a,b)=>a-b); renderYears();
+  await loadYear(next,true);
+});
+
+// ---------- tabs / dialog / toast ----------
+document.querySelectorAll('nav.tabs button').forEach(b=>b.addEventListener('click',()=>{
+  document.querySelectorAll('nav.tabs button').forEach(x=>x.classList.remove('active'));
+  document.querySelectorAll('.panel').forEach(p=>p.classList.remove('active'));
+  b.classList.add('active'); $('panel-'+b.dataset.tab).classList.add('active');
+}));
+function toast(msg,action){
+  const t=$('toast'); t.innerHTML=''; t.append(document.createTextNode(msg));
+  if(action){ const a=document.createElement('button'); a.textContent=action.label; a.className='ghost small'; a.style.cssText='margin-left:12px;color:inherit;border-color:currentColor;pointer-events:auto'; a.onclick=()=>{action.fn(); t.classList.remove('show');}; t.append(a); t.style.pointerEvents='auto'; }
+  t.classList.add('show'); clearTimeout(toast._h); toast._h=setTimeout(()=>{t.classList.remove('show'); t.style.pointerEvents='';},action?6000:2800);
+}
+function askConfirm(message){
+  return new Promise(resolve=>{
+    const o=$('modalOverlay'); $('modalMsg').textContent=message; o.style.display='flex';
+    const ok=$('modalOk'), c=$('modalCancel');
+    const done=r=>{ o.style.display='none'; ok.onclick=null; c.onclick=null; resolve(r); };
+    ok.onclick=()=>done(true); c.onclick=()=>done(false);
+  });
+}
+
+// ---------- registrering ----------
+function setRate(r){ currentRate=r; document.querySelectorAll('#fRate button').forEach(b=>{ const on=parseFloat(b.dataset.r)===r; b.classList.toggle('on',on); b.setAttribute('aria-checked',on); }); }
+document.querySelectorAll('#fRate button').forEach(b=>b.addEventListener('click',()=>{ setRate(parseFloat(b.dataset.r)); $('fSum').focus(); }));
+function nextSide(){ const n=livePages(doc).map(p=>+p.side||0); return n.length?Math.max(...n)+1:1; }
+function resetForm(){
+  editingId=null; $('fSide').value=doc?nextSide():1; $('fSum').value=''; $('fKom').value=''; $('fOk').checked=false;
+  $('fPreview').textContent=''; $('fPreview').className='preview';
+  $('entryTitle').textContent='Legg inn tellingsside'; $('addBtn').textContent='Legg til side'; $('cancelEdit').style.display='none';
+  setRate(currentRate);
+}
+$('fSum').addEventListener('input',()=>{
+  const r=parseAmount($('fSum').value), pv=$('fPreview');
+  if(r.empty){ pv.textContent=''; pv.className='preview'; return; }
+  if(r.error){ pv.textContent=r.error; pv.className='preview bad'; return; }
+  const eks=r.value/(1+currentRate);
+  pv.className='preview';
+  pv.textContent=(r.expr?'= '+kr(r.value)+'  ·  ':'')+`eks. mva ${kr(eks)}`;
+});
+$('cancelEdit').addEventListener('click',resetForm);
+$('entryForm').addEventListener('submit',async e=>{
+  e.preventDefault();
+  if(doc.locked){ toast('Varetellinga er låst. Lås opp fyrst.'); return; }
+  const side=parseInt($('fSide').value);
+  if(!side||side<1){ toast('Skriv inn sidenummer.'); $('fSide').focus(); return; }
+  const r=parseAmount($('fSum').value);
+  if(r.empty){ toast('Skriv inn summen på sida.'); $('fSum').focus(); return; }
+  if(r.error){ toast(r.error); $('fSum').focus(); return; }
+  const dup=livePages(doc).find(p=>+p.side===side && p.id!==editingId);
+  if(dup && !await askConfirm(`Side ${side} finst alt (${kr(dup.sum)}, ${rateLbl(dup.rate)}). Vil du likevel leggje inn ei side til med same nummer?`)) return;
+  if(r.value>250000 && !await askConfirm(`${kr(r.value)} er uvanleg mykje for éi side. Er summen rett?`)) return;
+  if(r.value===0 && !await askConfirm('Summen er 0 kr. Vil du lagre sida likevel?')) return;
+  const now=Date.now();
+  const data={side, avd:$('fAvd').value.trim(), rate:currentRate, sum:r.value, input:$('fSum').value.trim(), ok:$('fOk').checked, kommentar:$('fKom').value.trim(), updatedAt:now};
+  if(editingId){
+    const p=doc.pages.find(p=>p.id===editingId); Object.assign(p,data);
+    toast(`Side ${side} er endra.`);
+  } else {
+    doc.pages.push(Object.assign({id:(crypto.randomUUID?crypto.randomUUID():now+'-'+Math.random().toString(36).slice(2)), createdAt:now},data));
+    toast(`Side ${side} lagt til · ${kr(r.value)}`);
+  }
+  touch(); const keepAvd=$('fAvd').value; resetForm(); $('fAvd').value=keepAvd; render(); $('fSum').focus();
+});
+
+function startEdit(id){
+  const p=doc.pages.find(p=>p.id===id); if(!p) return;
+  if(doc.locked){ toast('Varetellinga er låst.'); return; }
+  editingId=id; $('fSide').value=p.side; $('fAvd').value=p.avd||''; setRate(p.rate); $('fSum').value=p.input||String(p.sum).replace('.',',');
+  $('fKom').value=p.kommentar||''; $('fOk').checked=!!p.ok;
+  $('entryTitle').textContent='Endre side '+p.side; $('addBtn').textContent='Lagre endring'; $('cancelEdit').style.display='';
+  $('fSum').dispatchEvent(new Event('input')); render();
+  $('entryCard').scrollIntoView({behavior:'smooth',block:'start'}); $('fSum').focus();
+}
+async function delPage(id){
+  const p=doc.pages.find(p=>p.id===id); if(!p||doc.locked) return;
+  if(!await askConfirm(`Slette side ${p.side} (${kr(p.sum)})?`)) return;
+  p.deleted=true; p.updatedAt=Date.now(); touch(); render();
+  toast(`Side ${p.side} sletta.`,{label:'Angre',fn:()=>{ p.deleted=false; p.updatedAt=Date.now(); touch(); render(); }});
+}
+async function toggleOk(id){
+  const p=doc.pages.find(p=>p.id===id); if(!p||doc.locked) return;
+  p.ok=!p.ok; p.updatedAt=Date.now(); touch(); render();
+}
+
+// ---------- opplysningar ----------
+function fillInfo(){
+  $('iDato').value=doc.dato||''; $('iAvanse').value=doc.avanse!=null?round2(doc.avanse*100):'';
+  $('iKontant').value=doc.kontant!=null?String(doc.kontant).replace('.',','):''; $('iTalt').value=doc.talt||''; $('iGodkj').value=doc.godkjent||''; $('iMerk').value=doc.merknad||'';
+}
+[['iDato','dato'],['iTalt','talt'],['iGodkj','godkjent'],['iMerk','merknad']].forEach(([id,k])=>$(id).addEventListener('input',()=>{ if(doc.locked) return; doc[k]=$(id).value; doc.infoUpdatedAt=Date.now(); touch(); render(); }));
+$('iAvanse').addEventListener('input',()=>{ if(doc.locked) return; const v=parseFloat($('iAvanse').value); if(isNaN(v)||v<0||v>=90) return; doc.avanse=round2(v)/100; doc.infoUpdatedAt=Date.now(); touch(); render(); });
+$('iKontant').addEventListener('input',()=>{ if(doc.locked) return; const r=parseAmount($('iKontant').value); doc.kontant=r.empty?null:(r.error?doc.kontant:r.value); doc.infoUpdatedAt=Date.now(); touch(); render(); });
+
+// ---------- utrekning ----------
+function summarize(d){
+  if(!d) return null;
+  const pages=livePages(d), av=d.avanse??0.38;
+  const byRate=RATES.map(r=>{ const p=pages.filter(x=>x.rate===r); const inkl=round2(p.reduce((a,x)=>a+x.sum,0)); const eks=inkl/(1+r); return {rate:r,pages:p.length,inkl,eks,mva:inkl-eks,netto:eks*(1-av)}; });
+  const t=k=>byRate.reduce((a,x)=>a+x[k],0);
+  return {byRate, inkl:t('inkl'), eks:t('eks'), mva:t('mva'), avanseKr:t('eks')*av, netto:t('netto'), pages:pages.length, controlled:pages.filter(p=>p.ok).length, kontant:d.kontant, avanse:av};
+}
+function calcRows(c,p){
+  const g=f=>p?f(p):null;
+  const rows=[
+    {l:'Varer etter telling inkl. forteneste og mva', c:c.inkl, p:g(x=>x.inkl)},
+    {l:'Varer med 25 % MVA', c:c.byRate[0].inkl, p:g(x=>x.byRate[0].inkl), cls:'sub'},
+    {l:'Varer med 15 % MVA', c:c.byRate[1].inkl, p:g(x=>x.byRate[1].inkl), cls:'sub'}];
+  if(c.byRate[2].pages||(p&&p.byRate[2].pages)) rows.push({l:'Varer med 0 % MVA', c:c.byRate[2].inkl, p:g(x=>x.byRate[2].inkl), cls:'sub'});
+  rows.push({l:'Varelager utan MVA', c:c.eks, p:g(x=>x.eks)},
+    {l:'MVA totalt', c:c.mva, p:g(x=>x.mva)},
+    {l:`Avanse / forteneste (${round2(c.avanse*100).toLocaleString('nb-NO')} %)`, c:c.avanseKr, p:g(x=>x.avanseKr)},
+    {l:'Netto varelager', c:c.netto, p:g(x=>x.netto), cls:'net'},
+    {l:'Kontantbehaldning', c:c.kontant, p:g(x=>x.kontant)});
+  return rows;
+}
+
+// ---------- visning ----------
+function render(){
+  if(!doc) return;
+  const locked=!!doc.locked;
+  $('lockedBanner').style.display=locked?'flex':'none';
+  $('entryCard').style.display=locked?'none':'';
+  ['iDato','iAvanse','iKontant','iTalt','iGodkj','iMerk'].forEach(id=>$(id).disabled=locked);
+  $('lockBtn').textContent=locked?'Varetellinga er låst':'🔒 Lås varetelling'; $('lockBtn').disabled=locked;
+  $('pathLbl').textContent=`${DIR}/${doc.year}.json`;
+  document.title=`Varetelling ${doc.year} – Krambua`;
+
+  const pages=livePages(doc);
+  $('avdList').innerHTML=[...new Set(pages.map(p=>p.avd).filter(Boolean))].map(a=>`<option value="${esc(a)}">`).join('');
+  if(!editingId && !$('fSum').value) $('fSide').value=nextSide();
+
+  // liste
+  const f=$('filterRate').value, sort=$('sortSel').value;
+  let list=pages.filter(p=>f==='all'?true:f==='nok'?!p.ok:p.rate===parseFloat(f));
+  list.sort(sort==='side'?(a,b)=>a.side-b.side||a.createdAt-b.createdAt:sort==='new'?(a,b)=>b.createdAt-a.createdAt:(a,b)=>b.sum-a.sum);
+  const sides=pages.map(p=>+p.side); const dupSet=new Set(sides.filter((s,i)=>sides.indexOf(s)!==i));
+  const total=pages.reduce((a,p)=>a+p.sum,0);
+  $('listTot').textContent=`${pages.length} sider · ${kr(total)}`;
+  if(!list.length){ $('pageTable').innerHTML=`<tr><td class="empty" style="font-family:var(--sans)">${pages.length?'Ingen sider i dette utvalet.':'Ingen sider enno. Legg inn den første sida over.'}</td></tr>`; }
+  else{
+    $('pageTable').innerHTML=`<tr><th>Side</th><th class="hide-sm">Avdeling</th><th>MVA</th><th class="num">Sum inkl. mva</th><th>Kontr.</th><th class="hide-sm">Kommentar</th><th></th></tr>`+
+      list.map(p=>`<tr class="${p.id===editingId?'editing':dupSet.has(+p.side)?'flag':''}"><td>${esc(p.side)}${dupSet.has(+p.side)?' ⚠':''}</td><td class="name hide-sm">${esc(p.avd)}</td><td><span class="pill">${rateLbl(p.rate)}</span></td><td class="num">${kr(p.sum)}</td>
+      <td><button class="ghost small ${p.ok?'toggle-active':''}" data-ok="${p.id}" ${locked?'disabled':''} aria-label="Kontrollert">${p.ok?'✓ Ja':'Nei'}</button></td><td class="name hide-sm">${esc(p.kommentar)}</td>
+      <td style="white-space:nowrap;text-align:right">${locked?'':`<button class="ghost small" data-edit="${p.id}">Endre</button> <button class="ghost small" data-del="${p.id}" aria-label="Slett side ${esc(p.side)}">✕</button>`}</td></tr>`).join('');
+  }
+
+  // samandrag
+  const c=summarize(doc), pv=summarize(prevDoc);
+  const d=pv?c.netto-pv.netto:null;
+  const kp=[
+    ['Netto varelager',kr0(c.netto),`utan mva, etter ${round2(c.avanse*100).toLocaleString('nb-NO')} % avanse`],
+    ['Endring mot '+(doc.year-1),pv?pct(pv.netto?c.netto/pv.netto-1:null):'–',pv?(d>=0?'▲ ':'▼ ')+kr0(Math.abs(d)):'Ingen varetelling for '+(doc.year-1),pv&&d<0],
+    ['Varer inkl. mva',kr0(c.inkl),`${c.pages} sider`],
+    ['Kontrollerte sider',c.pages?Math.round(c.controlled/c.pages*100)+' %':'–',`${c.controlled} av ${c.pages}`]];
+  $('kpis').innerHTML=kp.map(([l,v,s,neg])=>`<div class="kpi"><div class="label">${esc(l)}</div><div class="value${neg?' neg':''}">${esc(v)}</div><div class="muted" style="font-size:.75rem;margin-top:4px">${esc(s)}</div></div>`).join('');
+  const al=[];
+  if(dupSet.size) al.push(['bad',`Sidenummer brukt meir enn éin gong: ${[...dupSet].join(', ')}. Sjekk at det ikkje er dobbeltregistrert.`]);
+  if(c.pages&&c.controlled<c.pages) al.push(['',`${c.pages-c.controlled} side(r) er ikkje merka som kontrollert.`]);
+  const gaps=[]; const mx=Math.max(0,...sides); for(let i=1;i<=mx;i++) if(!sides.includes(i)) gaps.push(i);
+  if(gaps.length&&gaps.length<=30) al.push(['',`Manglar sidenummer: ${gaps.join(', ')}. Er alle sider lagt inn?`]);
+  if(c.kontant==null) al.push(['','Kontantbehaldning er ikkje fylt inn (fana Opplysningar).']);
+  if(pv&&pv.netto&&Math.abs(c.netto/pv.netto-1)>0.25&&c.pages>=pv.pages*0.8) al.push(['',`Netto varelager har endra seg meir enn 25 % frå i fjor. Dobbeltsjekk om det stemmer.`]);
+  if(!al.length&&c.pages) al.push(['ok','Alle sider er kontrollerte, og ingenting ser feil ut.']);
+  $('alerts').innerHTML=al.map(([k,t])=>`<div class="alert ${k}">${esc(t)}</div>`).join('');
+
+  let h='<tr><th>MVA-sats</th><th class="num">Sider</th><th class="num">Sum inkl. mva</th><th class="num">Eks. mva</th><th class="num">MVA</th><th class="num">Netto etter avanse</th></tr>';
+  c.byRate.forEach(r=>{ if(r.rate===0&&!r.pages) return; h+=`<tr><td class="name">${rateLbl(r.rate)} MVA</td><td class="num">${r.pages}</td><td class="num">${kr(r.inkl)}</td><td class="num">${kr(r.eks)}</td><td class="num">${kr(r.mva)}</td><td class="num">${kr(r.netto)}</td></tr>`; });
+  h+=`<tr class="tot"><td class="name">Totalt</td><td class="num">${c.pages}</td><td class="num">${kr(c.inkl)}</td><td class="num">${kr(c.eks)}</td><td class="num">${kr(c.mva)}</td><td class="num">${kr(c.netto)}</td></tr>`;
+  $('tRate').innerHTML=h;
+  $('calcTitle').textContent=`Netto varelager ${doc.year} mot ${doc.year-1}`;
+  $('calcSub').textContent=`Netto = varelager utan mva − ${round2(c.avanse*100).toLocaleString('nb-NO')} % avanse. ${pv?'':'Det finst inga varetelling for '+(doc.year-1)+' i appen.'}`;
+  h=`<tr><th></th><th class="num">${doc.year}</th><th class="num">${doc.year-1}</th><th class="num">Endring</th><th class="num">%</th></tr>`;
+  calcRows(c,pv).forEach(r=>{ const dd=(r.p==null||r.c==null)?null:r.c-r.p, pc=(r.p&&r.c!=null)?r.c/r.p-1:null;
+    h+=`<tr class="${r.cls||''}"><td class="name">${esc(r.l)}</td><td class="num">${kr(r.c)}</td><td class="num">${kr(r.p)}</td><td class="num">${dd==null?'–':`<span class="delta ${dd<0?'down':dd>0?'up':'flat'}">${kr(dd)}</span>`}</td><td class="num">${pct(pc)}</td></tr>`; });
+  $('tCalc').innerHTML=h;
+}
+$('pageTable').addEventListener('click',e=>{
+  const b=e.target.closest('button'); if(!b) return;
+  if(b.dataset.edit) startEdit(b.dataset.edit); else if(b.dataset.del) delPage(b.dataset.del); else if(b.dataset.ok) toggleOk(b.dataset.ok);
+});
+$('filterRate').addEventListener('change',render); $('sortSel').addEventListener('change',render);
+
+// ---------- låsing ----------
+$('lockBtn').addEventListener('click',async()=>{
+  const c=summarize(doc);
+  const extra=c.controlled<c.pages?` NB: ${c.pages-c.controlled} side(r) er ikkje kontrollert.`:'';
+  if(!await askConfirm(`Låse varetelling ${doc.year}? Netto varelager: ${kr(c.netto)} (${c.pages} sider).${extra}`)) return;
+  doc.locked=true; doc.lockedAt=new Date().toISOString(); doc.lockUpdatedAt=Date.now(); touch(); render(); toast('Varetellinga er låst.');
+});
+$('unlockBtn').addEventListener('click',async()=>{
+  if(!await askConfirm(`Låse opp varetelling ${doc.year} for endringar? Alle endringar vert framleis lagra med historikk.`)) return;
+  doc.locked=false; doc.lockUpdatedAt=Date.now(); touch(); render();
+});
+
+// ---------- eksport ----------
+function saveFile(blob,name){ const a=document.createElement('a'); a.href=URL.createObjectURL(blob); a.download=name; document.body.append(a); a.click(); setTimeout(()=>{URL.revokeObjectURL(a.href); a.remove();},2000); }
+const fmtDato=s=>{ if(!s) return ''; const m=String(s).match(/^(\d{4})-(\d{2})-(\d{2})$/); return m?`${m[3]}.${m[2]}.${m[1]}`:s; };
+
+$('xJson').addEventListener('click',()=>{ saveFile(new Blob([JSON.stringify(doc,null,1)],{type:'application/json'}),`Krambua_varetelling_${doc.year}_kopi.json`); });
+$('xImport').addEventListener('click',()=>{ if(doc.locked){ toast('Lås opp varetellinga fyrst.'); return; } $('importFile').click(); });
+$('importFile').addEventListener('change',async e=>{
+  const file=e.target.files[0]; e.target.value=''; if(!file) return;
+  try{
+    let incoming=[];
+    if(/\.json$/i.test(file.name)){
+      const d=JSON.parse(await file.text()); if(!Array.isArray(d.pages)) throw new Error('Fila er ikkje ei varetellings-kopi.');
+      if(d.year!==doc.year && !await askConfirm(`Kopien gjeld ${d.year}, men du står i ${doc.year}. Lese han inn i ${doc.year} likevel?`)) return;
+      if(!await askConfirm(`Slå saman ${livePages(d).length} sider frå kopien med dei ${livePages(doc).length} sidene som er her no? Ingenting vert sletta.`)) return;
+      const merged=mergeDocs(d,doc); merged.year=doc.year; doc=merged; doc.infoUpdatedAt=Date.now();
+    } else {
+      const wb=XLSX.read(await file.arrayBuffer(),{type:'array'}); const ws=wb.Sheets['Tellelister'];
+      if(!ws) throw new Error('Fann ikkje arket «Tellelister» i Excel-fila.');
+      const rng=XLSX.utils.decode_range(ws['!ref']);
+      for(let r=4;r<=rng.e.r;r++){ const g=c=>ws[XLSX.utils.encode_cell({r,c})]?.v;
+        let rate=g(2), sum=g(3); if(sum==null||sum==='') continue;
+        if(typeof rate==='string') rate=parseFloat(rate.replace(',','.'))/(rate.includes('%')?100:1); if(rate>1) rate/=100; rate=round2(rate);
+        const ps=typeof sum==='number'?{value:round2(sum)}:parseAmount(sum); if(ps.error||!RATES.includes(rate)) continue;
+        incoming.push({side:parseInt(g(0))||null,avd:g(1)||'',rate,sum:ps.value,ok:/^ja$/i.test(String(g(4)||'')),kommentar:g(5)||''}); }
+      if(!incoming.length) throw new Error('Fann ingen gyldige sider (med mva-sats og sum) i Excel-fila.');
+      if(!await askConfirm(`Leggje til ${incoming.length} sider frå Excel-fila? Sidene som alt er her vert ikkje endra.`)) return;
+      const now=Date.now(); let n=nextSide();
+      incoming.forEach((p,i)=>doc.pages.push(Object.assign({id:now+'-'+i+'-'+Math.random().toString(36).slice(2),createdAt:now+i,updatedAt:now},p,{side:p.side||n++})));
+    }
+    touch(); fillInfo(); render(); toast('Innlesinga er ferdig.');
+  }catch(err){ toast('Klarte ikkje lese fila: '+err.message); }
+});
+
+$('xExcel').addEventListener('click',()=>{
+  const c=summarize(doc), pv=summarize(prevDoc), y=doc.year;
+  const wb=XLSX.utils.book_new();
+  const S=[[`Varetelling ${y} – ${FIRMA}`],[`Telling per ${fmtDato(doc.dato)}`+(doc.talt?`, talt av ${doc.talt}`:'')],[],
+    ['', String(y), String(y-1), 'Endring (kr)']];
+  const money=[]; // [rad, kolonnar]
+  calcRows(c,pv).forEach(r=>{ money.push([S.length,[1,2,3]]); S.push([r.l, r.c==null?null:round2(r.c), r.p==null?null:round2(r.p), (r.c==null||r.p==null)?null:round2(r.c-r.p)]); });
+  S.push([],['MVA-sats','Sider','Sum inkl. mva','Eks. mva','MVA','Netto etter avanse']);
+  c.byRate.forEach(r=>{ money.push([S.length,[2,3,4,5]]); S.push([rateLbl(r.rate)+' MVA',r.pages,round2(r.inkl),round2(r.eks),round2(r.mva),round2(r.netto)]); });
+  money.push([S.length,[2,3,4,5]]); S.push(['Totalt',c.pages,round2(c.inkl),round2(c.eks),round2(c.mva),round2(c.netto)]);
+  S.push([],['Kontrollerte sider',`${c.controlled} av ${c.pages}`],['Godkjent av',doc.godkjent||''],['Merknader',doc.merknad||''],['Status',doc.locked?'Avslutta og låst':'Utkast']);
+  const ws1=XLSX.utils.aoa_to_sheet(S); ws1['!cols']=[{wch:44},{wch:16},{wch:16},{wch:16},{wch:14},{wch:18}];
+  money.forEach(([r,cols])=>cols.forEach(ci=>{ const cell=ws1[XLSX.utils.encode_cell({r,c:ci})]; if(cell&&typeof cell.v==='number') cell.z='#,##0.00'; }));
+  const rows=[['Side','Avdeling','MVA-sats','Sum inkl. mva','Eks. mva','MVA','Kontrollert','Kommentar']];
+  livePages(doc).slice().sort((a,b)=>a.side-b.side).forEach(p=>rows.push([p.side,p.avd||'',p.rate,p.sum,round2(p.sum/(1+p.rate)),round2(p.sum-p.sum/(1+p.rate)),p.ok?'Ja':'Nei',p.kommentar||'']));
+  const n=rows.length;
+  rows.push(['Sum','','',{f:`SUM(D2:D${n})`},{f:`SUM(E2:E${n})`},{f:`SUM(F2:F${n})`}]);
+  const ws2=XLSX.utils.aoa_to_sheet(rows); ws2['!cols']=[{wch:7},{wch:20},{wch:9},{wch:16},{wch:16},{wch:14},{wch:11},{wch:34}];
+  for(let r=2;r<=n+1;r++){ ['D','E','F'].forEach(col=>{ if(ws2[col+r]) ws2[col+r].z='#,##0.00'; }); if(ws2['C'+r]&&typeof ws2['C'+r].v==='number') ws2['C'+r].z='0%'; }
+  ws2['!autofilter']={ref:`A1:H${n}`};
+  XLSX.utils.book_append_sheet(wb,ws1,'Samandrag'); XLSX.utils.book_append_sheet(wb,ws2,'Tellelister');
+  const out=XLSX.write(wb,{bookType:'xlsx',type:'array'});
+  saveFile(new Blob([out],{type:'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet'}),`Krambua_varetelling_${y}.xlsx`);
+});
+
+$('xWord').addEventListener('click',async()=>{
+  try{ const blob=await docx.Packer.toBlob(buildDocx()); saveFile(blob,`Krambua_varetelling_${doc.year}.docx`); }
+  catch(e){ console.error(e); toast('Klarte ikkje lage Word-dokumentet: '+e.message); }
+});
+
+function buildDocx(){
+  const D=window.docx; const {Document,Paragraph,TextRun,Table,TableRow,TableCell,WidthType,AlignmentType,BorderStyle,ShadingType,HeadingLevel,Footer,PageNumber}=D;
+  const GREEN='2F5D50', INK='20303D', SOFT='DCE7E1', GREY='5B6B72';
+  const bd={style:BorderStyle.SINGLE,size:4,color:'CFC9B8'};
+  const borders={top:bd,bottom:bd,left:bd,right:bd,insideHorizontal:bd,insideVertical:bd};
+  const NONE={style:BorderStyle.NONE,size:0,color:'FFFFFF'};
+  const P=(text,o={})=>new Paragraph({spacing:{after:o.after??120,before:o.before??0},alignment:o.align,children:[new TextRun({text:String(text),bold:o.bold,size:o.size??21,color:o.color,italics:o.italic,font:'Arial'})]});
+  const cell=(text,o={})=>new TableCell({width:{size:o.w,type:WidthType.DXA},shading:o.fill?{type:ShadingType.CLEAR,color:'auto',fill:o.fill}:undefined,margins:{top:70,bottom:70,left:110,right:110},
+    children:[new Paragraph({alignment:o.right?AlignmentType.RIGHT:AlignmentType.LEFT,children:[new TextRun({text:String(text),bold:o.bold,color:o.color,size:o.size??19,font:'Arial'})]})]});
+  const table=(head,rows,widths)=>new Table({width:{size:widths.reduce((a,b)=>a+b,0),type:WidthType.DXA},columnWidths:widths,borders,
+    rows:[new TableRow({tableHeader:true,children:head.map((h,i)=>cell(h,{w:widths[i],fill:INK,color:'FFFFFF',bold:true,right:i>0,size:18}))}),
+      ...rows.map(r=>new TableRow({cantSplit:true,children:r.cells.map((t,i)=>cell(t,{w:widths[i],right:i>0,bold:r.bold,fill:r.fill,color:r.color}))}))]});
+  const H=t=>new Paragraph({heading:HeadingLevel.HEADING_2,keepNext:true,spacing:{before:280,after:120},children:[new TextRun({text:t,bold:true,size:26,color:GREEN,font:'Arial'})]});
+  const c=summarize(doc), p=summarize(prevDoc), y=doc.year;
+  const ch=[P(FIRMA.toUpperCase(),{size:18,color:GREY,bold:true,after:40}),
+    new Paragraph({spacing:{after:60},children:[new TextRun({text:'Varetelling '+y,bold:true,size:44,color:INK,font:'Arial'})]}),
+    P([doc.dato?'Telling per '+fmtDato(doc.dato):'',doc.talt?'Talt av '+doc.talt:'',doc.locked?'Avslutta og låst':'Utkast – ikkje låst'].filter(Boolean).join('   ·   '),{color:GREY,after:240})];
+  const diff=p?c.netto-p.netto:null;
+  ch.push(table(['Nøkkeltal','Beløp'],[
+    {cells:['Netto varelager '+y,kr(c.netto)],bold:true,fill:SOFT},
+    {cells:['Varelager utan mva',kr(c.eks)]},
+    {cells:['Varer etter telling inkl. forteneste og mva',kr(c.inkl)]},
+    ...(p?[{cells:['Endring netto varelager mot '+(y-1),(diff>=0?'+':'')+kr(diff)+'  ('+pct(p.netto?c.netto/p.netto-1:null)+')']}]:[]),
+    ...(c.kontant!=null?[{cells:['Kontantbehaldning',kr(c.kontant)]}]:[])],[6000,3360]));
+  ch.push(H('Varelager etter MVA-sats'));
+  const rr=c.byRate.filter(r=>r.pages||r.rate!==0);
+  ch.push(table(['MVA-sats','Sider','Sum inkl. mva','Eks. mva','MVA'],[...rr.map(r=>({cells:[rateLbl(r.rate)+' MVA',String(r.pages),kr(r.inkl),kr(r.eks),kr(r.mva)]})),
+    {cells:['Totalt',String(c.pages),kr(c.inkl),kr(c.eks),kr(c.mva)],bold:true,fill:SOFT}],[2160,1000,2100,2100,2000]));
+  ch.push(H('Utrekning av netto varelager'));
+  ch.push(table(['',String(y),String(y-1),'Endring'],calcRows(c,p).map(r=>({cells:[(r.cls==='sub'?'   ':'')+r.l,kr(r.c),kr(r.p),(r.p==null||r.c==null)?'–':kr(r.c-r.p)],bold:r.cls==='net',fill:r.cls==='net'?SOFT:undefined,color:r.cls==='sub'?GREY:undefined})),[3960,1800,1800,1800]));
+  ch.push(P(`Eks. mva = sum inkl. mva ÷ (1 + mva-sats). Netto varelager = varelager utan mva − ${round2(c.avanse*100).toLocaleString('nb-NO')} % avanse.`,{size:16,color:GREY,italic:true,before:80}));
+  ch.push(H('Kontroll'));
+  ch.push(table(['',String(y),String(y-1)],[{cells:['Tal tellingssider',String(c.pages),p?String(p.pages):'–']},{cells:['Kontrollerte sider',`${c.controlled} av ${c.pages}`,p?`${p.controlled} av ${p.pages}`:'–']},{cells:['Snitt per side inkl. mva',c.pages?kr(c.inkl/c.pages):'–',p&&p.pages?kr(p.inkl/p.pages):'–']}],[4560,2400,2400]));
+  if((doc.merknad||'').trim()){ ch.push(H('Merknader')); doc.merknad.split(/\n+/).forEach(l=>ch.push(P(l))); }
+  ch.push(H('Signatur'));
+  const sig=(lab,name)=>new TableCell({width:{size:4680,type:WidthType.DXA},borders:{top:NONE,left:NONE,right:NONE,bottom:NONE},margins:{top:80,bottom:80,left:0,right:240},
+    children:[P(' ',{after:300}),new Paragraph({border:{top:{style:BorderStyle.SINGLE,size:6,color:'333333',space:4}},children:[new TextRun({text:lab+(name?': '+name:''),size:18,font:'Arial'})]}),P('Dato:',{size:18,color:GREY,before:120})]});
+  ch.push(new Table({width:{size:9360,type:WidthType.DXA},columnWidths:[4680,4680],borders:{top:NONE,bottom:NONE,left:NONE,right:NONE,insideHorizontal:NONE,insideVertical:NONE},rows:[new TableRow({cantSplit:true,children:[sig('Talt av',doc.talt),sig('Godkjent av',doc.godkjent)]})]}));
+  const page={size:{width:11906,height:16838},margin:{top:1134,bottom:1134,left:1273,right:1273}};
+  const footers={default:new Footer({children:[new Paragraph({alignment:AlignmentType.RIGHT,children:[new TextRun({text:`${FIRMA} · Varetelling ${y} · side `,size:16,color:GREY,font:'Arial'}),new TextRun({children:[PageNumber.CURRENT],size:16,color:GREY,font:'Arial'})]})]})};
+  const sections=[{properties:{page},footers,children:ch}];
+  if($('xVedlegg').checked&&c.pages){
+    const rows=livePages(doc).slice().sort((a,b)=>a.side-b.side).map(x=>({cells:[String(x.side),x.avd||'',rateLbl(x.rate),kr(x.sum),x.ok?'Ja':'Nei']}));
+    sections.push({properties:{page},footers,children:[new Paragraph({spacing:{after:160},children:[new TextRun({text:'Vedlegg: Tellingssider '+y,bold:true,size:30,color:INK,font:'Arial'})]}),
+      table(['Side','Avdeling','MVA','Sum inkl. mva','Kontr.'],rows,[900,3060,1200,2700,1500]),P(`Totalt ${c.pages} sider · ${kr(c.inkl)} inkl. mva`,{bold:true,before:160})]});
+  }
+  return new Document({creator:FIRMA,title:'Varetelling '+y,styles:{default:{document:{run:{font:'Arial',size:21}}}},sections});
+}
+
+setRate(0.25);
+init();
+if('serviceWorker' in navigator) navigator.serviceWorker.register('service-worker.js').catch(()=>{});
+</script>
+</body>
+</html>
