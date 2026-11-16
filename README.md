@@ -16,3 +16,9 @@ Opne appen og lim inn eit GitHub fine-grained token med tilgang til dette repoet
 ## Utrekning
 - Eks. mva = sum inkl. mva ÷ (1 + mva-sats)
 - Netto varelager = varelager utan mva × (1 − avanse). Standard avanse er 38 %.
+
+## Ny teljing på varenivå (`telling/`)
+- **Administrator:** https://kristoffertungesvik-stack.github.io/Krambua-varetelling/telling/ – butikkart, teljing med strekkode, vekt → tal for skruar, mva-sats per linje, rapport til revisor/rekneskap (PDF og Excel), tellelister med strekkode, dobbelttelling-kontroll og lagerverdi mot sal per reol.
+- **Tilsette:** https://kristoffertungesvik-stack.github.io/Krambua-varetelling/telling/tilsett/ – berre kart og teljing, ingen kronebeløp. Telefonen vert kopla til med QR-koden «Kople til telefon» under Oppsett i administrator-versjonen.
+- Data: `data/telling-<kode>.json` (teljinga) og `data/vareliste.json` (varelista frå PCK + nye varer). Same token-nøkkel som appen over.
+- `telling/tilsett/index.html` er same fil som `telling/index.html`, berre med `const MODUS = 'tilsett';`.

@@ -1,4 +1,4 @@
-const CACHE_NAME = 'krambua-varetelling-v1';
+const CACHE_NAME = 'krambua-varetelling-v2';
 const APP_SHELL = [
   './manifest.json',
   './icon-192.png',
@@ -24,6 +24,9 @@ self.addEventListener('activate', event => {
 
 self.addEventListener('fetch', event => {
   if (event.request.method !== 'GET') return;
+  // Berre filer frå denne nettstaden. Kall til GitHub-API-et og andre sider
+  // skal aldri lesast frå mellomlageret, elles kan appane få gamle data.
+  if (new URL(event.request.url).origin !== self.location.origin) return;
 
   const acceptsHTML = (event.request.headers.get('accept') || '').includes('text/html');
   const isPageRequest = event.request.mode === 'navigate' || acceptsHTML;
