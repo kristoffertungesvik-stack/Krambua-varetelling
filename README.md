@@ -20,5 +20,6 @@ Opne appen og lim inn eit GitHub fine-grained token med tilgang til dette repoet
 ## Ny teljing på varenivå (`telling/`)
 - **Administrator:** https://kristoffertungesvik-stack.github.io/Krambua-varetelling/telling/ – butikkart, teljing med strekkode, vekt → tal for skruar, mva-sats per linje, rapport til revisor/rekneskap (PDF og Excel), tellelister med strekkode, dobbelttelling-kontroll og lagerverdi mot sal per reol.
 - **Tilsette:** https://kristoffertungesvik-stack.github.io/Krambua-varetelling/telling/tilsett/ – berre kart og teljing, ingen kronebeløp. Telefonen vert kopla til med QR-koden «Kople til telefon» under Oppsett i administrator-versjonen.
-- Data: `data/telling-<kode>.json` (teljinga) og `data/vareliste.json` (varelista frå PCK + nye varer). Same token-nøkkel som appen over.
+- Data: `data/telling-<kode>/` med éi fil per seksjon per eining (`J10__<eining>.json`) og `_meta__<eining>.json` for status og oppsett. Kvar eining skriv berre sine eigne filer, så ingen kan skrive over kvarandre. Varelista frå PCK ligg i `data/vareliste.json`. Same token-nøkkel som appen over.
+- Tryggleik: kvar linje vert lagra med ein gong i databasen i nettlesaren (IndexedDB), sendt til GitHub høgst eitt minutt seinare, og appen tek lokale kopiar kvart 15. minutt. Ventande linjer vert viste med ⏳.
 - `telling/tilsett/index.html` er same fil som `telling/index.html`, berre med `const MODUS = 'tilsett';`.
