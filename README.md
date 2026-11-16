@@ -1,25 +1,23 @@
 # Krambua – Varetelling
 
-Eigen app for den årlege varetellinga til Krambua Bensin & Storkiosk AS.
+App for den årlege varetellinga til Krambua Bensin & Storkiosk AS. Rot-adressa sender vidare til appen.
 
-- **Registrer sider:** éi rad per tellingsside med mva-sats (25 / 15 / 0 %) og sum inkl. mva. Summen kan skrivast som reknestykke (`12 450 + 3 210,50`).
-- **Samandrag:** netto varelager (utan mva, etter avanse), fordeling per mva-sats og samanlikning med året før.
-- **Eksport:** Word-samandrag, Excel-arbeidsbok og sikkerheitskopi (JSON).
-- **Låsing:** ferdige år blir låste, så tala ikkje kan endrast ved eit uhell.
+- **Administrator:** https://kristoffertungesvik-stack.github.io/Krambua-varetelling/telling/ – butikkart med rom og reolar som kan redigerast og plasserast, teljing med strekkode, vekt → tal for skruar, mva-sats per linje, rapport til revisor/rekneskap (PDF og Excel), tellelister med strekkode, dobbelttelling-kontroll, lagerverdi mot sal per reol og plakatar med kople-kode.
+- **Tilsette:** https://kristoffertungesvik-stack.github.io/Krambua-varetelling/telling/tilsett/ – berre kart og teljing, ingen kronebeløp. Telefonen blir kopla til med QR-koden «Kople til telefon» (Oppsett i administrator-versjonen) eller kople-plakaten. På iPhone må appen på heimeskjermen koplast til for seg med «📷 Skann kople-koden».
+- Brukarhandbok: trykk **?** øvst i appen.
 
 ## Lagring
-Kvart år ligg som `data/<år>.json` i dette repoet. Kvar endring blir ein commit, så heile historikken er tilgjengeleg under *History*. Appen held i tillegg ein lokal kopi i nettlesaren, og sender endringane opp når nettet er tilbake.
+- Teljinga ligg i `data/telling-<kode>/` med éi fil per seksjon per eining (`J10__<eining>.json`) og `_meta__<eining>.json` for status, oppsett, rom og reolar. Kvar eining skriv berre sine eigne filer, så ingen kan skrive over kvarandre. Kvar endring blir ein commit, så heile historikken er tilgjengeleg under *History*.
+- Varelista frå PCK ligg i `data/vareliste.json`.
+- Kvar linje blir lagra med ein gong i databasen i nettlesaren (IndexedDB), sendt til GitHub høgst eitt minutt seinare, og appen tek lokale kopiar kvart 15. minutt. Ventande linjer blir viste med ⏳.
+- `data/arkiv/2025.json` er varetellinga for 2025 frå den førre appen (173 tellingssider, låst). Ho blir teken vare på som rekneskapsdokumentasjon.
 
 ## Oppsett på ny eining
-Opne appen og lim inn eit GitHub fine-grained token med tilgang til dette repoet (*Contents: Read and write*). Tokenet blir berre lagra i nettlesaren på den eininga, og aldri i repoet.
+Opne administrator-versjonen og lim inn eit GitHub fine-grained token med tilgang til dette repoet (*Contents: Read and write*). Tokenet blir berre lagra i nettlesaren på den eininga, aldri i repoet.
 
 ## Utrekning
 - Eks. mva = sum inkl. mva ÷ (1 + mva-sats)
-- Netto varelager = varelager utan mva × (1 − avanse). Standard avanse er 38 %.
+- Kostverdi = eks. mva × (1 − avanse). Standard avanse er 38 %, med eigen avanse per rom. Har vara innkjøpspris frå PCK, blir den brukt.
 
-## Ny teljing på varenivå (`telling/`)
-- **Administrator:** https://kristoffertungesvik-stack.github.io/Krambua-varetelling/telling/ – butikkart, teljing med strekkode, vekt → tal for skruar, mva-sats per linje, rapport til revisor/rekneskap (PDF og Excel), tellelister med strekkode, dobbelttelling-kontroll og lagerverdi mot sal per reol.
-- **Tilsette:** https://kristoffertungesvik-stack.github.io/Krambua-varetelling/telling/tilsett/ – berre kart og teljing, ingen kronebeløp. Telefonen vert kopla til med QR-koden «Kople til telefon» under Oppsett i administrator-versjonen.
-- Data: `data/telling-<kode>/` med éi fil per seksjon per eining (`J10__<eining>.json`) og `_meta__<eining>.json` for status og oppsett. Kvar eining skriv berre sine eigne filer, så ingen kan skrive over kvarandre. Varelista frå PCK ligg i `data/vareliste.json`. Same token-nøkkel som appen over.
-- Tryggleik: kvar linje vert lagra med ein gong i databasen i nettlesaren (IndexedDB), sendt til GitHub høgst eitt minutt seinare, og appen tek lokale kopiar kvart 15. minutt. Ventande linjer vert viste med ⏳.
-- `telling/tilsett/index.html` er same fil som `telling/index.html`, berre med `const MODUS = 'tilsett';`.
+## Teknisk
+`telling/tilsett/index.html` er same fil som `telling/index.html`, berre med `const MODUS = 'tilsett';`.
