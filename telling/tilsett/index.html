@@ -195,6 +195,20 @@ table.t tr.sum td{font-weight:800;border-top:2px solid var(--slate);border-botto
 .itemrow span{font-size:12.5px;color:var(--muted)}
 .hide{display:none!important}
 details summary{cursor:pointer;font-weight:700}
+#kartedit{position:fixed;inset:0;background:#F6F4EF;z-index:90;display:flex;flex-direction:column}
+#kartedit[hidden]{display:none}
+.ke-top{display:flex;gap:8px;align-items:center;padding:10px 12px;background:#263238;color:#fff;font-size:16px}
+.ke-top .btn{min-height:38px}
+.ke-top .btn.primary{background:var(--ochre);border-color:var(--ochre);color:#fff}
+.ke-bar{display:flex;flex-wrap:wrap;gap:6px;padding:8px 10px;border-bottom:1px solid var(--line);background:#fff}
+.ke-bar select{flex:1 1 230px;min-width:0;min-height:40px}
+.ke-bar .btn{min-height:40px;padding:6px 12px}
+.ke-hint{font-size:13px;line-height:1.35;padding:7px 12px;color:var(--muted);background:#fff;border-bottom:1px solid var(--line)}
+#ke-wrap{flex:1;overflow:auto;-webkit-overflow-scrolling:touch;background:#E9E5DC}
+#ke-svg.map{display:block;max-width:none;margin:0;height:auto}
+#ke-svg [data-ke]{cursor:move;touch-action:none}
+#ke-svg .ke-h{cursor:nwse-resize}
+body.ke-open{overflow:hidden}
 .romblokk{display:grid;gap:10px;margin:4px 0 14px}
 .rom{border:2px solid #9AA4A8;border-radius:12px;background:#fff;padding:8px 10px 10px}
 .rom-h{font-weight:700;font-size:14px;margin:0 0 7px;color:var(--slate)}
@@ -288,6 +302,7 @@ body.preview #app,body.preview #nav{display:none}
 </div>
 <div id="modal-root"></div>
 <div id="toast"></div>
+<div id="kartedit" hidden></div>
 <div id="scanner" hidden>
   <video id="scan-video" playsinline muted autoplay></video>
   <div class="frame"></div>
@@ -304,7 +319,7 @@ body.preview #app,body.preview #nav{display:none}
    Krambua Varetelling – éi fil, køyrer på GitHub Pages.
    Data: lokalt i nettlesaren + (valfritt) delt via GitHub-repoet.
    ===================================================================== */
-const APP_VER = '2.6';
+const APP_VER = '2.7';
 const MODUS = 'tilsett';
 const STAFF = MODUS === 'tilsett';
 const NAV_ITEMS = STAFF ? ['kart','oppsett'] : ['kart','rapport','analyse','lister','varer','oppsett'];
@@ -2390,7 +2405,7 @@ function hjSeksjon(id){
 <li>Fyll inn firma, org.nr. og stad. Dei kjem på forsida av rapporten.</li>
 <li>Sjekk <b>bruttoavansen</b>: 38 % som standard. Du kan setje eigen avanse for jernvarerom, butikk, lager og kjøkken.</li>
 <li>Trykk <b>Lagre</b>. Under <b>Tellarar</b> legg du til eller fjernar namn.</li>
-<li>Manglar det rom eller reolar, t.d. eit ekstra lager: gå til <b>Rom og reolar</b>. Trykk <b>+ Nytt rom</b>, eller <b>+ Ny reol</b> i eit rom som alt finst. Nye rom kjem som eigne felt under kartet og blir delte med alle telefonane. Ein reol kan berre slettast når han er tom. Ei ny telling tek med seg romma og reolane.</li></ol>
+<li>Manglar det rom eller reolar, t.d. eit ekstra lager: gå til <b>Rom og reolar</b>. Trykk <b>+ Nytt rom</b>, eller <b>+ Ny reol</b> i eit rom som alt finst. Nye rom blir viste ved sida av bygget på kartet. Trykk <b>🗺 Plasser på kartet</b> for å dra rom og reolar dit dei faktisk står, og dra i den oransje prikken for å endre storleiken. Alt blir delt med alle telefonane. Ein reol kan berre slettast når han er tom. Ei ny telling tek med seg romma og reolane.</li></ol>
 <h3>3. Last inn varelista frå PCK</h3><ol>
 <li>Eksporter varene frå PCK til Excel eller CSV med varenummer, varenamn, strekkode, utsalspris inkl. mva og mva-sats eller hovudgruppe. Ta gjerne med innkjøpspris.</li>
 <li>Gå til <b>Varer → 📥 Vel fil (Excel eller CSV)</b>.</li>
@@ -2632,13 +2647,38 @@ async function koplePlakat(){
 
 
 
-/* ------------------------------ nye rom teikna på kartet ------------------------------ */
+/* ------------------------------ nye rom og reolar på kartet ------------------------------ */
 const ROM_KART_POS = [['under', 'Under butikken'], ['over', 'Over jernvarerommet'], ['venstre', 'Til venstre for bygget'], ['hogre', 'Til høgre for bygget']];
+const KART_BYGG = {x:152, y:152, w:626, h:978};
+const posRom = id => { const r = T.rom && T.rom[id]; return r && !r.deleted && r.pos ? r.pos : null; };
+const posSek = id => { const s = T.seksjonar[id]; return s && !s.deleted && s.pos ? s.pos : null; };
+/* Fordel n reolar i eit rektangel (rom som er plassert på kartet) */
+function romGrid(x, y, w, h, n){
+  const top = 30, pad = 8, g = 6;
+  const W = Math.max(20, w - 2 * pad), H = Math.max(16, h - top - pad);
+  let best = null;
+  for (let c = 1; c <= n; c++){
+    const r = Math.ceil(n / c), cw = (W - (c - 1) * g) / c, ch = Math.min(60, (H - (r - 1) * g) / r);
+    const score = Math.min(cw / 120, ch / 46);
+    if (!best || score > best.score) best = {c, cw, ch, score};
+  }
+  const out = [];
+  for (let i = 0; i < n; i++){ const c = i % best.c, r = Math.floor(i / best.c); out.push({x:x + pad + c * (best.cw + g), y:y + top + r * (best.ch + g), w:best.cw, h:best.ch}); }
+  return out;
+}
 function kartRomLayout(){
   const sek = allSek();
-  const grp = romList().map(r => ({r, ss:sek.filter(s => s.omr === r.id && !HITS[s.id]), side:(T.rom && T.rom[r.id] && T.rom[r.id].kart) || 'under'})).filter(g => g.ss.length);
-  const X0 = 152, Y0 = 152, X1 = 778, Y1 = 1130, GAP = 26, PAD = 12, HEAD = 34, CH = 50, CG = 8;
-  const boxes = []; const used = {under:0, over:0, venstre:0, hogre:0};
+  const grp = [], placed = [], free = [];
+  romList().forEach(r => {
+    const ss = sek.filter(s => s.omr === r.id && !HITS[s.id]);
+    ss.forEach(s => { const p = posSek(s.id); if (p) free.push({s, pos:p}); });
+    const auto = ss.filter(s => !posSek(s.id));
+    const rp = r.fast ? null : posRom(r.id);
+    if (rp) placed.push({r, pos:rp, ss:auto});
+    else if (auto.length) grp.push({r, ss:auto, side:(T.rom && T.rom[r.id] && T.rom[r.id].kart) || 'under'});
+  });
+  const X0 = KART_BYGG.x, Y0 = KART_BYGG.y, X1 = X0 + KART_BYGG.w, Y1 = Y0 + KART_BYGG.h, GAP = 26, PAD = 12, HEAD = 34, CH = 50, CG = 8;
+  const boxes = [];
   const sizeFor = (side, n) => {
     const w = (side === 'under' || side === 'over') ? (X1 - X0) : 300, cols = (side === 'under' || side === 'over') ? 4 : 2;
     const rows = Math.ceil(n / cols), h = HEAD + rows * CH + (rows - 1) * CG + PAD;
@@ -2653,39 +2693,181 @@ function kartRomLayout(){
       const z = sz[i], x = side === 'venstre' ? X0 - GAP - z.w : side === 'hogre' ? X1 + GAP : X0;
       boxes.push({...g, x, y, ...z, PAD, HEAD, CH, CG}); y += z.h + GAP;
     });
-    used[side] = side === 'venstre' || side === 'hogre' ? 300 + GAP : total + GAP;
   });
-  const vb = {x:X0 - used.venstre, y:Y0 - used.over, w:(X1 - X0) + used.venstre + used.hogre, h:(Y1 - Y0) + used.over + used.under};
-  return {boxes, vb};
+  let x0 = X0, y0 = Y0, x1 = X1, y1 = Y1;
+  const inc = (x, y, w, h) => { x0 = Math.min(x0, x - 10); y0 = Math.min(y0, y - 10); x1 = Math.max(x1, x + w + 10); y1 = Math.max(y1, y + h + 10); };
+  boxes.forEach(b => inc(b.x, b.y, b.w, b.h)); placed.forEach(p => inc(p.pos.x, p.pos.y, p.pos.w, p.pos.h)); free.forEach(f => inc(f.pos.x, f.pos.y, f.pos.w, f.pos.h));
+  return {boxes, placed, free, vb:{x:x0, y:y0, w:x1 - x0, h:y1 - y0}};
+}
+const kartCut = (t, n) => { t = String(t || ''); n = Math.max(3, n); return t.length > n ? t.slice(0, n - 1) + '…' : t; };
+function reolCelleSVG(s, x, y, w, h, st, opt, edit){
+  const ss = st[s.id] || {n:0, state:0};
+  const cls = opt.cls ? opt.cls(s.id) : 'st' + ss.state;
+  const fs = Math.max(9, Math.min(12.5, h / 3.4)), chars = Math.floor((w - 12) / (fs * 0.56));
+  let o = `<rect x="${x}" y="${y}" width="${w}" height="${h}" rx="6" fill="#fff" stroke="#9AA4A8" stroke-width="1.5"/>`;
+  if (h >= 34) o += `<text class="ml" x="${x + 7}" y="${y + fs + 5}" style="font-weight:700;font-size:${fs}px">${esc(s.id)}</text><text class="ml sm" x="${x + 7}" y="${y + 2 * fs + 10}" style="font-size:${fs - 1}px">${esc(kartCut(s.namn, chars))}</text>`;
+  else o += `<text class="ml" x="${x + 6}" y="${y + h / 2 + fs / 2.8}" style="font-size:${fs}px"><tspan style="font-weight:700">${esc(s.id)}</tspan> ${esc(kartCut(s.namn, chars - 5))}</text>`;
+  if (edit) return o;
+  o += `<rect class="hit ${cls}" x="${x}" y="${y}" width="${w}" height="${h}" rx="6" data-act="${opt.act || 'sek'}" data-id="${s.id}"><title>${s.id} ${esc(s.namn)}</title></rect>`;
+  const bx = x + w - 15, by = Math.min(y + 15, y + h / 2);
+  if (opt.badge){
+    const label = opt.badge(s.id);
+    if (label != null) o += `<g class="badge ${cls}"><rect x="${bx - 15}" y="${by - 8.5}" width="30" height="17" rx="8.5" fill="#263238"/><text x="${bx}" y="${by + 3.7}" text-anchor="middle">${esc(label)}</text></g>`;
+  } else if (ss.n || ss.ferdig){
+    const label = ss.ferdig ? '✓' : (ss.n > 99 ? '99+' : ss.n);
+    o += `<g class="badge st${ss.state}"><circle cx="${bx}" cy="${by}" r="${String(label).length > 2 ? 12 : 9.5}"/><text x="${bx}" y="${by + 3.7}" text-anchor="middle">${label}</text></g>`;
+  }
+  return o;
+}
+function romRammeSVG(namn, x, y, w, h){
+  return `<rect x="${x}" y="${y}" width="${w}" height="${h}" rx="8" fill="#F1EEE6" fill-opacity=".95" stroke="#263238" stroke-width="3"/>
+    <text class="rl" x="${x + 10}" y="${y + 21}" style="font-size:${w < 160 ? 13 : 16}px">${esc(kartCut(namn, Math.floor((w - 20) / 9)))}</text>`;
 }
 function kartRomSVG(st, opt, L){
-  const cut = (t, n) => { t = String(t || ''); return t.length > n ? t.slice(0, n - 1) + '…' : t; };
   let out = '';
   L.boxes.forEach(b => {
     const tittel = b.r.fast && b.r.id !== 'X' ? b.r.namn + ' · ekstra reolar' : b.r.namn;
-    out += `<g class="xrom"><rect x="${b.x}" y="${b.y}" width="${b.w}" height="${b.h}" rx="8" fill="#F1EEE6" stroke="#263238" stroke-width="3"/>
-      <text class="rl" x="${b.x + b.PAD}" y="${b.y + 23}" style="font-size:16px">${esc(cut(tittel, b.w > 400 ? 52 : 28))}</text>`;
+    out += `<g class="xrom">${romRammeSVG(tittel, b.x, b.y, b.w, b.h)}`;
     b.ss.forEach((s, i) => {
       const c = i % b.cols, r = Math.floor(i / b.cols);
-      const x = b.x + b.PAD + c * (b.cw + b.CG), y = b.y + b.HEAD + r * (b.CH + b.CG);
-      const ss = st[s.id] || {n:0, state:0};
-      const cls = opt.cls ? opt.cls(s.id) : 'st' + ss.state;
-      out += `<rect x="${x}" y="${y}" width="${b.cw}" height="${b.CH}" rx="6" fill="#fff" stroke="#9AA4A8" stroke-width="1.5"/>
-        <text class="ml" x="${x + 9}" y="${y + 20}" style="font-weight:700">${esc(s.id)}</text>
-        <text class="ml sm" x="${x + 9}" y="${y + 38}">${esc(cut(s.namn, Math.floor(b.cw / 7.2)))}</text>
-        <rect class="hit ${cls}" x="${x}" y="${y}" width="${b.cw}" height="${b.CH}" rx="6" data-act="${opt.act || 'sek'}" data-id="${s.id}"><title>${s.id} ${esc(s.namn)}</title></rect>`;
-      const bx = x + b.cw - 16, by = y + 16;
-      if (opt.badge){
-        const label = opt.badge(s.id);
-        if (label != null) out += `<g class="badge ${cls}"><rect x="${bx - 15}" y="${by - 8.5}" width="30" height="17" rx="8.5" fill="#263238"/><text x="${bx}" y="${by + 3.7}" text-anchor="middle">${esc(label)}</text></g>`;
-      } else if (ss.n || ss.ferdig){
-        const label = ss.ferdig ? '✓' : (ss.n > 99 ? '99+' : ss.n);
-        out += `<g class="badge st${ss.state}"><circle cx="${bx}" cy="${by}" r="${String(label).length > 2 ? 12 : 9.5}"/><text x="${bx}" y="${by + 3.7}" text-anchor="middle">${label}</text></g>`;
-      }
+      out += reolCelleSVG(s, b.x + b.PAD + c * (b.cw + b.CG), b.y + b.HEAD + r * (b.CH + b.CG), b.cw, b.CH, st, opt);
     });
     out += `</g>`;
   });
+  L.placed.forEach(p => {
+    out += `<g class="xrom">${romRammeSVG(p.r.namn, p.pos.x, p.pos.y, p.pos.w, p.pos.h)}`;
+    romGrid(p.pos.x, p.pos.y, p.pos.w, p.pos.h, p.ss.length).forEach((c, i) => out += reolCelleSVG(p.ss[i], c.x, c.y, c.w, c.h, st, opt));
+    out += `</g>`;
+  });
+  L.free.forEach(f => out += `<g class="xrom">${reolCelleSVG(f.s, f.pos.x, f.pos.y, f.pos.w, f.pos.h, st, opt)}</g>`);
   return out;
+}
+
+/* ------------------------------ redigering: dra rom og reolar på plass ------------------------------ */
+let KE = null;
+const KE_VB = {x:KART_BYGG.x - 340, y:KART_BYGG.y - 340, w:KART_BYGG.w + 680, h:KART_BYGG.h + 680};
+function keItems(){
+  const rom = Object.values(T.rom || {}).filter(r => r && !r.deleted).map(r => ({key:'r:' + r.id, id:r.id, kind:'r', namn:r.namn}));
+  const sek = Object.values(T.seksjonar).filter(s => s && !s.deleted && !SEKSJONAR.some(f => f.id === s.id)).sort((a, b) => a.id.localeCompare(b.id)).map(s => ({key:'s:' + s.id, id:s.id, kind:'s', namn:s.namn, omr:s.omr}));
+  return [...rom, ...sek];
+}
+function keRect(key){ const [k, id] = key.split(':'); return (k === 'r' ? KE.rom : KE.sek)[id] || null; }
+function keSet(key, r){ const [k, id] = key.split(':'); (k === 'r' ? KE.rom : KE.sek)[id] = r; }
+function keDefault(key){
+  const [k, id] = key.split(':');
+  const wrap = $('#ke-wrap'), svg = $('#ke-svg');
+  let cx = KART_BYGG.x + KART_BYGG.w / 2, cy = KART_BYGG.y + KART_BYGG.h + 120;
+  try{
+    const b = wrap.getBoundingClientRect(), pt = svg.createSVGPoint(); pt.x = b.left + b.width / 2; pt.y = b.top + b.height / 2;
+    const p = pt.matrixTransform($('#ke-layer').getScreenCTM().inverse()); cx = p.x; cy = p.y;
+  }catch(e){}
+  let r;
+  if (k === 'r'){ const n = allSek().filter(s => s.omr === id && !KE.sek[s.id]).length; const w = 240, h = 40 + Math.max(1, Math.ceil(n / 2)) * 54; r = {x:Math.round(cx - w / 2), y:Math.round(cy - h / 2), w, h}; }
+  else r = {x:Math.round(cx - 65), y:Math.round(cy - 23), w:130, h:46};
+  // ikkje legg nye ting oppå noko som alt er plassert
+  const alle = [...Object.values(KE.rom), ...Object.values(KE.sek)];
+  const over = q => alle.some(o => !(q.x + q.w <= o.x || o.x + o.w <= q.x || q.y + q.h <= o.y || o.y + o.h <= q.y));
+  for (let i = 0; i < 40 && over(r); i++) r = {...r, y:r.y + (k === 'r' ? 40 : 54), x:r.x + (i % 6 === 5 ? -150 : 30)};
+  return r;
+}
+function kartEditOpen(sel){
+  if (STAFF) return;
+  if (locked()) return toast('Teljinga er avslutta', 'err');
+  KE = {rom:{}, sek:{}, sel:null, zoom:window.innerWidth < 760 ? 2.2 : 1.2, drag:null};
+  Object.values(T.rom || {}).forEach(r => { if (r && !r.deleted && r.pos) KE.rom[r.id] = {...r.pos}; });
+  Object.values(T.seksjonar).forEach(s => { if (s && !s.deleted && s.pos) KE.sek[s.id] = {...s.pos}; });
+  closeModal();
+  const el = $('#kartedit'); el.hidden = false; document.body.classList.add('ke-open');
+  el.innerHTML = `<div class="ke-top"><b>Plasser på kartet</b><span style="flex:1"></span><button class="btn" data-act="ke-avbryt">Avbryt</button><button class="btn primary" data-act="ke-lagre">Lagre</button></div>
+    <div class="ke-bar"><select id="ke-sel"></select><button class="btn" data-act="ke-snu" title="Byt breidd og høgd">↻ Snu</button><button class="btn" data-act="ke-fjern">Fjern frå kartet</button><span style="flex:1"></span><button class="btn" data-act="ke-zoom" data-d="-1" aria-label="Mindre">−</button><button class="btn" data-act="ke-zoom" data-d="1" aria-label="Større">+</button></div>
+    <div class="ke-hint" id="ke-hint"></div>
+    <div id="ke-wrap"><svg id="ke-svg" class="map" viewBox="${KE_VB.x} ${KE_VB.y} ${KE_VB.w} ${KE_VB.h}" xmlns="http://www.w3.org/2000/svg"><g opacity=".75" pointer-events="none">${MAP_STATIC}</g><g id="ke-layer"></g></svg></div>`;
+  const svg = $('#ke-svg');
+  svg.addEventListener('pointerdown', keDown); svg.addEventListener('pointermove', keMove); svg.addEventListener('pointerup', keUp); svg.addEventListener('pointercancel', keUp);
+  svg.addEventListener('touchstart', e => { if (e.target.closest && e.target.closest('[data-ke]')) e.preventDefault(); }, {passive:false});
+  svg.addEventListener('touchmove', e => { if (KE && KE.drag) e.preventDefault(); }, {passive:false});
+  $('#ke-sel').addEventListener('change', e => keVel(e.target.value));
+  keZoom(0);
+  // start midt på bygget
+  const w = $('#ke-wrap'); w.scrollLeft = (w.scrollWidth - w.clientWidth) / 2; w.scrollTop = (w.scrollHeight - w.clientHeight) * 0.62;
+  keRender();
+  if (sel) setTimeout(() => keVel(sel), 30);
+}
+function keVel(key){
+  if (!KE) return; KE.sel = key || null;
+  if (key && !keRect(key)){ keSet(key, keDefault(key)); }
+  else if (key){ const r = keRect(key); try{ const el = $('#ke-layer [data-ke="' + key + '"]'); if (el) el.scrollIntoView({block:'center', inline:'center', behavior:'smooth'}); }catch(e){} }
+  keRender();
+}
+function keRender(){
+  if (!KE) return;
+  const items = keItems(), st = sekStats();
+  const sel = $('#ke-sel');
+  if (sel) sel.innerHTML = `<option value="">Vel rom eller reol …</option>` + items.map(it => `<option value="${it.key}" ${KE.sel === it.key ? 'selected' : ''}>${it.kind === 'r' ? 'Rom: ' + esc(it.namn) : 'Reol ' + it.id + ' – ' + esc(it.namn)}${keRect(it.key) ? '' : ' (ikkje plassert)'}</option>`).join('');
+  let o = '';
+  // rom først, så reolar
+  items.filter(it => it.kind === 'r' && KE.rom[it.id]).forEach(it => {
+    const p = KE.rom[it.id], on = KE.sel === it.key;
+    const auto = allSek().filter(s => s.omr === it.id && !KE.sek[s.id]);
+    o += `<g data-ke="${it.key}" class="ke-it${on ? ' on' : ''}">${romRammeSVG(it.namn, p.x, p.y, p.w, p.h)}`;
+    romGrid(p.x, p.y, p.w, p.h, auto.length).forEach((c, i) => o += reolCelleSVG(auto[i], c.x, c.y, c.w, c.h, st, {}, true));
+    o += `<rect x="${p.x}" y="${p.y}" width="${p.w}" height="${p.h}" rx="8" fill="transparent" stroke="${on ? '#C98A1A' : 'transparent'}" stroke-width="5"/></g>`;
+  });
+  items.filter(it => it.kind === 's' && KE.sek[it.id]).forEach(it => {
+    const p = KE.sek[it.id], on = KE.sel === it.key, s = sekById(it.id);
+    o += `<g data-ke="${it.key}" class="ke-it${on ? ' on' : ''}">${reolCelleSVG(s, p.x, p.y, p.w, p.h, st, {}, true)}<rect x="${p.x}" y="${p.y}" width="${p.w}" height="${p.h}" rx="6" fill="transparent" stroke="${on ? '#C98A1A' : 'transparent'}" stroke-width="4"/></g>`;
+  });
+  if (KE.sel && keRect(KE.sel)){
+    const p = keRect(KE.sel), hr = 14 / Math.max(1, KE.zoom / 1.6) + 6;
+    o += `<circle data-ke="${KE.sel}" data-h="1" class="ke-h" cx="${p.x + p.w}" cy="${p.y + p.h}" r="${hr}" fill="#C98A1A" stroke="#fff" stroke-width="3"/>`;
+  }
+  $('#ke-layer').innerHTML = o;
+  const it = items.find(i => i.key === KE.sel);
+  $('#ke-hint').innerHTML = !items.length ? 'Du har ingen eigne rom eller reolar enno. Legg dei til under Oppsett → Rom og reolar.'
+    : it ? `<b>${it.kind === 'r' ? esc(it.namn) : it.id + ' ' + esc(it.namn)}</b>: dra for å flytte, dra i den oransje prikken for å endre storleik.${it.kind === 'r' ? ' Reolar i rommet som ikkje er plasserte kvar for seg, blir fordelte inne i rommet.' : ''}`
+    : 'Vel eit rom eller ein reol i lista – eller trykk på han på kartet – og dra han på plass.';
+}
+function kePt(e){ const pt = $('#ke-svg').createSVGPoint(); pt.x = e.clientX; pt.y = e.clientY; return pt.matrixTransform($('#ke-layer').getScreenCTM().inverse()); }
+function keDown(e){
+  const t = e.target.closest && e.target.closest('[data-ke]'); if (!t || !KE) return;
+  const key = t.dataset.ke, p = kePt(e), r = keRect(key); if (!r) return;
+  e.preventDefault();
+  if (KE.sel !== key){ KE.sel = key; keRender(); }
+  const med = [];
+  if (key.startsWith('r:') && t.dataset.h !== '1'){
+    const id = key.slice(2);
+    allSek().filter(s => s.omr === id && KE.sek[s.id]).forEach(s => { const q = KE.sek[s.id]; if (q.x >= r.x && q.y >= r.y && q.x + q.w <= r.x + r.w && q.y + q.h <= r.y + r.h) med.push([s.id, {...q}]); });
+  }
+  KE.drag = {key, mode:t.dataset.h === '1' ? 'size' : 'move', sx:p.x, sy:p.y, r0:{...r}, med};
+  try{ $('#ke-svg').setPointerCapture(e.pointerId); }catch(err){}
+}
+function keMove(e){
+  if (!KE || !KE.drag) return; e.preventDefault();
+  const d = KE.drag, p = kePt(e), dx = p.x - d.sx, dy = p.y - d.sy, g = v => Math.round(v / 2) * 2;
+  if (d.mode === 'move'){
+    keSet(d.key, {...d.r0, x:g(d.r0.x + dx), y:g(d.r0.y + dy)});
+    d.med.forEach(([id, q]) => KE.sek[id] = {...q, x:g(q.x + dx), y:g(q.y + dy)});
+  } else keSet(d.key, {...d.r0, w:Math.max(d.key.startsWith('r:') ? 90 : 34, g(d.r0.w + dx)), h:Math.max(d.key.startsWith('r:') ? 60 : 20, g(d.r0.h + dy))});
+  if (!KE.raf) KE.raf = requestAnimationFrame(() => { KE.raf = null; keRender(); });
+}
+function keUp(){ if (KE && KE.drag){ KE.drag = null; keRender(); } }
+function keZoom(d){
+  if (!KE) return;
+  KE.zoom = Math.max(0.6, Math.min(4, KE.zoom * (d > 0 ? 1.35 : d < 0 ? 1 / 1.35 : 1)));
+  const w = $('#ke-wrap'), cxr = (w.scrollLeft + w.clientWidth / 2) / (w.scrollWidth || 1), cyr = (w.scrollTop + w.clientHeight / 2) / (w.scrollHeight || 1);
+  $('#ke-svg').style.width = Math.round(w.clientWidth * KE.zoom) + 'px';
+  if (d){ w.scrollLeft = cxr * w.scrollWidth - w.clientWidth / 2; w.scrollTop = cyr * w.scrollHeight - w.clientHeight / 2; }
+  keRender();
+}
+function keLukk(){ KE = null; const el = $('#kartedit'); el.hidden = true; el.innerHTML = ''; document.body.classList.remove('ke-open'); }
+function keLagre(){
+  if (!KE) return;
+  const now = nowISO(); let n = 0;
+  const same = (a, b) => JSON.stringify(a || null) === JSON.stringify(b || null);
+  Object.values(T.rom || {}).forEach(r => { if (!r || r.deleted) return; const p = KE.rom[r.id] || null; if (!same(p, r.pos)){ T.rom[r.id] = {...r, pos:p, updatedAt:now}; n++; } });
+  Object.values(T.seksjonar).forEach(s => { if (!s || s.deleted) return; const p = KE.sek[s.id] || null; if (!same(p, s.pos)){ T.seksjonar[s.id] = {...s, pos:p, updatedAt:now}; n++; } });
+  keLukk();
+  if (n){ saveLocal(); render(); toast('Kartet er lagra – ' + n + (n === 1 ? ' endring' : ' endringar'), 'ok'); } else toast('Ingen endringar');
 }
 
 /* ------------------------------ ROM OG REOLAR (redigerbare, delte via _meta-fila) ------------------------------ */
@@ -2729,7 +2911,8 @@ function romEditorHTML(){
         ${r.id !== 'X' ? `<div class="btnrow"><button class="btn" data-act="reol-ny" data-rom="${r.id}" ${L ? 'disabled' : ''}>+ Ny reol i ${esc(r.namn)}</button></div>` : ''}
       </details>`;
     }).join('')}
-    <div class="btnrow"><button class="btn primary" data-act="rom-ny" ${L ? 'disabled' : ''}>+ Nytt rom</button></div>
+    <div class="btnrow"><button class="btn primary" data-act="rom-ny" ${L ? 'disabled' : ''}>+ Nytt rom</button><button class="btn ochre" data-act="ke-open" ${L || !Object.values(T.seksjonar).some(x => !x.deleted) && !Object.values(T.rom || {}).some(x => !x.deleted) ? 'disabled' : ''}>🗺 Plasser på kartet</button></div>
+    <p class="tiny muted">Med «Plasser på kartet» dreg du romma og reolane dit dei faktisk står. Det som ikkje er plassert, blir vist ved sida av bygget.</p>
     ${L ? '<p class="tiny muted">Teljinga er avslutta. Opne ho att under Rapport for å endre rom og reolar.</p>' : ''}</div>`;
 }
 const mvaSel = (id, v) => `<select id="${id}"><option value="" ${v == null || v === '' ? 'selected' : ''}>Blanda – vel for kvar vare</option>${MVA_SATSAR.map(m => `<option value="${m}" ${v != null && v !== '' && +v === m ? 'selected' : ''}>${m} %</option>`).join('')}</select>`;
@@ -2762,7 +2945,8 @@ function romEndreModal(id){
   openModal(`<h2>Endre rom ${id}</h2>
     <label>Namn på rommet<input id="re-namn" type="text" value="${esc(r.namn)}" autocomplete="off"></label>
     <label>Plassering på kartet<select id="re-kart">${ROM_KART_POS.map(([k, t]) => `<option value="${k}" ${(r.kart || 'under') === k ? 'selected' : ''}>${t}</option>`).join('')}</select></label>
-    <div class="btnrow"><button class="btn" data-act="modal-close">Avbryt</button><button class="btn primary" data-act="rom-endre-ok" data-id="${id}">Lagre</button></div>
+    ${r.pos ? '<p class="tiny muted">Rommet er plassert på kartet sjølv – plasseringa over gjeld berre om du fjernar det frå kartet.</p>' : ''}
+    <div class="btnrow"><button class="btn" data-act="modal-close">Avbryt</button><button class="btn" data-act="ke-open" data-key="r:${id}">🗺 Plasser på kartet</button><button class="btn primary" data-act="rom-endre-ok" data-id="${id}">Lagre</button></div>
     <hr style="border:0;border-top:1px solid var(--line);margin:14px 0">
     ${tal ? `<p class="small muted">Rommet kan ikkje slettast fordi det er talt ${tal} ${tal === 1 ? 'linje' : 'linjer'} i reolane. Flytt eller slett linjene først.</p>`
           : `<button class="btn danger wide" data-act="rom-slett" data-id="${id}">Slett rommet og ${ss.length} tomme ${ss.length === 1 ? 'reol' : 'reolar'}</button>`}`);
@@ -2793,7 +2977,7 @@ function reolModal(id, romId){
     <div class="row2"><label>Rom<select id="rl-rom">${romList().filter(r => r.id !== 'X' || rom === 'X').map(r => `<option value="${r.id}" ${r.id === rom ? 'selected' : ''}>${esc(r.namn)}</option>`).join('')}</select></label>
     <label>Mva-sats${mvaSel('rl-mva', defMva)}</label></div>
     ${s ? '<p class="tiny muted">Koden ' + s.id + ' blir ikkje endra når du flyttar reolen til eit anna rom.</p>' : ''}
-    <div class="btnrow"><button class="btn" data-act="modal-close">Avbryt</button><button class="btn primary" data-act="reol-ok" data-id="${s ? s.id : ''}" data-ny="${nyId}">${s ? 'Lagre' : 'Legg til reol'}</button></div>
+    <div class="btnrow"><button class="btn" data-act="modal-close">Avbryt</button>${s ? `<button class="btn" data-act="ke-open" data-key="s:${s.id}">🗺 Plasser på kartet</button>` : ''}<button class="btn primary" data-act="reol-ok" data-id="${s ? s.id : ''}" data-ny="${nyId}">${s ? 'Lagre' : 'Legg til reol'}</button></div>
     ${s ? `<hr style="border:0;border-top:1px solid var(--line);margin:14px 0">${tal ? `<p class="small muted">Reolen kan ikkje slettast fordi det er talt ${tal} ${tal === 1 ? 'linje' : 'linjer'} der.</p>` : `<button class="btn danger wide" data-act="reol-slett" data-id="${s.id}">Slett reolen</button>`}` : ''}`);
   setTimeout(() => { const e = $('#rl-namn'); if (e && !s) e.focus(); }, 50);
 }
@@ -2954,6 +3138,12 @@ const ACT = {
   'kople-hint-ok':() => { closeModal(); if (!curTellar()) velTellar(); },
   'kople-inn-ok':() => koplFraKode($('#kl-inn').value),
   'rom-ny':() => romNyModal(),
+  'ke-open':el => kartEditOpen(el.dataset.key || ''),
+  'ke-avbryt':() => keLukk(),
+  'ke-lagre':() => keLagre(),
+  'ke-zoom':el => keZoom(+el.dataset.d),
+  'ke-snu':() => { if (!KE || !KE.sel) return toast('Vel eit rom eller ein reol først'); const r = keRect(KE.sel); if (!r) return; keSet(KE.sel, {...r, w:r.h, h:r.w}); keRender(); },
+  'ke-fjern':() => { if (!KE || !KE.sel) return toast('Vel eit rom eller ein reol først'); keSet(KE.sel, undefined); const [k, id] = KE.sel.split(':'); delete (k === 'r' ? KE.rom : KE.sek)[id]; KE.sel = null; keRender(); toast('Fjerna frå kartet – blir vist automatisk igjen'); },
   'rom-ny-ok':() => romNyOk(),
   'rom-endre':el => romEndreModal(el.dataset.id),
   'rom-endre-ok':el => romEndreOk(el.dataset.id),
