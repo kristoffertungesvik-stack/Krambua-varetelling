@@ -195,6 +195,16 @@ table.t tr.sum td{font-weight:800;border-top:2px solid var(--slate);border-botto
 .itemrow span{font-size:12.5px;color:var(--muted)}
 .hide{display:none!important}
 details summary{cursor:pointer;font-weight:700}
+.romblokk{display:grid;gap:10px;margin:4px 0 14px}
+.rom{border:2px solid #9AA4A8;border-radius:12px;background:#fff;padding:8px 10px 10px}
+.rom-h{font-weight:700;font-size:14px;margin:0 0 7px;color:var(--slate)}
+.rom-g{display:grid;grid-template-columns:repeat(auto-fill,minmax(96px,1fr));gap:7px}
+.rom-t{position:relative;display:flex;flex-direction:column;align-items:flex-start;gap:1px;text-align:left;min-height:58px;padding:7px 8px;border:1.5px solid #C9C4B8;border-radius:9px;background:#fff;cursor:pointer;font:inherit;color:var(--txt)}
+.rom-t b{font-size:14px}.rom-t span{font-size:12px;color:var(--muted);line-height:1.25}
+.rom-t.st1{background:rgba(242,170,30,.25);border-color:#D98A00}.rom-t.st2{background:rgba(46,139,71,.18);border-color:var(--ok)}
+.rom-t i{position:absolute;top:5px;right:6px;font-style:normal;font-size:11.5px;font-weight:700;background:var(--slate);color:#fff;border-radius:99px;padding:1px 6px}
+.rom-ed{border:1px solid var(--line);border-radius:10px;padding:8px 10px;margin:8px 0}
+.rom-ed summary{font-weight:600}.rom-ed .itemrow{margin-top:6px}
 .hj{scroll-margin-top:70px}
 .hj h2{font-size:19px;margin:0 0 8px}
 .hj h3{font-size:15.5px;margin:16px 0 6px}
@@ -294,7 +304,7 @@ body.preview #app,body.preview #nav{display:none}
    Krambua Varetelling – éi fil, køyrer på GitHub Pages.
    Data: lokalt i nettlesaren + (valfritt) delt via GitHub-repoet.
    ===================================================================== */
-const APP_VER = '2.3';
+const APP_VER = '2.4';
 const MODUS = 'admin';
 const STAFF = MODUS === 'tilsett';
 const NAV_ITEMS = STAFF ? ['kart','oppsett'] : ['kart','rapport','analyse','lister','varer','oppsett'];
@@ -501,12 +511,12 @@ function nyTelling(id){
     meta:{namn:'Varetelling '+id, perDato:todayISO(), firma:'Krambua Bensin & Storkiosk AS', orgnr:'', stad:'Skånevik',
           avanse:38, avanseOmr:{}, ukurans:0, ukuransTekst:'', updatedAt:OLD},
     avslutta:{status:false, av:'', tid:'', updatedAt:OLD},
-    tellarar:{}, seksjonar:{}, status:{}, linjer:{}, dobbel:{}};
+    tellarar:{}, seksjonar:{}, rom:{}, status:{}, linjer:{}, dobbel:{}};
   DEFAULT_TELLARAR.forEach(n => { const k = 't-'+slug(n); t.tellarar[k] = {id:k, namn:n, updatedAt:OLD, deleted:false}; });
   return t;
 }
 function normTelling(t){
-  ['tellarar','seksjonar','status','linjer','dobbel'].forEach(k => { if (!t[k] || typeof t[k] !== 'object') t[k] = {}; });
+  ['tellarar','seksjonar','rom','status','linjer','dobbel'].forEach(k => { if (!t[k] || typeof t[k] !== 'object') t[k] = {}; });
   if (!t.meta) t.meta = nyTelling(t.id).meta;
   if (!t.avslutta) t.avslutta = {status:false, av:'', tid:'', updatedAt:OLD};
   if (!t.meta.avanseOmr) t.meta.avanseOmr = {};
@@ -726,11 +736,11 @@ function mergeTelling(a, b){
   a = normTelling(a); b = normTelling(b);
   return {id:a.id, v:1, oppretta:[a.oppretta, b.oppretta].filter(Boolean).sort()[0] || nowISO(),
     meta:newer(a.meta, b.meta), avslutta:newer(a.avslutta, b.avslutta),
-    tellarar:mergeMap(a.tellarar, b.tellarar), seksjonar:mergeMap(a.seksjonar, b.seksjonar),
+    tellarar:mergeMap(a.tellarar, b.tellarar), seksjonar:mergeMap(a.seksjonar, b.seksjonar), rom:mergeMap(a.rom, b.rom),
     status:mergeMap(a.status, b.status), linjer:mergeMap(a.linjer, b.linjer), dobbel:mergeMap(a.dobbel, b.dobbel)};
 }
 function allSek(){
-  const extra = Object.values(T.seksjonar).filter(s => !s.deleted).sort((a,b) => a.id.localeCompare(b.id)).map(s => ({...s, omr:'X'}));
+  const extra = Object.values(T.seksjonar).filter(s => !s.deleted && !SEKSJONAR.some(f => f.id === s.id)).sort((a,b) => a.id.localeCompare(b.id)).map(s => ({...s, omr:romOk(s.omr) ? s.omr : 'X'}));
   return [...SEKSJONAR, ...extra];
 }
 function sekById(id){ return allSek().find(s => s.id === id) || Object.values(T.seksjonar).find(s => s.id === id) || null; }
@@ -942,8 +952,8 @@ function mergeFile(j){
     const L = T.linjer;
     for (const lid in j.linjer){ const b = j.linjer[lid]; if (!b || !b.id || !b.sek) continue; const a = L[lid], n = newer(a, b); if (n !== a){ L[lid] = n; t = true; } }
   }
-  if (j.meta || j.status || j.tellarar || j.avslutta || j.dobbel || j.seksjonar){
-    const m = mergeTelling(T, {id:T.id, oppretta:j.oppretta, meta:j.meta, avslutta:j.avslutta, tellarar:j.tellarar, seksjonar:j.seksjonar, status:j.status, dobbel:j.dobbel, linjer:{}});
+  if (j.meta || j.status || j.tellarar || j.avslutta || j.dobbel || j.seksjonar || j.rom){
+    const m = mergeTelling(T, {id:T.id, oppretta:j.oppretta, meta:j.meta, avslutta:j.avslutta, tellarar:j.tellarar, seksjonar:j.seksjonar, rom:j.rom, status:j.status, dobbel:j.dobbel, linjer:{}});
     const {linjer:_x, ...h1} = m, {linjer:_y, ...h0} = T;
     if (stable(h1) !== stable(h0)){ T = {...m, linjer:T.linjer}; t = true; }
   }
@@ -1371,9 +1381,10 @@ function viewKart(){
   h += `<div class="mapwrap ${mapZoom ? 'zoom' : ''}" id="mapwrap">${mapSVG(st)}</div>
     <div class="legend"><span><i style="background:#fff;border-color:#C9C4B8"></i>Ikkje starta</span><span><i style="background:rgba(242,170,30,.35);border-color:#D98A00"></i>Påbyrja</span><span><i style="background:rgba(46,139,71,.35);border-color:#2E8B47"></i>Ferdig</span>
     <span style="margin-left:auto"><button class="btn ghost" data-act="map-zoom" style="min-height:30px;padding:2px 8px">${mapZoom ? '− Mindre kart' : '+ Større kart'}</button></span></div>`;
-  OMR_ORDER.forEach(o => {
+  h += romBlokkHTML(st, sek);
+  omrOrder().forEach(o => {
     const ss = sek.filter(s => s.omr === o); if (!ss.length) return;
-    h += `<div class="grp-h">${OMRADE[o]}</div><div class="seklist">`;
+    h += `<div class="grp-h">${omrNamn(o)}</div><div class="seklist">`;
     ss.forEach(s => {
       const x = st[s.id];
       const pill = x.ferdig ? '<span class="tag st2">Ferdig</span>' : (x.n ? '<span class="tag st1">Påbyrja</span>' : '');
@@ -1396,7 +1407,7 @@ function viewSek(){
   if (!s) return `<div class="card">Fann ikkje seksjonen «${esc(route.id)}». <a href="#kart">Til kartet</a></div>`;
   const st = T.status[s.id]; const ferdig = !!(st && st.ferdig);
   let h = `<div class="btnrow" style="margin:0 0 8px"><a class="btn ghost" href="#kart" style="flex:0 0 auto;padding-left:4px">← Kart</a></div>
-  <div class="card"><div class="sek-head"><span class="code">${s.id}</span><div><h1 style="margin:0 0 2px;font-size:19px">${esc(s.namn)}</h1><div class="small muted">${esc(OMRADE[s.omr] || '')} · ${esc(s.stad || '')}</div><div id="sek-status" style="margin-top:6px">${sekStatusHTML(s.id)}</div></div></div></div>`;
+  <div class="card"><div class="sek-head"><span class="code">${s.id}</span><div><h1 style="margin:0 0 2px;font-size:19px">${esc(s.namn)}</h1><div class="small muted">${esc(omrNamn(s.omr) || '')} · ${esc(s.stad || '')}</div><div id="sek-status" style="margin-top:6px">${sekStatusHTML(s.id)}</div></div></div></div>`;
   if (locked()) h += `<div class="banner ok">Teljinga er avslutta – linjene er låste.</div>`;
   else if (ferdig) h += `<div class="banner ok">Seksjonen er merka ferdig. <button class="btn" data-act="sek-opne" style="min-height:36px;margin-left:6px">Opne att for å legge til</button></div>`;
   else {
@@ -1661,7 +1672,7 @@ function viewRapport(){
     ${Object.keys(S.perMva).sort((a,b) => b - a).map(k => { const m = S.perMva[k]; return `<tr><td>${k} %</td><td class="n">${m.n}</td><td class="n">${kr(m.inkl)}</td><td class="n">${kr(m.mva)}</td><td class="n">${kr(m.eks)}</td><td class="n">${kr(m.kost)}</td></tr>`; }).join('')}
     <tr class="sum"><td>Sum</td><td class="n">${t.n}</td><td class="n">${kr(t.inkl)}</td><td class="n">${kr(t.mva)}</td><td class="n">${kr(t.eks)}</td><td class="n">${kr(t.kost)}</td></tr></tbody></table></div>
     <dl class="kv" style="margin-top:12px"><dt>Kostverdi</dt><dd>${kr(t.kost)} kr</dd><dt>− Ukurans</dt><dd>${kr(t.ukurans)} kr</dd><dt>Varelager til balansen</dt><dd style="font-size:18px">${kr(t.balanse)} kr</dd></dl>
-    <p class="small muted" style="margin-bottom:0">Kostverdi = utsalsverdi eks. mva × (1 − avanse). Avanse: ${esc(T.meta.avanse)} %${Object.keys(T.meta.avanseOmr || {}).filter(k => T.meta.avanseOmr[k] !== '' && T.meta.avanseOmr[k] != null).map(k => `, ${OMRADE[k]} ${esc(T.meta.avanseOmr[k])} %`).join('')}. Endre under <a href="#oppsett">Oppsett</a>.</p></div>`;
+    <p class="small muted" style="margin-bottom:0">Kostverdi = utsalsverdi eks. mva × (1 − avanse). Avanse: ${esc(T.meta.avanse)} %${Object.keys(T.meta.avanseOmr || {}).filter(k => T.meta.avanseOmr[k] !== '' && T.meta.avanseOmr[k] != null).map(k => `, ${omrNamn(k)} ${esc(T.meta.avanseOmr[k])} %`).join('')}. Endre under <a href="#oppsett">Oppsett</a>.</p></div>`;
   h += `<div class="card"><h2>Per seksjon</h2><div class="tablewrap"><table class="t"><thead><tr><th>Liste</th><th>Seksjon</th><th class="n">Linjer</th><th class="n">Inkl. mva</th><th class="n">Kost</th><th>Status</th></tr></thead><tbody>
     ${S.sek.map(s => { const p = S.perSek[s.id], st = T.status[s.id]; return `<tr><td><a href="#sek-${s.id}">${s.id}</a></td><td>${esc(s.namn)}</td><td class="n">${p.n}</td><td class="n">${kr(p.inkl)}</td><td class="n">${kr(p.kost)}</td><td>${st && st.ferdig ? '<span class="tag st2">Ferdig</span>' : (p.n ? '<span class="tag st1">Påbyrja</span>' : '<span class="tag">–</span>')}</td></tr>`; }).join('')}
     </tbody></table></div></div>`;
@@ -1715,7 +1726,7 @@ async function buildRapport(){
   const utkast = !locked();
   const wm = utkast ? '<div class="wm">UTKAST – VARETELLINGA ER IKKJE AVSLUTTA</div>' : '';
   const firmaLine = `${esc(M.firma)}${M.orgnr ? ' · Org.nr. ' + esc(M.orgnr) : ''}${M.stad ? ' · ' + esc(M.stad) : ''}`;
-  const avTxt = `${esc(M.avanse)} %` + OMR_ORDER.filter(o => M.avanseOmr && M.avanseOmr[o] !== '' && M.avanseOmr[o] != null).map(o => `, ${OMRADE[o]} ${esc(M.avanseOmr[o])} %`).join('');
+  const avTxt = `${esc(M.avanse)} %` + omrOrder().filter(o => M.avanseOmr && M.avanseOmr[o] !== '' && M.avanseOmr[o] != null).map(o => `, ${omrNamn(o)} ${esc(M.avanseOmr[o])} %`).join('');
   const tellarar = Object.keys(S.perTellar).sort();
   const ferdigN = S.sek.length - S.ikkjeFerdig.length;
   const D = dobbelGroups(), dOpenN = D.filter(g => !g.ok).length;
@@ -1770,7 +1781,7 @@ async function buildRapport(){
     const p = S.perSek[s.id], st = T.status[s.id];
     const per = {}; rows.forEach(({l, c}) => { per[l.mva] = per[l.mva] || {inkl:0, eks:0, kost:0}; per[l.mva].inkl += c.inkl; per[l.mva].eks += c.eks; per[l.mva].kost += c.kost; });
     lists += `<section class="page">${wm}
-      <div class="lh"><div><div class="firm">Telleliste · ${esc(M.namn)} · per ${esc(fmtDato(M.perDato))}</div><div class="lnum">${s.id}</div><div style="font-size:12pt;font-weight:700">${esc(s.namn)}</div><div class="sub">${esc(OMRADE[s.omr] || '')} · ${esc(s.stad || '')}</div></div><div class="bc">${barcodeSVG('KRB-' + s.id, {h:9, mw:.26, fs:2.4})}</div></div>
+      <div class="lh"><div><div class="firm">Telleliste · ${esc(M.namn)} · per ${esc(fmtDato(M.perDato))}</div><div class="lnum">${s.id}</div><div style="font-size:12pt;font-weight:700">${esc(s.namn)}</div><div class="sub">${esc(omrNamn(s.omr) || '')} · ${esc(s.stad || '')}</div></div><div class="bc">${barcodeSVG('KRB-' + s.id, {h:9, mw:.26, fs:2.4})}</div></div>
       <div class="sub" style="margin:2mm 0">Talt av: ${Object.keys(p.tellarar).map(n => esc(n) + ' (' + p.tellarar[n] + ')').join(', ')} · ${st && st.ferdig ? 'Ferdig ' + esc(fmtDT(st.tid)) + ' (' + esc(st.av) + ')' : 'Ikkje merka ferdig'}</div>
       <table><thead><tr><th class="c">Nr</th><th>Varenr. / EAN</th><th>Varetekst</th><th class="n">Mengd</th><th>Eining</th><th class="n">Pris inkl. mva</th><th class="c">Mva</th><th class="n">Sum inkl. mva</th><th>Talt av / tid</th></tr></thead><tbody>
       ${rows.map(({l, c}, i) => `<tr><td class="c">${i + 1}</td><td>${esc(l.varenr || '')}${l.varenr && l.ean ? '<br>' : ''}<span class="meth">${esc(l.ean || '')}</span></td><td>${esc(l.namn)}${l.vekt ? `<div class="vekt">${esc(vektTekst(l))}</div>` : ''}${l.merknad ? `<div class="vekt">${esc(l.merknad)}</div>` : ''}${l.endraAv ? `<div class="meth">${l.flyttaFra ? 'Flytta frå ' + esc(l.flyttaFra) + ' – e' : 'E'}ndra av ${esc(l.endraAv)} ${esc(fmtDT(l.updatedAt))}</div>` : ''}</td><td class="n">${qty(parseNum(l.antal))}</td><td>${esc(l.eining)}</td><td class="n">${kr(l.pris)}</td><td class="c">${esc(l.mva)} %</td><td class="n">${kr(c.inkl)}</td><td class="meth" style="white-space:nowrap">${esc((l.tellar || '').split(' ')[0])}<br>${esc(fmtDato(l.tid).slice(0, 6))} ${esc(fmtKl(l.tid))}</td></tr>`).join('')}
@@ -1804,9 +1815,9 @@ function viewLister(){
     <label>Ta med varer frå<select id="ls-kjelde" ${listerSel.type === 'varer' ? '' : 'disabled'}>${lsGet(LS.list, []).map(id => `<option value="${esc(id)}" ${id === T.id ? 'selected' : ''}>${esc(id === T.id ? T.meta.namn + ' (denne)' : 'Telling ' + id)}</option>`).join('')}</select></label></div>
   </div>
   <div class="card"><div style="display:flex;justify-content:space-between;align-items:center"><h2 style="margin:0">Seksjonar (${listerSel.sek.size} valde)</h2><span><button class="btn ghost" data-act="ls-alle">Alle</button><button class="btn ghost" data-act="ls-ingen">Ingen</button></span></div>`;
-  OMR_ORDER.forEach(o => {
+  omrOrder().forEach(o => {
     const ss = sek.filter(s => s.omr === o); if (!ss.length) return;
-    h += `<div class="grp-h">${OMRADE[o]} <button class="btn ghost tiny" data-act="ls-omr" data-o="${o}" style="min-height:26px;padding:0 6px">vel</button></div>`;
+    h += `<div class="grp-h">${omrNamn(o)} <button class="btn ghost tiny" data-act="ls-omr" data-o="${o}" style="min-height:26px;padding:0 6px">vel</button></div>`;
     ss.forEach(s => h += `<label class="check" style="margin:4px 0"><input type="checkbox" data-act="ls-sek" data-id="${s.id}" ${listerSel.sek.has(s.id) ? 'checked' : ''}> <b>${s.id}</b> ${esc(s.namn)} <span class="tiny muted">${st[s.id] && st[s.id].n ? st[s.id].n + ' varer' : ''}</span></label>`);
   });
   h += `</div><div class="btnrow"><button class="btn primary big wide" data-act="ls-print">🖨 Vis og skriv ut ${listerSel.sek.size} tellelister</button></div>`;
@@ -1830,7 +1841,7 @@ function printLister(){
     const blanks = listerSel.type === 'varer' ? Math.max(listerSel.ekstra, listerSel.rader - items.length) : listerSel.rader;
     let n = 0;
     html += `<section class="page">
-      <div class="lh"><div><div class="firm">${esc(M.firma)} · Telleliste</div><div class="lnum">${s.id}</div><div style="font-size:13pt;font-weight:700">${esc(s.namn)}</div><div class="sub">${esc(OMRADE[s.omr] || '')} · ${esc(s.stad || '')} · ${esc(M.namn)}, varebeholdning per ${esc(fmtDato(M.perDato))}</div></div>
+      <div class="lh"><div><div class="firm">${esc(M.firma)} · Telleliste</div><div class="lnum">${s.id}</div><div style="font-size:13pt;font-weight:700">${esc(s.namn)}</div><div class="sub">${esc(omrNamn(s.omr) || '')} · ${esc(s.stad || '')} · ${esc(M.namn)}, varebeholdning per ${esc(fmtDato(M.perDato))}</div></div>
       <div class="bc">${barcodeSVG('KRB-' + s.id, {h:11, mw:.3, fs:2.6})}<div>Skann for å opne i appen</div></div></div>
       <div class="fld"><div>Talt av:</div><div>Dato:</div><div>Kl.:</div></div>
       <table><thead><tr><th class="c" style="width:7mm">Nr</th><th style="width:40mm">Strekkode</th><th style="width:20mm">Varenr.</th><th>Varetekst</th><th style="width:13mm">Eining</th><th class="n" style="width:20mm">Mengd</th><th style="width:30mm">Merknad / vekt</th></tr></thead><tbody>
@@ -1865,7 +1876,7 @@ async function exportExcel(){
   const ws1 = XLSX.utils.aoa_to_sheet(a1); ws1['!cols'] = [{wch:44},{wch:12},{wch:20},{wch:14},{wch:20},{wch:16}]; money(ws1, [2,3,4,5], 11);
   XLSX.utils.book_append_sheet(wb, ws1, 'Samandrag');
   const a2 = [['Liste', 'Seksjon', 'Område', 'Plassering', 'Linjer', 'Inkl. mva', 'Eks. mva', 'Kostverdi', 'Talt av', 'Ferdig']];
-  S.sek.forEach(s => { const p = S.perSek[s.id], st = T.status[s.id]; a2.push([s.id, s.namn, OMRADE[s.omr] || '', s.stad || '', p.n, round2(p.inkl), round2(p.eks), round2(p.kost), Object.keys(p.tellarar).join(', '), st && st.ferdig ? fmtDT(st.tid) + ' ' + st.av : '']); });
+  S.sek.forEach(s => { const p = S.perSek[s.id], st = T.status[s.id]; a2.push([s.id, s.namn, omrNamn(s.omr) || '', s.stad || '', p.n, round2(p.inkl), round2(p.eks), round2(p.kost), Object.keys(p.tellarar).join(', '), st && st.ferdig ? fmtDT(st.tid) + ' ' + st.av : '']); });
   a2.push(['', 'Sum', '', '', t.n, t.inkl, t.eks, t.kost]);
   const ws2 = XLSX.utils.aoa_to_sheet(a2); ws2['!cols'] = [{wch:6},{wch:30},{wch:13},{wch:30},{wch:7},{wch:14},{wch:14},{wch:14},{wch:30},{wch:26}]; money(ws2, [5,6,7], 1);
   XLSX.utils.book_append_sheet(wb, ws2, 'Per telleliste');
@@ -2238,7 +2249,7 @@ function genEdit(v){
   const g = salGeneriskCfg()[v]; if (!g) return;
   const sel = new Set(g.sek);
   openModal(`<h2>Fordel «${esc(g.namn)}»</h2><p class="small muted" style="margin-top:0">Vel reolane der varene som vert slegne inn på denne knappen står.</p>
-    ${OMR_ORDER.map(o => { const ss = allSek().filter(s => s.omr === o); return ss.length ? `<div class="grp-h">${OMRADE[o]}</div>` + ss.map(s => `<label class="check" style="margin:4px 0"><input type="checkbox" class="ge" value="${s.id}" ${sel.has(s.id) ? 'checked' : ''}> <b>${s.id}</b> ${esc(s.namn)}</label>`).join('') : ''; }).join('')}
+    ${omrOrder().map(o => { const ss = allSek().filter(s => s.omr === o); return ss.length ? `<div class="grp-h">${omrNamn(o)}</div>` + ss.map(s => `<label class="check" style="margin:4px 0"><input type="checkbox" class="ge" value="${s.id}" ${sel.has(s.id) ? 'checked' : ''}> <b>${s.id}</b> ${esc(s.namn)}</label>`).join('') : ''; }).join('')}
     <div class="btnrow"><button class="btn primary" id="ge-save">Lagre</button>${DEFAULT_GENERISK[v] ? '<button class="btn" id="ge-std">Standard</button>' : ''}<button class="btn" data-act="modal-close">Avbryt</button></div>`, m => {
     m.querySelector('#ge-save').onclick = () => { SAL.generisk[v] = [...m.querySelectorAll('.ge:checked')].map(i => i.value); saveSal(); closeModal(); render(); };
     const st = m.querySelector('#ge-std'); if (st) st.onclick = () => { delete SAL.generisk[v]; saveSal(); closeModal(); render(); };
@@ -2348,7 +2359,8 @@ function hjSeksjon(id){
 <li>Set <b>Varebeholdning per dato</b> til 31.12. Datoen blir elles dagens dato når teljinga blir oppretta.</li>
 <li>Fyll inn firma, org.nr. og stad. Dei kjem på forsida av rapporten.</li>
 <li>Sjekk <b>bruttoavansen</b>: 38 % som standard. Du kan setje eigen avanse for jernvarerom, butikk, lager og kjøkken.</li>
-<li>Trykk <b>Lagre</b>. Under <b>Tellarar</b> legg du til eller fjernar namn.</li></ol>
+<li>Trykk <b>Lagre</b>. Under <b>Tellarar</b> legg du til eller fjernar namn.</li>
+<li>Manglar det rom eller reolar, t.d. eit ekstra lager: gå til <b>Rom og reolar</b>. Trykk <b>+ Nytt rom</b>, eller <b>+ Ny reol</b> i eit rom som alt finst. Nye rom kjem som eigne felt under kartet og blir delte med alle telefonane. Ein reol kan berre slettast når han er tom. Ei ny telling tek med seg romma og reolane.</li></ol>
 <h3>3. Last inn varelista frå PCK</h3><ol>
 <li>Eksporter varene frå PCK til Excel eller CSV med varenummer, varenamn, strekkode, utsalspris inkl. mva og mva-sats eller hovudgruppe. Ta gjerne med innkjøpspris.</li>
 <li>Gå til <b>Varer → 📥 Vel fil (Excel eller CSV)</b>.</li>
@@ -2378,7 +2390,7 @@ function hjSeksjon(id){
 <p>Ei linje er éi vare på éin stad med mengd og pris. Same vare kan ha linjer på fleire reolar, og appen summerer dei i rapporten.</p>
 <div class="hj-flyt"><span>Opne seksjonen</span>→<span>Skann eller søk</span>→<span>Finst vara? Ja: namn og pris kjem. Nei: ny vare</span>→<span>Skriv mengda</span>→<span class="on">Lagre linje</span>→<span>neste vare … til ✓ Ferdig</span></div>
 <h3>Vel kven du er</h3><p>Første gong spør appen «Kven tel?». Trykk namnet ditt, eller skriv det under «Anna namn». Namnet blir hugsa og står på kvar linje du lagrar. Byt med namneknappen øvst til høgre.</p>
-<h3>Opne rett seksjon</h3><p>Kartet viser 27 seksjonar: J01–J13 i jernvarerommet, B01–B11 i butikken, L01–L02 for lageret og K01 for kjøkkenet.</p><ul>
+<h3>Opne rett seksjon</h3><p>Kartet viser 27 seksjonar: J01–J13 i jernvarerommet, B01–B11 i butikken, L01–L02 for lageret og K01 for kjøkkenet. Rom og reolar som er lagde til seinare, står som eigne felt rett under kartet.</p><ul>
 <li><b>Trykk på reolen</b> på kartet eller i lista under. <b>+ Større kart</b> gjer kartet lettare å treffe.</li>
 <li><b>Eller skann reol-koden</b> øvst på papirlista med «📷 Skann reol-kode på tellelista».</li>
 <li><b>Fargane:</b> kvit er ikkje starta, oransje er påbyrja og grøn er ferdig. Talet i rundingen er kor mange linjer som er talde.</li></ul>
@@ -2587,6 +2599,135 @@ async function koplePlakat(){
   showPreview('Plakatar for tilsette – med kople-kode', plakatHTML(svg));
 }
 
+
+/* ------------------------------ ROM OG REOLAR (redigerbare, delte via _meta-fila) ------------------------------ */
+const ROM_FAST = ['J','B','L','K'];
+const ROM_KODAR = 'ACDEFGHMNOPRSTUVWYZ';
+function romList(){
+  const custom = Object.values(T.rom || {}).filter(r => r && !r.deleted)
+    .sort((a, b) => String(a.oppretta || '').localeCompare(String(b.oppretta || '')) || a.id.localeCompare(b.id));
+  return [...ROM_FAST.map(id => ({id, namn:OMRADE[id], fast:true})), ...custom, {id:'X', namn:OMRADE.X, fast:true}];
+}
+function omrOrder(){ return romList().map(r => r.id); }
+function omrNamn(o){ if (OMRADE[o]) return OMRADE[o]; const r = T.rom && T.rom[o]; return r ? r.namn : OMRADE.X; }
+function romOk(o){ return ROM_FAST.includes(o) || o === 'X' || !!(T.rom && T.rom[o] && !T.rom[o].deleted); }
+function nyRomKode(){ for (const c of ROM_KODAR) if (!(T.rom && T.rom[c])) return c; return null; }
+function nyReolId(prefix){
+  let max = 0;
+  [...SEKSJONAR.map(s => s.id), ...Object.keys(T.seksjonar)].forEach(id => {
+    const m = new RegExp('^' + prefix + '(\\d+)$').exec(id); if (m) max = Math.max(max, +m[1]);
+  });
+  return prefix + pad(max + 1);
+}
+function reolLinjer(id){ return activeLines(id).length; }
+function romBlokkHTML(st, sek){
+  const blokker = romList().map(r => ({r, ss:sek.filter(s => s.omr === r.id && !HITS[s.id])})).filter(x => x.ss.length);
+  if (!blokker.length) return '';
+  return `<div class="romblokk">${blokker.map(({r, ss}) => `<div class="rom"><div class="rom-h">${esc(r.namn)}${r.fast && r.id !== 'X' ? ' · ekstra reolar' : ''}</div>
+    <div class="rom-g">${ss.map(s => { const x = st[s.id] || {state:0, n:0}; return `<button class="rom-t st${x.state}" data-act="sek" data-id="${s.id}"><b>${s.id}</b><span>${esc(s.namn)}</span>${x.n ? `<i>${x.n}</i>` : ''}</button>`; }).join('')}</div></div>`).join('')}</div>`;
+}
+function romEditorHTML(){
+  const L = locked();
+  const sek = allSek();
+  return `<div class="card"><h2>Rom og reolar</h2>
+    <p class="small muted" style="margin-top:0">Legg til rom og reolar som ikkje er på kartet, t.d. eit lager de har gløymt. Nye rom kjem som eigne felt rett under kartet, og reolane får kode etter rommet (t.d. A01, A02). Du kan òg leggje nye reolar i rom som alt finst, t.d. L03 i Lager. Endringane blir delte med alle telefonane.</p>
+    ${romList().map(r => {
+      const ss = sek.filter(s => s.omr === r.id);
+      if (r.id === 'X' && !ss.length) return '';
+      const eigne = ss.filter(s => T.seksjonar[s.id]).length;
+      return `<details class="rom-ed" ${!r.fast || (eigne && r.id !== 'X') || r.id === 'X' ? 'open' : ''}><summary><span class="tag">${r.id}</span> ${esc(r.namn)} <span class="muted small">· ${ss.length} ${ss.length === 1 ? 'reol' : 'reolar'}${r.fast && r.id !== 'X' ? ' · på kartet' : ''}</span></summary>
+        ${!r.fast ? `<div class="btnrow" style="margin:6px 0"><button class="btn" data-act="rom-endre" data-id="${r.id}" ${L ? 'disabled' : ''}>✎ Endre eller slett rommet</button></div>` : ''}
+        ${ss.map(s => { const eigen = !!T.seksjonar[s.id]; return `<div class="itemrow" ${eigen && !L ? `data-act="reol-endre" data-id="${s.id}"` : 'style="cursor:default"'}><span class="tag">${s.id}</span><div class="mid"><b>${esc(s.namn)}</b><span>${esc(s.stad || '')}${s.stad ? ' · ' : ''}${s.mva} %${eigen ? '' : ' · fast på kartet'}</span></div>${eigen && !L ? '<span class="muted">✎</span>' : ''}</div>`; }).join('')}
+        ${r.id !== 'X' ? `<div class="btnrow"><button class="btn" data-act="reol-ny" data-rom="${r.id}" ${L ? 'disabled' : ''}>+ Ny reol i ${esc(r.namn)}</button></div>` : ''}
+      </details>`;
+    }).join('')}
+    <div class="btnrow"><button class="btn primary" data-act="rom-ny" ${L ? 'disabled' : ''}>+ Nytt rom</button></div>
+    ${L ? '<p class="tiny muted">Teljinga er avslutta. Opne ho att under Rapport for å endre rom og reolar.</p>' : ''}</div>`;
+}
+const mvaSel = (id, v) => `<select id="${id}">${MVA_SATSAR.map(m => `<option value="${m}" ${+v === m ? 'selected' : ''}>${m} %</option>`).join('')}</select>`;
+function romNyModal(){
+  if (locked()) return toast('Teljinga er avslutta', 'err');
+  const kode = nyRomKode(); if (!kode) return toast('Det er ikkje plass til fleire rom', 'err');
+  openModal(`<h2>Nytt rom</h2>
+    <label>Namn på rommet<input id="rn-namn" type="text" placeholder="T.d. Lager 2 – kjellaren" autocomplete="off"></label>
+    <div class="row2"><label>Tal på reolar<input id="rn-n" type="text" inputmode="numeric" value="1"></label><label>Standard mva-sats${mvaSel('rn-mva', 25)}</label></div>
+    <p class="tiny muted">Rommet får kode <b>${kode}</b>, og reolane blir ${kode}01, ${kode}02 … Du kan gje reolane eigne namn etterpå.</p>
+    <div class="btnrow"><button class="btn" data-act="modal-close">Avbryt</button><button class="btn primary" data-act="rom-ny-ok">Legg til rom</button></div>`);
+  setTimeout(() => { const e = $('#rn-namn'); if (e) e.focus(); }, 50);
+}
+function romNyOk(){
+  const namn = $('#rn-namn').value.trim(); if (!namn) return toast('Skriv inn namn på rommet', 'err');
+  const n = Math.max(1, Math.min(40, parseInt($('#rn-n').value, 10) || 1)), mva = +$('#rn-mva').value;
+  const kode = nyRomKode(); if (!kode) return toast('Det er ikkje plass til fleire rom', 'err');
+  const now = nowISO();
+  T.rom[kode] = {id:kode, namn, oppretta:now, updatedAt:now, deleted:false};
+  for (let i = 1; i <= n; i++){ const id = kode + pad(i); T.seksjonar[id] = {id, namn: n === 1 ? namn : 'Reol ' + i, stad:namn, mva, omr:kode, updatedAt:now, deleted:false}; }
+  saveLocal(); closeModal(); render(); toast(`${namn} lagt til med ${n} ${n === 1 ? 'reol' : 'reolar'} (${kode}01${n > 1 ? '–' + kode + pad(n) : ''})`, 'ok');
+}
+function romEndreModal(id){
+  const r = T.rom[id]; if (!r || r.deleted) return;
+  const ss = allSek().filter(s => s.omr === id), tal = ss.reduce((a, s) => a + reolLinjer(s.id), 0);
+  openModal(`<h2>Endre rom ${id}</h2>
+    <label>Namn på rommet<input id="re-namn" type="text" value="${esc(r.namn)}" autocomplete="off"></label>
+    <div class="btnrow"><button class="btn" data-act="modal-close">Avbryt</button><button class="btn primary" data-act="rom-endre-ok" data-id="${id}">Lagre</button></div>
+    <hr style="border:0;border-top:1px solid var(--line);margin:14px 0">
+    ${tal ? `<p class="small muted">Rommet kan ikkje slettast fordi det er talt ${tal} ${tal === 1 ? 'linje' : 'linjer'} i reolane. Flytt eller slett linjene først.</p>`
+          : `<button class="btn danger wide" data-act="rom-slett" data-id="${id}">Slett rommet og ${ss.length} tomme ${ss.length === 1 ? 'reol' : 'reolar'}</button>`}`);
+}
+function romEndreOk(id){
+  const r = T.rom[id]; if (!r) return; const namn = $('#re-namn').value.trim(); if (!namn) return toast('Skriv inn namn', 'err');
+  T.rom[id] = {...r, namn, updatedAt:nowISO()}; saveLocal(); closeModal(); render(); toast('Rommet er endra', 'ok');
+}
+function romSlett(id){
+  const r = T.rom[id]; if (!r) return;
+  const ss = Object.values(T.seksjonar).filter(s => !s.deleted && s.omr === id);
+  if (ss.some(s => reolLinjer(s.id))) return toast('Rommet har talde varer og kan ikkje slettast', 'err');
+  const now = nowISO();
+  ss.forEach(s => T.seksjonar[s.id] = {...s, deleted:true, updatedAt:now});
+  T.rom[id] = {...r, deleted:true, updatedAt:now};
+  saveLocal(); closeModal(); render(); toast(r.namn + ' er sletta', 'ok');
+}
+function reolModal(id, romId){
+  if (locked()) return toast('Teljinga er avslutta', 'err');
+  const s = id ? T.seksjonar[id] : null;
+  const rom = s ? (romOk(s.omr) ? s.omr : 'X') : romId;
+  const nyId = s ? s.id : (rom === 'X' ? nyReolId('X') : nyReolId(rom));
+  const defMva = s ? s.mva : (allSek().filter(x => x.omr === rom).map(x => x.mva)[0] ?? 25);
+  const tal = s ? reolLinjer(s.id) : 0;
+  openModal(`<h2>${s ? 'Endre reol ' + s.id : 'Ny reol ' + nyId}</h2>
+    <label>Namn på reolen<input id="rl-namn" type="text" value="${esc(s ? s.namn : '')}" placeholder="T.d. Hylle ved døra" autocomplete="off"></label>
+    <label>Plassering (valfritt)<input id="rl-stad" type="text" value="${esc(s ? s.stad || '' : '')}" placeholder="T.d. venstre vegg"></label>
+    <div class="row2"><label>Rom<select id="rl-rom">${romList().filter(r => r.id !== 'X' || rom === 'X').map(r => `<option value="${r.id}" ${r.id === rom ? 'selected' : ''}>${esc(r.namn)}</option>`).join('')}</select></label>
+    <label>Standard mva-sats${mvaSel('rl-mva', defMva)}</label></div>
+    ${s ? '<p class="tiny muted">Koden ' + s.id + ' blir ikkje endra når du flyttar reolen til eit anna rom.</p>' : ''}
+    <div class="btnrow"><button class="btn" data-act="modal-close">Avbryt</button><button class="btn primary" data-act="reol-ok" data-id="${s ? s.id : ''}" data-ny="${nyId}">${s ? 'Lagre' : 'Legg til reol'}</button></div>
+    ${s ? `<hr style="border:0;border-top:1px solid var(--line);margin:14px 0">${tal ? `<p class="small muted">Reolen kan ikkje slettast fordi det er talt ${tal} ${tal === 1 ? 'linje' : 'linjer'} der.</p>` : `<button class="btn danger wide" data-act="reol-slett" data-id="${s.id}">Slett reolen</button>`}` : ''}`);
+  setTimeout(() => { const e = $('#rl-namn'); if (e && !s) e.focus(); }, 50);
+}
+function reolOk(el){
+  const namn = $('#rl-namn').value.trim(); if (!namn) return toast('Skriv inn namn på reolen', 'err');
+  const rom = $('#rl-rom').value, mva = +$('#rl-mva').value, stad = $('#rl-stad').value.trim(), now = nowISO();
+  const id = el.dataset.id;
+  if (id){ const s = T.seksjonar[id]; if (!s) return; T.seksjonar[id] = {...s, namn, stad, mva, omr:rom, updatedAt:now}; saveLocal(); closeModal(); render(); return toast('Reolen er endra', 'ok'); }
+  let nid = el.dataset.ny; if (SEKSJONAR.some(s => s.id === nid) || (T.seksjonar[nid] && !T.seksjonar[nid].deleted)) nid = nyReolId(rom);
+  T.seksjonar[nid] = {id:nid, namn, stad, mva, omr:rom, updatedAt:now, deleted:false};
+  saveLocal(); closeModal(); render(); toast('Reol ' + nid + ' lagt til', 'ok');
+}
+function reolSlett(id){
+  const s = T.seksjonar[id]; if (!s) return;
+  if (reolLinjer(id)) return toast('Reolen har talde varer og kan ikkje slettast', 'err');
+  T.seksjonar[id] = {...s, deleted:true, updatedAt:nowISO()}; saveLocal(); closeModal(); render(); toast('Reol ' + id + ' er sletta', 'ok');
+}
+/* Ny telling: ta med rom og ekstra reolar frå teljinga som var open */
+function arvOppsett(prev){
+  if (!prev || Object.keys(T.linjer).length || Object.keys(T.rom || {}).length || Object.keys(T.seksjonar).length) return false;
+  let n = 0;
+  Object.values(prev.rom || {}).forEach(r => { if (r && !r.deleted){ T.rom[r.id] = {...r}; n++; } });
+  Object.values(prev.seksjonar || {}).forEach(s => { if (s && !s.deleted){ T.seksjonar[s.id] = {...s}; n++; } });
+  if (n) saveLocal();
+  return n > 0;
+}
+
 /* ------------------------------ OPPSETT ------------------------------ */
 function viewOppsett(){
   const M = T.meta, g = ghCfg(), tok = getToken();
@@ -2601,18 +2742,13 @@ function viewOppsett(){
     <h3>Verdsetjing</h3>
     <label>Bruttoavanse for kostverdi (%)<input id="o-avanse" type="text" inputmode="decimal" value="${esc(fmtIn(M.avanse))}" ${locked() ? 'disabled' : ''}></label>
     <div class="tiny muted">Kostverdi = utsalsverdi eks. mva × (1 − avanse). Tom rute under = same avanse som over.</div>
-    <div class="row2">${OMR_ORDER.map(o => `<label>${OMRADE[o]}<input data-avo="${o}" type="text" inputmode="decimal" value="${esc(fmtIn(M.avanseOmr[o]))}" placeholder="${esc(fmtIn(M.avanse))}" ${locked() ? 'disabled' : ''}></label>`).join('')}</div>
+    <div class="row2">${omrOrder().map(o => `<label>${omrNamn(o)}<input data-avo="${o}" type="text" inputmode="decimal" value="${esc(fmtIn(M.avanseOmr[o]))}" placeholder="${esc(fmtIn(M.avanse))}" ${locked() ? 'disabled' : ''}></label>`).join('')}</div>
     <div class="row2"><label>Nedskriving for ukurans (kr)<input id="o-ukurans" type="text" inputmode="decimal" value="${esc(fmtIn(M.ukurans))}" ${locked() ? 'disabled' : ''}></label><label>Grunngjeving<input id="o-ukt" type="text" value="${esc(M.ukuransTekst)}" ${locked() ? 'disabled' : ''}></label></div>
     <div class="btnrow"><button class="btn primary" data-act="o-lagre" ${locked() ? 'disabled' : ''}>Lagre</button></div></div>
   <div class="card"><h2>Tellarar</h2>
     ${tellarList().map(t => `<div class="itemrow" style="cursor:default"><div class="mid"><b>${esc(t.namn)}</b></div>${t.namn === curTellar() ? '<span class="tag ok">Denne eininga</span>' : ''}<button class="btn ghost" data-act="t-del" data-id="${esc(t.id)}" aria-label="Fjern">✕</button></div>`).join('')}
     <div class="search" style="margin-top:8px"><input id="o-tellar" type="text" placeholder="Nytt namn" autocomplete="off"><button class="btn" data-act="o-add-tellar">Legg til</button></div></div>
-  <div class="card"><h2>Ekstra seksjonar</h2>
-    <p class="small muted" style="margin-top:0">For plassar som ikkje er på kartet (t.d. eit nytt lager eller ein container). Dei får kode X01, X02 …</p>
-    ${extra.map(s => `<div class="itemrow" style="cursor:default"><span class="tag">${s.id}</span><div class="mid"><b>${esc(s.namn)}</b><span>${esc(s.stad || '')} · ${s.mva} %</span></div><button class="btn ghost" data-act="x-del" data-id="${s.id}">✕</button></div>`).join('')}
-    <div class="row2"><label>Namn<input id="x-namn" type="text"></label><label>Plassering<input id="x-stad" type="text"></label></div>
-    <label>Standard mva-sats<select id="x-mva">${MVA_SATSAR.map(m => `<option value="${m}">${m} %</option>`).join('')}</select></label>
-    <div class="btnrow"><button class="btn" data-act="x-add">+ Legg til seksjon</button></div></div>
+  ${romEditorHTML()}
   <div class="card"><h2>Deling mellom telefonar (GitHub)</h2>
     <p class="small muted" style="margin-top:0">Med deling på kan fleire telje samstundes på kvar sin telefon. Kvar eining lagrar eigne filer per seksjon i <code>${esc(g.dir)}/telling-${esc(T.id)}/</code>, og alt vert slått saman. Varelista ligg i <code>${esc(g.dir)}/vareliste.json</code>. Utan deling vert alt berre lagra på denne eininga.</p>
     <div class="row2"><label>Eigar<input id="g-owner" type="text" value="${esc(g.owner)}" autocapitalize="off"></label><label>Repo<input id="g-repo" type="text" value="${esc(g.repo)}" autocapitalize="off"></label></div>
@@ -2719,6 +2855,15 @@ const ACT = {
   'an-excel':() => analyseExcel(),
   'kople-qr':() => kopleQR(),
   'kople-plakat':() => koplePlakat(),
+  'rom-ny':() => romNyModal(),
+  'rom-ny-ok':() => romNyOk(),
+  'rom-endre':el => romEndreModal(el.dataset.id),
+  'rom-endre-ok':el => romEndreOk(el.dataset.id),
+  'rom-slett':el => romSlett(el.dataset.id),
+  'reol-ny':el => reolModal(null, el.dataset.rom),
+  'reol-endre':el => reolModal(el.dataset.id),
+  'reol-ok':el => reolOk(el),
+  'reol-slett':el => reolSlett(el.dataset.id),
   'kople-kopier':() => kopleKopier(false),
   'kople-adr':() => kopleKopier(true),
   's-token':() => { setToken($('#g-token').value.trim()); SY.known = {}; SY.dirSha = null; SY.legacySha = null; SYC.sha = null; if (!ghOn()){ render(); return; } markAllPending(); syncNow(true).then(() => { render(); toast(SYNC.status === 'ok' ? 'Kopla til' : 'Feil: ' + SYNC.err, SYNC.status === 'ok' ? 'ok' : 'err'); }); },
@@ -2785,8 +2930,10 @@ async function openTelling(id){
   if (id === T.id) return;
   if (ghOn() && DIRTY.size && !SYNC.busy) await syncNow(true);
   saveSyncState(); await lagKopi(false); await STORE.chain;
+  const prev = {rom:{...(T.rom || {})}, seksjonar:{...T.seksjonar}};
   await loadTelling(id); draft = null; listerSel = null;
-  toast('Opna telling ' + id, 'ok'); if (ghOn()) syncNow(true); go('kart');
+  const arv = arvOppsett(prev);
+  toast('Opna telling ' + id + (arv ? ' – rom og reolar er tekne med' : ''), 'ok'); if (ghOn()) syncNow(true); go('kart');
 }
 document.addEventListener('click', e => {
   const n = e.target.closest('[data-nav]'); if (n){ go(n.dataset.nav); return; }
