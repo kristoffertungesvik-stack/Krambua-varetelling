@@ -304,7 +304,7 @@ body.preview #app,body.preview #nav{display:none}
    Krambua Varetelling – éi fil, køyrer på GitHub Pages.
    Data: lokalt i nettlesaren + (valfritt) delt via GitHub-repoet.
    ===================================================================== */
-const APP_VER = '2.4';
+const APP_VER = '2.6';
 const MODUS = 'admin';
 const STAFF = MODUS === 'tilsett';
 const NAV_ITEMS = STAFF ? ['kart','oppsett'] : ['kart','rapport','analyse','lister','varer','oppsett'];
@@ -1123,7 +1123,7 @@ function barcodeSVG(code, {h=12, mw=0.3, text=true, fs=2.6}={}){
    2. zxing-wasm (same motor som zxing-cpp) via barcode-detector-ponyfill – iPhone, Windows, Linux
    3. ZXing-js utan TRY_HARDER (TRY_HARDER gjer at han ikkje les frå video)
    Kameraet blir styrt av appen sjølv: hovudkamera bak, kontinuerleg fokus, høg oppløysing. */
-const SCAN_FORMATS = ['ean_13','ean_8','code_128','upc_a','upc_e','code_39','itf'];
+const SCAN_FORMATS = ['ean_13','ean_8','code_128','upc_a','upc_e','code_39','itf','qr_code'];
 const BD_URLS = ['https://cdn.jsdelivr.net/npm/barcode-detector@3.2.4/dist/iife/ponyfill.js','https://unpkg.com/barcode-detector@3.2.4/dist/iife/ponyfill.js'];
 const WASM_URLS = ['https://cdn.jsdelivr.net/npm/zxing-wasm@3.1.7/dist/reader/zxing_reader.wasm','https://unpkg.com/zxing-wasm@3.1.7/dist/reader/zxing_reader.wasm'];
 const LS_CAM = 'krb-telling-kamera';
@@ -1164,7 +1164,7 @@ const Scanner = {
     }catch(e){ /* prøv ZXing-js */ }
     if (!window.ZXing) await loadScript(ZXING_URLS);
     const F = ZXing.BarcodeFormat, hints = new Map();
-    hints.set(ZXing.DecodeHintType.POSSIBLE_FORMATS, [F.EAN_13, F.EAN_8, F.CODE_128, F.UPC_A, F.UPC_E, F.CODE_39, F.ITF]);
+    hints.set(ZXing.DecodeHintType.POSSIBLE_FORMATS, [F.EAN_13, F.EAN_8, F.CODE_128, F.UPC_A, F.UPC_E, F.CODE_39, F.ITF, F.QR_CODE]);
     const reader = new ZXing.MultiFormatReader(); reader.setHints(hints);
     this.engine = 'zxing-js';
     return { async detect(canvas){
@@ -1356,7 +1356,8 @@ function mapSVG(st, opt={}){
       badges += `<g class="badge st${ss.state}"><circle cx="${bx}" cy="${by}" r="${String(label).length > 2 ? 12 : 9.5}"/><text x="${bx}" y="${by + 3.7}" text-anchor="middle">${label}</text></g>`;
     }
   });
-  return `<svg class="map" viewBox="152 152 626 978" xmlns="http://www.w3.org/2000/svg" role="img" aria-label="Butikkart – trykk på ein reol">${MAP_STATIC}${hits}${badges}</svg>`;
+  const L = kartRomLayout(), xr = kartRomSVG(st, opt, L);
+  return `<svg class="map" viewBox="${L.vb.x} ${L.vb.y} ${L.vb.w} ${L.vb.h}" xmlns="http://www.w3.org/2000/svg" role="img" aria-label="Butikkart – trykk på ein reol">${MAP_STATIC}${hits}${badges}${xr}</svg>`;
 }
 function viewKart(){
   const st = sekStats(), sek = allSek();
@@ -1366,7 +1367,7 @@ function viewKart(){
   let h = '';
   if (locked()) h += `<div class="banner ok"><b>Teljinga er avslutta</b> ${esc(fmtDT(T.avslutta.tid))} av ${esc(T.avslutta.av)}. Linjene kan ikkje endrast. Sjå <a href="#rapport">Rapport</a>.</div>`;
   if (STAFF){
-    if (!ghOn()) h += `<div class="banner warn">Telefonen er <b>ikkje kopla til</b> – teljinga vert berre lagra her. Be den som styrer teljinga om QR-koden «Kople til telefon» og skann han med kameraet.</div>`;
+    if (!ghOn()) h += `<div class="banner warn">Telefonen er <b>ikkje kopla til</b> – teljinga vert berre lagra her. Trykk «📷 Skann kople-koden» og skann QR-koden på kople-plakaten eller skjermen til den som styrer teljinga.${IOS && STANDALONE ? '<br><span class="small">På iPhone må appen på heimeskjermen koplast til for seg, sjølv om Safari alt er kopla.</span>' : ''}${KOPLE_KNAPPAR}</div>`;
     else if (!IDX.list.length) h += `<div class="banner info">Varelista er ikkje komen til telefonen enno. Du kan likevel telje – skriv inn namn på vara.</div>`;
   } else {
     if (!ghOn() && !lsGet(LS.hints, {}).lokal) h += `<div class="banner info">Teljinga vert lagra <b>berre på denne eininga</b>. Skal fleire telje samstundes på kvar sin telefon, slå på deling under <a href="#oppsett">Oppsett</a>. <button class="btn ghost small" data-act="hint-off" data-k="lokal" style="min-height:30px;padding:2px 8px">Skjul</button></div>`;
@@ -1381,7 +1382,6 @@ function viewKart(){
   h += `<div class="mapwrap ${mapZoom ? 'zoom' : ''}" id="mapwrap">${mapSVG(st)}</div>
     <div class="legend"><span><i style="background:#fff;border-color:#C9C4B8"></i>Ikkje starta</span><span><i style="background:rgba(242,170,30,.35);border-color:#D98A00"></i>Påbyrja</span><span><i style="background:rgba(46,139,71,.35);border-color:#2E8B47"></i>Ferdig</span>
     <span style="margin-left:auto"><button class="btn ghost" data-act="map-zoom" style="min-height:30px;padding:2px 8px">${mapZoom ? '− Mindre kart' : '+ Større kart'}</button></span></div>`;
-  h += romBlokkHTML(st, sek);
   omrOrder().forEach(o => {
     const ss = sek.filter(s => s.omr === o); if (!ss.length) return;
     h += `<div class="grp-h">${omrNamn(o)}</div><div class="seklist">`;
@@ -1441,7 +1441,7 @@ function sekLiveHTML(id){
 }
 function newDraft(sekId, src){
   const s = sekById(sekId);
-  const d = {sek:sekId, id:null, key:null, fromCat:false, namn:'', ean:'', varenr:'', pris:'', innpris:'', mva:s ? s.mva : 25, eining:'stk',
+  const d = {sek:sekId, id:null, key:null, fromCat:false, namn:'', ean:'', varenr:'', pris:'', innpris:'', mva:s ? (s.mva ?? null) : 25, eining:'stk',
     modus:'stk', antal:'', vekt:{proveAntal:'10', proveVekt:'', total:'', tara:'', unit:'g'}, merknad:'', lagreICat:true};
   if (src && src.item){
     const it = src.item;
@@ -1475,8 +1475,8 @@ function formHTML(d){
       <label>Pris inkl. mva (kr)${d.fromCat ? '' : ' – kan stå tom'}<input data-f="pris" id="f-pris" type="text" inputmode="decimal" value="${esc(fmtIn(d.pris))}" autocomplete="off" ${d.fromCat ? '' : 'placeholder="Veit ikkje"'}></label>
       <label>Eining<select data-f="eining">${EININGAR.map(e => `<option ${e === d.eining ? 'selected' : ''}>${e}</option>`).join('')}</select></label>
     </div>
-    <div class="lbl">Mva-sats</div>
-    <div class="chips">${MVA_SATSAR.map(m => `<button type="button" class="chip ${+d.mva === m ? 'on' : ''}" data-act="f-mva" data-v="${m}">${m} %</button>`).join('')}</div>
+    <div class="lbl">Mva-sats${d.mva == null || d.mva === '' ? ' <span style="color:var(--err);font-weight:600">– vel for denne vara (15 % mat og drikke, 25 % anna)</span>' : ''}</div>
+    <div class="chips">${MVA_SATSAR.map(m => `<button type="button" class="chip ${d.mva != null && d.mva !== '' && +d.mva === m ? 'on' : ''}" data-act="f-mva" data-v="${m}">${m} %</button>`).join('')}</div>
     <div class="lbl">Teljemåte</div>
     <div class="seg"><button type="button" data-act="f-modus" data-v="stk" class="${d.modus === 'stk' ? 'on' : ''}">Tel</button><button type="button" data-act="f-modus" data-v="vekt" class="${d.modus === 'vekt' ? 'on' : ''}">Vekt → tal (skruar o.l.)</button></div>
     ${d.modus === 'stk' ? `<div class="antal-row"><button type="button" class="btn" data-act="f-minus">−</button><input id="f-antal" data-f="antal" type="text" inputmode="decimal" value="${esc(fmtIn(d.antal))}" placeholder="0" autocomplete="off" enterkeyhint="done"><button type="button" class="btn" data-act="f-plus">+</button></div>`
@@ -1510,7 +1510,7 @@ function updateCalc(){
   if (STAFF) { s.innerHTML = `= <b>${qty(a)} ${esc(d.eining)}</b>${isNaN(p) && String(d.pris || '').trim() === '' ? ' <span style="opacity:.8;font-size:13px">· utan pris</span>' : ''}`; return; }
   if (isNaN(p)) { s.innerHTML = `${qty(a)} ${esc(d.eining)} – <span style="opacity:.8">manglar pris</span>`; return; }
   const c = lineCalc({antal:a, pris:p, mva:d.mva, innpris:d.innpris, sek:d.sek});
-  s.innerHTML = `${qty(a)} ${esc(d.eining)} × ${kr(p)} = <b>${kr(c.inkl)} kr</b> <span style="opacity:.8;font-size:13px">inkl. ${d.mva} % mva</span>`;
+  s.innerHTML = `${qty(a)} ${esc(d.eining)} × ${kr(p)} = <b>${kr(c.inkl)} kr</b> <span style="opacity:.8;font-size:13px">${d.mva == null || d.mva === '' ? '· vel mva-sats' : 'inkl. ' + d.mva + ' % mva'}</span>`;
 }
 function showForm(d, focus){
   draft = d;
@@ -1529,6 +1529,7 @@ function afterSek(){
 }
 function handleCode(raw){
   const code = String(raw || '').trim(); if (!code) return;
+  if (/#kople=/.test(code) || /^https?:\/\/\S+\/telling\/tilsett\/?$/.test(code)){ koplFraKode(code); return true; }
   const m = /^KRB-([A-Z0-9]+)$/i.exec(code) || (sekById(code.toUpperCase()) && /^[A-Z]\d{2}$/i.test(code) ? [0, code] : null);
   if (m){ const id = m[1].toUpperCase(); if (sekById(id)){ toast('Opnar ' + id + ' ' + sekById(id).namn); go('sek-' + id); return true; } }
   if (route.v !== 'sek'){ toast('Vel seksjon først – skann koden på tellelista eller trykk på kartet', 'err'); return; }
@@ -1558,6 +1559,7 @@ function saveDraft(){
   if (!namn) { toast('Skriv inn varenamn', 'err'); const e = $('[data-f=namn]'); if (e) e.focus(); return; }
   const antal = draftAntal(d);
   if (!(antal > 0)) { toast(d.modus === 'vekt' ? 'Fyll inn prøve og totalvekt' : 'Skriv inn mengd', 'err'); const e = $(d.modus === 'vekt' ? '#f-total' : '#f-antal'); if (e) e.focus(); return; }
+  if (d.mva == null || d.mva === '' || !MVA_SATSAR.includes(+d.mva)) { toast('Vel mva-sats for vara', 'err'); const e = $('[data-act=f-mva]'); if (e) e.scrollIntoView({block:'center'}); return; }
   const prisRaw = String(d.pris ?? '').trim();
   const pris = prisRaw === '' ? null : parseNum(prisRaw);
   if (pris !== null && (isNaN(pris) || pris < 0)) { toast('Ugyldig pris', 'err'); const e = $('#f-pris'); if (e) e.focus(); return; }
@@ -2277,18 +2279,46 @@ function kopleLenke(){
   const b64 = utf8ToB64(JSON.stringify({t:getToken(), o:g.owner, r:g.repo, b:g.branch, d:g.dir, id:T.id})).replace(/=+$/, '').replace(/\+/g, '-').replace(/\//g, '_');
   return staffUrl() + '#kople=' + b64;
 }
-function handleKople(){
-  const m = /^#kople=([A-Za-z0-9_\-+/=]+)/.exec(location.hash || '');
+const IOS = /iPhone|iPad|iPod/.test(navigator.userAgent) || (navigator.platform === 'MacIntel' && navigator.maxTouchPoints > 1);
+const STANDALONE = navigator.standalone === true || (window.matchMedia && matchMedia('(display-mode: standalone)').matches);
+function parseKople(str){
+  const m = /#kople=([A-Za-z0-9_\-+/=]+)/.exec(String(str || ''));
   if (!m) return null;
-  try{
-    const p = JSON.parse(b64ToUtf8(m[1].replace(/-/g, '+').replace(/_/g, '/')));
-    if (p.t) setToken(p.t);
-    lsSet(LS.gh, {owner:p.o || GH_DEF.owner, repo:p.r || GH_DEF.repo, branch:p.b || 'main', dir:p.d || 'data'});
-    if (p.id) lsSet(LS.active, String(p.id));
-    history.replaceState(null, '', location.pathname + location.search);
-    return 'ok';
-  }catch(e){ history.replaceState(null, '', location.pathname + location.search); return 'feil'; }
+  try{ const p = JSON.parse(b64ToUtf8(m[1].replace(/-/g, '+').replace(/_/g, '/'))); return p && typeof p === 'object' ? p : false; }catch(e){ return false; }
 }
+function setKople(p){
+  if (p.t) setToken(p.t);
+  lsSet(LS.gh, {owner:p.o || GH_DEF.owner, repo:p.r || GH_DEF.repo, branch:p.b || 'main', dir:p.d || 'data'});
+  if (p.id) lsSet(LS.active, String(p.id));
+}
+function handleKople(){
+  const p = parseKople(location.hash);
+  if (p === null) return null;
+  history.replaceState(null, '', location.pathname + location.search);
+  if (!p || !p.t) return 'feil';
+  setKople(p); return 'ok';
+}
+/* Kople til frå ein skanna eller innlimt kople-kode – trengst på iPhone, der appen på heimeskjermen har eige lager, skilt frå Safari */
+async function koplFraKode(code){
+  const p = parseKople(code);
+  if (!p || !p.t){
+    if (/\/telling\/tilsett\/?$/.test(String(code || '').trim())) return toast('Denne koden opnar berre appen. Skann kople-koden – frå plakaten på bakrommet eller skjermen til den som styrer teljinga.', 'err');
+    return toast('Det var ikkje ein kople-kode', 'err');
+  }
+  setKople(p); SY.known = {}; SY.dirSha = null; SY.legacySha = null; SYC.sha = null;
+  if (p.id && String(p.id) !== T.id) await openTelling(String(p.id));
+  markAllPending(); toast('Koplar til …');
+  await syncNow(true); closeModal(); render();
+  toast(SYNC.status === 'ok' ? 'Telefonen er kopla til teljinga ✓' : 'Kopla til – ' + (SYNC.err || 'deler når nettet er tilbake'), SYNC.status === 'ok' ? 'ok' : '');
+}
+function kopleInnModal(){
+  openModal(`<h2>Lim inn kople-lenke</h2><p class="small muted" style="margin-top:0">Lim inn lenka du har fått frå den som styrer teljinga.</p>
+    <textarea id="kl-inn" style="width:100%;height:110px" autocomplete="off"></textarea>
+    <div class="btnrow"><button class="btn" data-act="modal-close">Avbryt</button><button class="btn primary" data-act="kople-inn-ok">Kople til</button></div>`);
+  setTimeout(() => { const e = $('#kl-inn'); if (e) e.focus(); }, 50);
+}
+const KOPLE_KNAPPAR = `<div class="btnrow"><button class="btn primary" data-act="kople-skann">📷 Skann kople-koden</button><button class="btn" data-act="kople-inn">Lim inn lenke</button></div>`;
+const IOS_HEIM_TXT = 'På iPhone har appen på heimeskjermen eige lager, skilt frå Safari. Har du lagt appen på heimeskjermen, må du kople han til éin gong der: trykk «📷 Skann kople-koden» og skann QR-koden på kople-plakaten eller skjermen til den som styrer teljinga.';
 async function kopleQR(){
   if (!getToken()) return toast('Slå på deling først', 'err');
   try{ await loadScript(QR_URLS); }catch(e){ return toast(e.message, 'err'); }
@@ -2310,7 +2340,7 @@ function viewOppsettStaff(){
   <div class="card"><h2>Teljing</h2><p class="small" style="margin:0">${esc(T.meta.namn)} · kode ${esc(T.id)}</p>${locked() ? '<p class="small"><span class="tag ok">Avslutta</span></p>' : ''}</div>
   <div class="card"><h2>Kopling</h2>${ghOn()
     ? `<p class="small" style="margin-top:0">${SYNC.status === 'feil' ? '<span class="tag warn">Feil</span> ' + esc(SYNC.err) : '<span class="tag ok">Kopla til</span> ' + (SYNC.last ? 'Sist delt ' + esc(fmtDT(SYNC.last)) : '')}</p><div class="btnrow"><button class="btn" data-act="g-sync">Synk no</button></div>`
-    : `<p class="small" style="margin-top:0"><span class="tag warn">Ikkje kopla til</span> Teljinga vert berre lagra på denne telefonen.</p><p class="small muted">Be den som styrer teljinga om å vise QR-koden «Kople til telefon», og skann han med kameraet.</p>`}
+    : `<p class="small" style="margin-top:0"><span class="tag warn">Ikkje kopla til</span> Teljinga vert berre lagra på denne telefonen.</p><p class="small muted">Trykk «📷 Skann kople-koden» og skann QR-koden på kople-plakaten eller skjermen til den som styrer teljinga.</p>${KOPLE_KNAPPAR}${IOS ? '<p class="tiny muted">' + IOS_HEIM_TXT + '</p>' : ''}`}
     <details style="margin-top:10px"><summary class="small">Legg inn nøkkel manuelt</summary><label>Tilgangsnøkkel<input id="g-token" type="password" value="${esc(tok)}" autocomplete="off"></label><div class="btnrow"><button class="btn" data-act="s-token">Lagre</button></div></details></div>
   ${tryggHTML()}
   <div class="card"><h2>Sikkerheitskopi</h2><p class="small muted" style="margin-top:0">Er telefonen ikkje kopla til, kan du laste ned linjene og sende fila til den som styrer teljinga.</p><button class="btn" data-act="json-ut">⬇ Last ned linjene (JSON)</button></div>
@@ -2337,7 +2367,7 @@ function hjSeksjon(id){
 <li><b>Handskannar (valfritt):</b> ein Bluetooth- eller USB-skannar kan brukast i staden for kameraet.</li></ul>`,
 'hj-kort':`<h2>Kortversjon for tilsette</h2>
 <p>Ti steg er alt du treng for å telje.</p><ol class="hj-steg">
-<li><b>Opne appen</b> frå heimeskjermen. Første gong: skann QR-koden «Kople til telefon» frå den som styrer teljinga, og legg appen til på heimeskjermen.</li>
+<li><b>Opne appen</b> frå heimeskjermen. Første gong: skann QR-koden «Kople til telefon» frå den som styrer teljinga, og legg appen til på heimeskjermen. På iPhone må du deretter opne appen frå heimeskjermen, trykkje «📷 Skann kople-koden» og skanne koden éin gong til.</li>
 <li><b>Vel namnet ditt.</b> Appen spør «Kven tel?». Seinare byter du med namneknappen øvst til høgre.</li>
 <li><b>Opne reolen.</b> Trykk på reolen på kartet, eller trykk «📷 Skann reol-kode på tellelista» og skann strekkoden øvst på papirlista.</li>
 <li><b>Finn vara.</b> Trykk «📷 Skann strekkode» og skann vara. Har ho ingen strekkode, skriv namnet i søkefeltet og vel i lista.</li>
@@ -2486,7 +2516,8 @@ ${STAFF ? '' : '<h3>Kvar tala ligg</h3><p>I repoet ligg teljinga i mappa <i>data
 <tr><td><b>Ny telefon midt i teljinga</b></td><td>Skann QR-koden «Kople til telefon». Alt som er talt blir henta frå GitHub.</td></tr>
 <tr><td><b>Ein telefon blir borte eller går i stykke</b></td><td>Alt han har delt, ligg i GitHub. Berre linjer som ikkje var delte, er borte.</td></tr>
 <tr><td><b>«⚠ Lagringsfeil»</b></td><td>Ikkje lukk appen. Sjekk at du ikkje er i privat modus, last ned sikkerheitskopi under Oppsett, og si frå.</td></tr>
-<tr><td><b>«● Lokalt»</b></td><td>Telefonen er ikkje kopla til. Skann QR-koden «Kople til telefon».</td></tr></tbody></table></div>`
+<tr><td><b>«● Lokalt»</b></td><td>Telefonen er ikkje kopla til. Trykk «📷 Skann kople-koden» på kartet eller i Oppsett, og skann kople-koden.</td></tr>
+<tr><td><b>Appen på heimeskjermen deler ikkje (iPhone)</b></td><td>iPhone gjev appen på heimeskjermen eige lager, skilt frå Safari. Opne appen frå heimeskjermen og trykk «📷 Skann kople-koden» éin gong. Linjer du har talt der før, blir sende med ein gong.</td></tr></tbody></table></div>`
   };
   return S[id] || '';
 }
@@ -2559,7 +2590,7 @@ function plakatHTML(qrSvg){
   const p1 = `<div class="page"><div class="plk">
     <div class="ph"><div class="t"><div class="pf">${firm} · Varetelling</div><h1>Slik tel du</h1><p class="pl">Éi linje per vare på kvar reol. Namnet ditt, dato og klokkeslett kjem av seg sjølv.</p></div>${qbox()}</div>
     ${warn}
-    <div class="pfirst"><b>Første gong:</b> skann QR-koden med kameraet på telefonen. Appen opnar seg og er kopla til teljinga. Legg han så til på heimeskjermen – iPhone: Del → Legg til på Heim-skjerm · Android: ⋮ → Legg til på startskjermen.</div>
+    <div class="pfirst"><b>Første gong:</b> skann QR-koden med kameraet. Appen opnar seg og er kopla til. Legg han på heimeskjermen (iPhone: Del → Legg til på Heim-skjerm · Android: ⋮ → Legg til på startskjermen). <b>iPhone:</b> opne appen frå heimeskjermen, trykk «📷 Skann kople-koden» og skann denne koden éin gong til.</div>
     <ol>${STEPS.map((s, i) => `<li class="${i === STEPS.length - 1 ? 'last' : ''}"><span class="n">${i + 1}</span><div class="st"><b>${s[0]}</b>${s[1]}</div></li>`).join('')}</ol>
     ${foot}</div></div>`;
   const BADGES = [
@@ -2600,6 +2631,63 @@ async function koplePlakat(){
 }
 
 
+
+/* ------------------------------ nye rom teikna på kartet ------------------------------ */
+const ROM_KART_POS = [['under', 'Under butikken'], ['over', 'Over jernvarerommet'], ['venstre', 'Til venstre for bygget'], ['hogre', 'Til høgre for bygget']];
+function kartRomLayout(){
+  const sek = allSek();
+  const grp = romList().map(r => ({r, ss:sek.filter(s => s.omr === r.id && !HITS[s.id]), side:(T.rom && T.rom[r.id] && T.rom[r.id].kart) || 'under'})).filter(g => g.ss.length);
+  const X0 = 152, Y0 = 152, X1 = 778, Y1 = 1130, GAP = 26, PAD = 12, HEAD = 34, CH = 50, CG = 8;
+  const boxes = []; const used = {under:0, over:0, venstre:0, hogre:0};
+  const sizeFor = (side, n) => {
+    const w = (side === 'under' || side === 'over') ? (X1 - X0) : 300, cols = (side === 'under' || side === 'over') ? 4 : 2;
+    const rows = Math.ceil(n / cols), h = HEAD + rows * CH + (rows - 1) * CG + PAD;
+    return {w, h, cols, cw:(w - 2 * PAD - (cols - 1) * CG) / cols};
+  };
+  ['under', 'over', 'venstre', 'hogre'].forEach(side => {
+    const gs = grp.filter(g => g.side === side); if (!gs.length) return;
+    const sz = gs.map(g => sizeFor(side, g.ss.length));
+    const total = sz.reduce((a, z) => a + z.h, 0) + GAP * (gs.length - 1);
+    let y = side === 'under' ? Y1 + GAP : side === 'over' ? Y0 - GAP - total : Y0;
+    gs.forEach((g, i) => {
+      const z = sz[i], x = side === 'venstre' ? X0 - GAP - z.w : side === 'hogre' ? X1 + GAP : X0;
+      boxes.push({...g, x, y, ...z, PAD, HEAD, CH, CG}); y += z.h + GAP;
+    });
+    used[side] = side === 'venstre' || side === 'hogre' ? 300 + GAP : total + GAP;
+  });
+  const vb = {x:X0 - used.venstre, y:Y0 - used.over, w:(X1 - X0) + used.venstre + used.hogre, h:(Y1 - Y0) + used.over + used.under};
+  return {boxes, vb};
+}
+function kartRomSVG(st, opt, L){
+  const cut = (t, n) => { t = String(t || ''); return t.length > n ? t.slice(0, n - 1) + '…' : t; };
+  let out = '';
+  L.boxes.forEach(b => {
+    const tittel = b.r.fast && b.r.id !== 'X' ? b.r.namn + ' · ekstra reolar' : b.r.namn;
+    out += `<g class="xrom"><rect x="${b.x}" y="${b.y}" width="${b.w}" height="${b.h}" rx="8" fill="#F1EEE6" stroke="#263238" stroke-width="3"/>
+      <text class="rl" x="${b.x + b.PAD}" y="${b.y + 23}" style="font-size:16px">${esc(cut(tittel, b.w > 400 ? 52 : 28))}</text>`;
+    b.ss.forEach((s, i) => {
+      const c = i % b.cols, r = Math.floor(i / b.cols);
+      const x = b.x + b.PAD + c * (b.cw + b.CG), y = b.y + b.HEAD + r * (b.CH + b.CG);
+      const ss = st[s.id] || {n:0, state:0};
+      const cls = opt.cls ? opt.cls(s.id) : 'st' + ss.state;
+      out += `<rect x="${x}" y="${y}" width="${b.cw}" height="${b.CH}" rx="6" fill="#fff" stroke="#9AA4A8" stroke-width="1.5"/>
+        <text class="ml" x="${x + 9}" y="${y + 20}" style="font-weight:700">${esc(s.id)}</text>
+        <text class="ml sm" x="${x + 9}" y="${y + 38}">${esc(cut(s.namn, Math.floor(b.cw / 7.2)))}</text>
+        <rect class="hit ${cls}" x="${x}" y="${y}" width="${b.cw}" height="${b.CH}" rx="6" data-act="${opt.act || 'sek'}" data-id="${s.id}"><title>${s.id} ${esc(s.namn)}</title></rect>`;
+      const bx = x + b.cw - 16, by = y + 16;
+      if (opt.badge){
+        const label = opt.badge(s.id);
+        if (label != null) out += `<g class="badge ${cls}"><rect x="${bx - 15}" y="${by - 8.5}" width="30" height="17" rx="8.5" fill="#263238"/><text x="${bx}" y="${by + 3.7}" text-anchor="middle">${esc(label)}</text></g>`;
+      } else if (ss.n || ss.ferdig){
+        const label = ss.ferdig ? '✓' : (ss.n > 99 ? '99+' : ss.n);
+        out += `<g class="badge st${ss.state}"><circle cx="${bx}" cy="${by}" r="${String(label).length > 2 ? 12 : 9.5}"/><text x="${bx}" y="${by + 3.7}" text-anchor="middle">${label}</text></g>`;
+      }
+    });
+    out += `</g>`;
+  });
+  return out;
+}
+
 /* ------------------------------ ROM OG REOLAR (redigerbare, delte via _meta-fila) ------------------------------ */
 const ROM_FAST = ['J','B','L','K'];
 const ROM_KODAR = 'ACDEFGHMNOPRSTUVWYZ';
@@ -2637,30 +2725,34 @@ function romEditorHTML(){
       const eigne = ss.filter(s => T.seksjonar[s.id]).length;
       return `<details class="rom-ed" ${!r.fast || (eigne && r.id !== 'X') || r.id === 'X' ? 'open' : ''}><summary><span class="tag">${r.id}</span> ${esc(r.namn)} <span class="muted small">· ${ss.length} ${ss.length === 1 ? 'reol' : 'reolar'}${r.fast && r.id !== 'X' ? ' · på kartet' : ''}</span></summary>
         ${!r.fast ? `<div class="btnrow" style="margin:6px 0"><button class="btn" data-act="rom-endre" data-id="${r.id}" ${L ? 'disabled' : ''}>✎ Endre eller slett rommet</button></div>` : ''}
-        ${ss.map(s => { const eigen = !!T.seksjonar[s.id]; return `<div class="itemrow" ${eigen && !L ? `data-act="reol-endre" data-id="${s.id}"` : 'style="cursor:default"'}><span class="tag">${s.id}</span><div class="mid"><b>${esc(s.namn)}</b><span>${esc(s.stad || '')}${s.stad ? ' · ' : ''}${s.mva} %${eigen ? '' : ' · fast på kartet'}</span></div>${eigen && !L ? '<span class="muted">✎</span>' : ''}</div>`; }).join('')}
+        ${ss.map(s => { const eigen = !!T.seksjonar[s.id]; return `<div class="itemrow" ${eigen && !L ? `data-act="reol-endre" data-id="${s.id}"` : 'style="cursor:default"'}><span class="tag">${s.id}</span><div class="mid"><b>${esc(s.namn)}</b><span>${esc(s.stad || '')}${s.stad ? ' · ' : ''}${mvaTxt(s.mva)}${eigen ? '' : ' · fast på kartet'}</span></div>${eigen && !L ? '<span class="muted">✎</span>' : ''}</div>`; }).join('')}
         ${r.id !== 'X' ? `<div class="btnrow"><button class="btn" data-act="reol-ny" data-rom="${r.id}" ${L ? 'disabled' : ''}>+ Ny reol i ${esc(r.namn)}</button></div>` : ''}
       </details>`;
     }).join('')}
     <div class="btnrow"><button class="btn primary" data-act="rom-ny" ${L ? 'disabled' : ''}>+ Nytt rom</button></div>
     ${L ? '<p class="tiny muted">Teljinga er avslutta. Opne ho att under Rapport for å endre rom og reolar.</p>' : ''}</div>`;
 }
-const mvaSel = (id, v) => `<select id="${id}">${MVA_SATSAR.map(m => `<option value="${m}" ${+v === m ? 'selected' : ''}>${m} %</option>`).join('')}</select>`;
+const mvaSel = (id, v) => `<select id="${id}"><option value="" ${v == null || v === '' ? 'selected' : ''}>Blanda – vel for kvar vare</option>${MVA_SATSAR.map(m => `<option value="${m}" ${v != null && v !== '' && +v === m ? 'selected' : ''}>${m} %</option>`).join('')}</select>`;
+const mvaVal2 = v => v === '' || v == null ? null : +v;
+const mvaTxt = v => v == null || v === '' ? 'blanda mva' : v + ' %';
 function romNyModal(){
   if (locked()) return toast('Teljinga er avslutta', 'err');
   const kode = nyRomKode(); if (!kode) return toast('Det er ikkje plass til fleire rom', 'err');
   openModal(`<h2>Nytt rom</h2>
     <label>Namn på rommet<input id="rn-namn" type="text" placeholder="T.d. Lager 2 – kjellaren" autocomplete="off"></label>
-    <div class="row2"><label>Tal på reolar<input id="rn-n" type="text" inputmode="numeric" value="1"></label><label>Standard mva-sats${mvaSel('rn-mva', 25)}</label></div>
+    <div class="row2"><label>Tal på reolar<input id="rn-n" type="text" inputmode="numeric" value="1"></label><label>Mva-sats${mvaSel('rn-mva', null)}</label></div>
+    <label>Plassering på kartet<select id="rn-kart">${ROM_KART_POS.map(([k, t]) => `<option value="${k}">${t}</option>`).join('')}</select></label>
+    <p class="tiny muted">«Blanda» passar for lager med både mat og andre varer: då vel den som tel mva-sats for kvar vare som ikkje er i varelista. Varer frå kassa har alltid rett sats.</p>
     <p class="tiny muted">Rommet får kode <b>${kode}</b>, og reolane blir ${kode}01, ${kode}02 … Du kan gje reolane eigne namn etterpå.</p>
     <div class="btnrow"><button class="btn" data-act="modal-close">Avbryt</button><button class="btn primary" data-act="rom-ny-ok">Legg til rom</button></div>`);
   setTimeout(() => { const e = $('#rn-namn'); if (e) e.focus(); }, 50);
 }
 function romNyOk(){
   const namn = $('#rn-namn').value.trim(); if (!namn) return toast('Skriv inn namn på rommet', 'err');
-  const n = Math.max(1, Math.min(40, parseInt($('#rn-n').value, 10) || 1)), mva = +$('#rn-mva').value;
+  const n = Math.max(1, Math.min(40, parseInt($('#rn-n').value, 10) || 1)), mva = mvaVal2($('#rn-mva').value), kart = $('#rn-kart').value;
   const kode = nyRomKode(); if (!kode) return toast('Det er ikkje plass til fleire rom', 'err');
   const now = nowISO();
-  T.rom[kode] = {id:kode, namn, oppretta:now, updatedAt:now, deleted:false};
+  T.rom[kode] = {id:kode, namn, kart, oppretta:now, updatedAt:now, deleted:false};
   for (let i = 1; i <= n; i++){ const id = kode + pad(i); T.seksjonar[id] = {id, namn: n === 1 ? namn : 'Reol ' + i, stad:namn, mva, omr:kode, updatedAt:now, deleted:false}; }
   saveLocal(); closeModal(); render(); toast(`${namn} lagt til med ${n} ${n === 1 ? 'reol' : 'reolar'} (${kode}01${n > 1 ? '–' + kode + pad(n) : ''})`, 'ok');
 }
@@ -2669,6 +2761,7 @@ function romEndreModal(id){
   const ss = allSek().filter(s => s.omr === id), tal = ss.reduce((a, s) => a + reolLinjer(s.id), 0);
   openModal(`<h2>Endre rom ${id}</h2>
     <label>Namn på rommet<input id="re-namn" type="text" value="${esc(r.namn)}" autocomplete="off"></label>
+    <label>Plassering på kartet<select id="re-kart">${ROM_KART_POS.map(([k, t]) => `<option value="${k}" ${(r.kart || 'under') === k ? 'selected' : ''}>${t}</option>`).join('')}</select></label>
     <div class="btnrow"><button class="btn" data-act="modal-close">Avbryt</button><button class="btn primary" data-act="rom-endre-ok" data-id="${id}">Lagre</button></div>
     <hr style="border:0;border-top:1px solid var(--line);margin:14px 0">
     ${tal ? `<p class="small muted">Rommet kan ikkje slettast fordi det er talt ${tal} ${tal === 1 ? 'linje' : 'linjer'} i reolane. Flytt eller slett linjene først.</p>`
@@ -2676,7 +2769,7 @@ function romEndreModal(id){
 }
 function romEndreOk(id){
   const r = T.rom[id]; if (!r) return; const namn = $('#re-namn').value.trim(); if (!namn) return toast('Skriv inn namn', 'err');
-  T.rom[id] = {...r, namn, updatedAt:nowISO()}; saveLocal(); closeModal(); render(); toast('Rommet er endra', 'ok');
+  T.rom[id] = {...r, namn, kart:$('#re-kart').value, updatedAt:nowISO()}; saveLocal(); closeModal(); render(); toast('Rommet er endra', 'ok');
 }
 function romSlett(id){
   const r = T.rom[id]; if (!r) return;
@@ -2692,13 +2785,13 @@ function reolModal(id, romId){
   const s = id ? T.seksjonar[id] : null;
   const rom = s ? (romOk(s.omr) ? s.omr : 'X') : romId;
   const nyId = s ? s.id : (rom === 'X' ? nyReolId('X') : nyReolId(rom));
-  const defMva = s ? s.mva : (allSek().filter(x => x.omr === rom).map(x => x.mva)[0] ?? 25);
+  const f0 = allSek().find(x => x.omr === rom); const defMva = s ? s.mva : (f0 ? f0.mva : null);
   const tal = s ? reolLinjer(s.id) : 0;
   openModal(`<h2>${s ? 'Endre reol ' + s.id : 'Ny reol ' + nyId}</h2>
     <label>Namn på reolen<input id="rl-namn" type="text" value="${esc(s ? s.namn : '')}" placeholder="T.d. Hylle ved døra" autocomplete="off"></label>
     <label>Plassering (valfritt)<input id="rl-stad" type="text" value="${esc(s ? s.stad || '' : '')}" placeholder="T.d. venstre vegg"></label>
     <div class="row2"><label>Rom<select id="rl-rom">${romList().filter(r => r.id !== 'X' || rom === 'X').map(r => `<option value="${r.id}" ${r.id === rom ? 'selected' : ''}>${esc(r.namn)}</option>`).join('')}</select></label>
-    <label>Standard mva-sats${mvaSel('rl-mva', defMva)}</label></div>
+    <label>Mva-sats${mvaSel('rl-mva', defMva)}</label></div>
     ${s ? '<p class="tiny muted">Koden ' + s.id + ' blir ikkje endra når du flyttar reolen til eit anna rom.</p>' : ''}
     <div class="btnrow"><button class="btn" data-act="modal-close">Avbryt</button><button class="btn primary" data-act="reol-ok" data-id="${s ? s.id : ''}" data-ny="${nyId}">${s ? 'Lagre' : 'Legg til reol'}</button></div>
     ${s ? `<hr style="border:0;border-top:1px solid var(--line);margin:14px 0">${tal ? `<p class="small muted">Reolen kan ikkje slettast fordi det er talt ${tal} ${tal === 1 ? 'linje' : 'linjer'} der.</p>` : `<button class="btn danger wide" data-act="reol-slett" data-id="${s.id}">Slett reolen</button>`}` : ''}`);
@@ -2706,7 +2799,7 @@ function reolModal(id, romId){
 }
 function reolOk(el){
   const namn = $('#rl-namn').value.trim(); if (!namn) return toast('Skriv inn namn på reolen', 'err');
-  const rom = $('#rl-rom').value, mva = +$('#rl-mva').value, stad = $('#rl-stad').value.trim(), now = nowISO();
+  const rom = $('#rl-rom').value, mva = mvaVal2($('#rl-mva').value), stad = $('#rl-stad').value.trim(), now = nowISO();
   const id = el.dataset.id;
   if (id){ const s = T.seksjonar[id]; if (!s) return; T.seksjonar[id] = {...s, namn, stad, mva, omr:rom, updatedAt:now}; saveLocal(); closeModal(); render(); return toast('Reolen er endra', 'ok'); }
   let nid = el.dataset.ny; if (SEKSJONAR.some(s => s.id === nid) || (T.seksjonar[nid] && !T.seksjonar[nid].deleted)) nid = nyReolId(rom);
@@ -2756,6 +2849,7 @@ function viewOppsett(){
     <label>Tilgangsnøkkel (fine-grained token, Contents: Read and write)<input id="g-token" type="password" value="${esc(tok)}" autocomplete="off" placeholder="github_pat_…"></label>
     <div class="tiny muted">Nøkkelen vert lagra berre i nettlesaren på denne eininga. Er han alt lagt inn i den gamle varetellingsappen, vert han brukt her òg.</div>
     <div class="btnrow"><button class="btn primary" data-act="g-lagre">Lagre og test</button>${tok ? '<button class="btn" data-act="g-sync">Synk no</button><button class="btn danger" data-act="g-av">Slå av deling</button>' : ''}</div>
+    ${tok ? '' : `<p class="tiny muted">Eller kople til med ein kople-kode frå ei anna eining (t.d. når appen ligg på heimeskjermen på iPhone):</p>${KOPLE_KNAPPAR}`}
     <div id="g-status" class="small" style="margin-top:8px">${ghOn() ? (SYNC.status === 'feil' ? '<span class="tag warn">Feil</span> ' + esc(SYNC.err) : (SYNC.last ? '<span class="tag ok">OK</span> Sist delt ' + esc(fmtDT(SYNC.last)) : '')) : '<span class="tag">Av</span>'}</div></div>
   <div class="card"><h2>Versjon for tilsette</h2>
     <p class="small muted" style="margin-top:0">Tilsett-versjonen har berre kart og teljing. Han viser ingen kronebeløp, rapportar eller oppsett. Nye varer kan leggjast inn med namn og strekkode.</p>
@@ -2829,7 +2923,7 @@ const ACT = {
   'kode-ok':() => handleCode($('#kode').value),
   'velg-vare':el => { const it = CAT.items[el.dataset.k]; if (it) showForm(newDraft(route.id, {item:it})); $('#kode').value = ''; },
   'ny-vare':() => { const q = $('#kode').value; $('#kode').value = ''; showForm(newDraft(route.id, {text:q})); },
-  'f-mva':el => { draft.mva = +el.dataset.v; document.querySelectorAll('[data-act=f-mva]').forEach(b => b.classList.toggle('on', b === el)); updateCalc(); },
+  'f-mva':el => { draft.mva = +el.dataset.v; document.querySelectorAll('[data-act=f-mva]').forEach(b => b.classList.toggle('on', b === el)); const lb = el.closest('.chips') && el.closest('.chips').previousElementSibling; if (lb && lb.classList.contains('lbl')) lb.textContent = 'Mva-sats'; updateCalc(); },
   'f-modus':el => { draft.modus = el.dataset.v; if (draft.modus === 'stk' && draft.vekt && vektAntal(draft.vekt) > 0 && !(parseNum(draft.antal) > 0)) draft.antal = vektAntal(draft.vekt); showForm(draft, draft.modus === 'vekt' ? (parseNum(draft.vekt.proveVekt) > 0 ? '#f-total' : '#f-prove') : '#f-antal'); },
   'f-vunit':el => { draft.vekt.unit = el.dataset.v; showForm(draft, '#f-total'); },
   'f-plus':() => { const n = parseNum(draft.antal) || 0; draft.antal = round2(n + 1); $('#f-antal').value = fmtIn(draft.antal); updateCalc(); },
@@ -2855,6 +2949,10 @@ const ACT = {
   'an-excel':() => analyseExcel(),
   'kople-qr':() => kopleQR(),
   'kople-plakat':() => koplePlakat(),
+  'kople-skann':() => Scanner.open(code => koplFraKode(code)),
+  'kople-inn':() => kopleInnModal(),
+  'kople-hint-ok':() => { closeModal(); if (!curTellar()) velTellar(); },
+  'kople-inn-ok':() => koplFraKode($('#kl-inn').value),
   'rom-ny':() => romNyModal(),
   'rom-ny-ok':() => romNyOk(),
   'rom-endre':el => romEndreModal(el.dataset.id),
@@ -2997,10 +3095,13 @@ $('#view').innerHTML = '<div class="card muted">Opnar teljinga…</div>';
   if (STORE.migratedIds.includes(T.id)){ persistedUA = {}; saveLocal(true); }
   route = parseHash();
   render();
-  if (kopla === 'ok') setTimeout(() => toast('Telefonen er kopla til teljinga', 'ok'), 300);
+  if (kopla === 'ok') setTimeout(() => {
+    toast('Telefonen er kopla til teljinga', 'ok');
+    if (IOS && !STANDALONE) openModal(`<h2>Kopla til ✓</h2><p>Du kan telje her i Safari no.</p><p><b>Vil du ha appen på heimeskjermen?</b> Trykk Del → «Legg til på Heim-skjerm». Opne han så frå heimeskjermen og trykk <b>«📷 Skann kople-koden»</b>, og skann QR-koden éin gong til. iPhone held appen på heimeskjermen åtskild frå Safari.</p><div class="btnrow"><button class="btn primary" data-act="kople-hint-ok">OK</button></div>`);
+  }, 300);
   if (kopla === 'feil') setTimeout(() => toast('Lenka for kopling var ugyldig', 'err'), 300);
   if (ghOn()) syncNow(true);
-  if (!curTellar()) setTimeout(() => velTellar(), 400);
+  if (!curTellar() && !(kopla === 'ok' && IOS && !STANDALONE)) setTimeout(() => velTellar(), 400);
   setInterval(() => { if (document.visibilityState === 'visible' && ghOn() && !SYNC.busy) syncNow(); }, POLL_MS);
   setInterval(() => lagKopi(false), window.KRB_TEST_FAST ? 4000 : 15 * 60000);
   setTimeout(() => Scanner.preload(), window.KRB_TEST_FAST ? 300 : 3000);
