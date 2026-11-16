@@ -179,7 +179,11 @@ table.t tr.sum td{font-weight:800;border-top:2px solid var(--slate);border-botto
 #scanner .frame::after{content:"";position:absolute;left:6%;right:6%;top:50%;height:2px;background:#FF4D4D;box-shadow:0 0 8px #FF4D4D}
 #scanner .top{position:absolute;top:calc(env(safe-area-inset-top) + 16px);left:0;right:0;text-align:center;color:#fff;font-weight:600;font-size:16px;text-shadow:0 1px 4px #000}
 #scanner .bot{position:absolute;bottom:calc(env(safe-area-inset-bottom) + 22px);left:0;right:0;display:flex;justify-content:center;gap:12px}
-#scanner .bot .btn{min-width:120px}
+#scanner .bot{flex-wrap:wrap;padding:0 12px}
+#scanner .bot .btn{min-width:0;flex:1 1 40%;max-width:200px}
+#scanner [hidden]{display:none!important}
+#scan-msg{padding:0 18px;line-height:1.35}
+#scan-info{font-size:11px;font-weight:400;opacity:.7;margin-top:6px;padding:0 18px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
 .kv{display:grid;grid-template-columns:auto 1fr;gap:4px 14px;font-size:14.5px}
 .kv dt{color:var(--muted)}
 .kv dd{margin:0;font-weight:600}
@@ -191,6 +195,18 @@ table.t tr.sum td{font-weight:800;border-top:2px solid var(--slate);border-botto
 .itemrow span{font-size:12.5px;color:var(--muted)}
 .hide{display:none!important}
 details summary{cursor:pointer;font-weight:700}
+.hj{scroll-margin-top:70px}
+.hj h2{font-size:19px;margin:0 0 8px}
+.hj h3{font-size:15.5px;margin:16px 0 6px}
+.hj p,.hj li{font-size:15px;line-height:1.5}
+.hj ol,.hj ul{padding-left:22px;margin:6px 0}
+.hj li{margin:4px 0}
+.hj-steg li{margin:7px 0}
+.hj-pill{display:inline-block;border-radius:999px;padding:3px 10px;font-size:13px;font-weight:600;white-space:nowrap}
+.hj-pill.ok{background:#2E8B47;color:#fff}.hj-pill.busy{background:#3d5560;color:#fff}.hj-pill.feil{background:#F2B33D;color:#1E2A30}.hj-pill.av{background:#E4E7E8;color:#1E2A30}
+.hj-flyt{display:flex;flex-wrap:wrap;gap:6px;align-items:center;font-size:13px;color:var(--muted);margin:8px 0 4px}
+.hj-flyt span{border:1px solid #C9C4B8;border-radius:8px;padding:5px 9px;background:#fff;color:var(--txt)}
+.hj-flyt span.on{border:2px solid var(--ochre);background:#FFF6E6;font-weight:700}
 /* ---------- utskrift ---------- */
 #print-root{display:none}
 body.preview #print-root{display:block;position:fixed;inset:0;overflow:auto;background:#7d878b;z-index:100;-webkit-overflow-scrolling:touch}
@@ -247,6 +263,7 @@ body.preview #app,body.preview #nav{display:none}
   <header id="topbar">
     <div class="ttl"><b>KRAMBUA VARETELLING</b><span id="tb-sub"></span></div>
     <button id="sync" class="av" data-act="sync-info" title="Deling">● Lokalt</button>
+    <button id="tb-hjelp" class="pill-btn" data-act="hjelp" title="Brukarhandbok" aria-label="Brukarhandbok" style="padding:6px 10px;font-weight:700">?</button>
     <button id="tb-tellar" class="pill-btn" data-act="vel-tellar"></button>
   </header>
   <main id="view"></main>
@@ -264,8 +281,8 @@ body.preview #app,body.preview #nav{display:none}
 <div id="scanner" hidden>
   <video id="scan-video" playsinline muted autoplay></video>
   <div class="frame"></div>
-  <div class="top">Rett kameraet mot strekkoden</div>
-  <div class="bot"><button class="btn" data-act="scan-torch">Lys</button><button class="btn primary" data-act="scan-close">Lukk</button></div>
+  <div class="top"><div id="scan-msg">Rett kameraet mot strekkoden</div><div id="scan-info"></div></div>
+  <div class="bot"><button class="btn" id="scan-torch" data-act="scan-torch">Lys</button><button class="btn" id="scan-cam" data-act="scan-cam">Byt kamera</button><button class="btn" data-act="scan-manual">Skriv inn</button><button class="btn primary" data-act="scan-close">Lukk</button></div>
 </div>
 <div id="print-root"></div>
 <input type="file" id="file-vareliste" accept=".xlsx,.xls,.csv,.txt,.xlsm" hidden>
@@ -277,7 +294,7 @@ body.preview #app,body.preview #nav{display:none}
    Krambua Varetelling – éi fil, køyrer på GitHub Pages.
    Data: lokalt i nettlesaren + (valfritt) delt via GitHub-repoet.
    ===================================================================== */
-const APP_VER = '2.0';
+const APP_VER = '2.2';
 const MODUS = 'tilsett';
 const STAFF = MODUS === 'tilsett';
 const NAV_ITEMS = STAFF ? ['kart','oppsett'] : ['kart','rapport','analyse','lister','varer','oppsett'];
@@ -1091,49 +1108,171 @@ function barcodeSVG(code, {h=12, mw=0.3, text=true, fs=2.6}={}){
 }
 
 /* ------------------------------ kamera-skannar ------------------------------ */
+/* Tre lesarar, i denne rekkjefølgja:
+   1. Innebygd BarcodeDetector (Chrome på Android, Safari/Chrome på Mac)
+   2. zxing-wasm (same motor som zxing-cpp) via barcode-detector-ponyfill – iPhone, Windows, Linux
+   3. ZXing-js utan TRY_HARDER (TRY_HARDER gjer at han ikkje les frå video)
+   Kameraet blir styrt av appen sjølv: hovudkamera bak, kontinuerleg fokus, høg oppløysing. */
+const SCAN_FORMATS = ['ean_13','ean_8','code_128','upc_a','upc_e','code_39','itf'];
+const BD_URLS = ['https://cdn.jsdelivr.net/npm/barcode-detector@3.2.4/dist/iife/ponyfill.js','https://unpkg.com/barcode-detector@3.2.4/dist/iife/ponyfill.js'];
+const WASM_URLS = ['https://cdn.jsdelivr.net/npm/zxing-wasm@3.1.7/dist/reader/zxing_reader.wasm','https://unpkg.com/zxing-wasm@3.1.7/dist/reader/zxing_reader.wasm'];
+const LS_CAM = 'krb-telling-kamera';
 const Scanner = {
-  active:false, stream:null, timer:null, reader:null, cb:null, torchOn:false,
-  async open(cb){
-    this.cb = cb; this.active = true; $('#scanner').hidden = false;
-    const video = $('#scan-video');
-    if (!navigator.mediaDevices || !navigator.mediaDevices.getUserMedia){ this.close(); return this.fail('Kameraet er ikkje tilgjengeleg her. Appen må opnast via https (GitHub Pages).'); }
-    try{
-      let formats = ['ean_13','ean_8','code_128','upc_a','upc_e','code_39','itf'];
-      let useNative = 'BarcodeDetector' in window;
-      if (useNative){ try{ const sup = await BarcodeDetector.getSupportedFormats(); formats = formats.filter(f => sup.includes(f)); if (!formats.length) useNative = false; }catch(e){ useNative = false; } }
-      if (useNative){
-        const det = new BarcodeDetector({formats});
-        this.stream = await navigator.mediaDevices.getUserMedia({video:{facingMode:{ideal:'environment'}, width:{ideal:1280}, height:{ideal:720}}, audio:false});
-        if (!this.active){ this.stopStream(); return; }
-        video.srcObject = this.stream; await video.play();
-        const loop = async () => {
-          if (!this.active) return;
-          try{ const r = await det.detect(video); if (r && r.length && r[0].rawValue){ return this.found(r[0].rawValue); } }catch(e){}
-          this.timer = setTimeout(loop, 110);
-        };
-        loop(); return;
-      }
-      await loadScript(ZXING_URLS);
-      if (!this.active) return;
-      const hints = new Map(), F = ZXing.BarcodeFormat;
-      hints.set(ZXing.DecodeHintType.POSSIBLE_FORMATS, [F.EAN_13, F.EAN_8, F.CODE_128, F.UPC_A, F.UPC_E, F.CODE_39, F.ITF]);
-      hints.set(ZXing.DecodeHintType.TRY_HARDER, true);
-      this.reader = new ZXing.BrowserMultiFormatReader(hints, 120);
-      await this.reader.decodeFromConstraints({video:{facingMode:{ideal:'environment'}}, audio:false}, video, (res) => { if (res && this.active) this.found(res.getText()); });
-    }catch(e){
-      this.close();
-      this.fail(e && e.name === 'NotAllowedError' ? 'Appen fekk ikkje lov til å bruke kameraet. Gje løyve i nettlesaren og prøv igjen.' : 'Klarte ikkje starte kameraet: ' + (e.message || e));
+  active:false, stream:null, timer:null, hintTimer:null, cb:null, torchOn:false, manual:null,
+  det:null, engine:'', detP:null, cams:[], canvas:null, busy:false, seq:0,
+  setTop(t){ const e = $('#scan-msg'); if (e) e.textContent = t; },
+  setInfo(t){ const e = $('#scan-info'); if (e) e.textContent = t; },
+  getDetector(){
+    if (this.det) return Promise.resolve(this.det);
+    if (!this.detP) this.detP = this._getDetector().then(d => { this.det = d; return d; }, e => { this.detP = null; throw e; });
+    return this.detP;
+  },
+  async _getDetector(){
+    if ('BarcodeDetector' in window){
+      try{
+        const sup = await BarcodeDetector.getSupportedFormats();
+        const f = SCAN_FORMATS.filter(x => sup.includes(x));
+        if (f.includes('ean_13') && f.includes('code_128')){ this.engine = 'innebygd'; return new BarcodeDetector({formats:f}); }
+      }catch(e){}
     }
+    try{
+      if (!window.BarcodeDetectionAPI) await loadScript(BD_URLS);
+      const api = window.BarcodeDetectionAPI;
+      let lastErr = null;
+      for (const url of WASM_URLS){
+        try{
+          api.purgeZXingModule && api.purgeZXingModule();
+          api.setZXingModuleOverrides({locateFile:(p, pre) => p.endsWith('.wasm') ? url : pre + p});
+          await api.prepareZXingModule({fireImmediately:true});
+          const d = new api.BarcodeDetector({formats:SCAN_FORMATS});
+          const c = document.createElement('canvas'); c.width = c.height = 8;
+          await d.detect(c);
+          this.engine = 'zxing-wasm'; return d;
+        }catch(e){ lastErr = e; }
+      }
+      throw lastErr || new Error('wasm');
+    }catch(e){ /* prøv ZXing-js */ }
+    if (!window.ZXing) await loadScript(ZXING_URLS);
+    const F = ZXing.BarcodeFormat, hints = new Map();
+    hints.set(ZXing.DecodeHintType.POSSIBLE_FORMATS, [F.EAN_13, F.EAN_8, F.CODE_128, F.UPC_A, F.UPC_E, F.CODE_39, F.ITF]);
+    const reader = new ZXing.MultiFormatReader(); reader.setHints(hints);
+    this.engine = 'zxing-js';
+    return { async detect(canvas){
+      try{ const bmp = new ZXing.BinaryBitmap(new ZXing.HybridBinarizer(new ZXing.HTMLCanvasElementLuminanceSource(canvas)));
+        const r = reader.decodeWithState(bmp); return r ? [{rawValue:r.getText()}] : []; }
+      catch(e){ return []; }
+      finally{ try{ reader.reset(); }catch(e){} }
+    }};
+  },
+  preload(){ try{ this.getDetector().catch(() => {}); }catch(e){} },
+  async open(cb, manualSel){
+    this.cb = cb; this.manual = manualSel || null; this.active = true; const my = ++this.seq;
+    $('#scanner').hidden = false; $('#scan-cam').hidden = true; $('#scan-torch').hidden = true;
+    this.setTop('Startar kameraet …'); this.setInfo('');
+    if (!window.isSecureContext || !navigator.mediaDevices || !navigator.mediaDevices.getUserMedia){
+      this.close(); return this.fail('Kameraet er ikkje tilgjengeleg her. Appen må opnast via https-adressa (GitHub Pages), ikkje som fil.');
+    }
+    try{
+      const [det] = await Promise.all([this.getDetector(), this.startCam()]);
+      if (!this.active || my !== this.seq) return;
+      this.setTop('Rett kameraet mot strekkoden');
+      this.loop(my);
+      clearTimeout(this.hintTimer);
+      this.hintTimer = setTimeout(() => { if (this.active && my === this.seq) this.setTop('Les han ikkje? Hald telefonen 15–25 cm unna, ha godt lys' + (this.cams.length > 1 ? ', eller trykk «Byt kamera»' : '') + '.'); }, 9000);
+    }catch(e){
+      if (my !== this.seq) return;
+      this.close();
+      const n = e && e.name;
+      this.fail(n === 'NotAllowedError' || n === 'SecurityError' ? 'Appen fekk ikkje lov til å bruke kameraet. Gje løyve til kameraet for denne nettsida i nettlesaren (på iPhone: Innstillingar → Safari → Kamera) og prøv igjen.'
+        : n === 'NotReadableError' || n === 'AbortError' ? 'Kameraet er i bruk av ein annan app. Lukk andre appar som brukar kameraet, og prøv igjen.'
+        : n === 'NotFoundError' || n === 'OverconstrainedError' ? 'Fann ikkje noko kamera på denne eininga.'
+        : 'Klarte ikkje starte skannaren: ' + ((e && e.message) || e));
+    }
+  },
+  async startCam(deviceId){
+    this.stopStream();
+    const video = $('#scan-video');
+    const saved = deviceId || lsGet(LS_CAM, null);
+    const size = {width:{ideal:1920}, height:{ideal:1080}};
+    let stream;
+    try{ stream = await navigator.mediaDevices.getUserMedia({video: saved ? {deviceId:{exact:saved}, ...size} : {facingMode:{ideal:'environment'}, ...size}, audio:false}); }
+    catch(e){
+      if (!saved || e.name === 'NotAllowedError') throw e;
+      lsSet(LS_CAM, null);
+      stream = await navigator.mediaDevices.getUserMedia({video:{facingMode:{ideal:'environment'}, ...size}, audio:false});
+    }
+    if (!this.active){ stream.getTracks().forEach(t => t.stop()); return; }
+    this.stream = stream; video.srcObject = stream;
+    try{ await video.play(); }catch(e){}
+    const tr = stream.getVideoTracks()[0];
+    let cap = {};
+    try{ cap = tr.getCapabilities ? tr.getCapabilities() : {}; }catch(e){}
+    try{ if (cap.focusMode && cap.focusMode.includes('continuous')) await tr.applyConstraints({advanced:[{focusMode:'continuous'}]}); }catch(e){}
+    $('#scan-torch').hidden = !cap.torch; this.torchOn = false;
+    try{
+      const devs = (await navigator.mediaDevices.enumerateDevices()).filter(d => d.kind === 'videoinput');
+      const back = devs.filter(d => /back|rear|environment|bak/i.test(d.label));
+      this.cams = back.length ? back : devs;
+    }catch(e){ this.cams = []; }
+    $('#scan-cam').hidden = this.cams.length < 2;
+    // Android med fleire kamera: vel hovudkameraet (camera2 0) i staden for vidvinkel som ikkje kan fokusere nært
+    const cur = tr.getSettings ? tr.getSettings().deviceId : '';
+    if (!saved && /Android/i.test(navigator.userAgent) && this.cams.length > 1){
+      const main = this.cams.find(d => /\b0\b.*(back|bak)|camera2 0/i.test(d.label));
+      if (main && main.deviceId && main.deviceId !== cur){ lsSet(LS_CAM, main.deviceId); return this.startCam(main.deviceId); }
+    }
+    const s = tr.getSettings ? tr.getSettings() : {};
+    this.curCam = cur;
+    this.camInfo = (s.width && s.height ? s.width + '×' + s.height : '') + (tr.label ? ' · ' + tr.label : '');
+  },
+  async nextCam(){
+    if (this.cams.length < 2) return;
+    const i = this.cams.findIndex(d => d.deviceId === this.curCam);
+    const nx = this.cams[(i + 1) % this.cams.length];
+    lsSet(LS_CAM, nx.deviceId);
+    this.setTop('Byter kamera …');
+    try{ await this.startCam(nx.deviceId); this.setTop('Rett kameraet mot strekkoden'); }
+    catch(e){ lsSet(LS_CAM, null); this.setTop('Klarte ikkje byte kamera'); try{ await this.startCam(); }catch(e2){} }
+  },
+  loop(my){
+    const video = $('#scan-video');
+    const step = async () => {
+      if (!this.active || my !== this.seq) return;
+      if (!this.busy && video.readyState >= 2 && video.videoWidth){
+        this.busy = true;
+        try{
+          let src = video;
+          if (this.engine !== 'innebygd'){
+            const max = this.engine === 'zxing-js' ? 960 : 1280;
+            const k = Math.min(1, max / video.videoWidth);
+            const c = this.canvas || (this.canvas = document.createElement('canvas'));
+            c.width = Math.round(video.videoWidth * k); c.height = Math.round(video.videoHeight * k);
+            c.getContext('2d', {willReadFrequently:true}).drawImage(video, 0, 0, c.width, c.height);
+            src = c;
+          }
+          const r = await this.det.detect(src);
+          const hit = r && r.find(x => x && x.rawValue && String(x.rawValue).trim());
+          if (hit && this.active && my === this.seq){ this.busy = false; return this.found(hit.rawValue); }
+        }catch(e){}
+        this.busy = false;
+        this.setInfo('Lesar: ' + this.engine + (this.camInfo ? ' · ' + this.camInfo : ''));
+      }
+      this.timer = setTimeout(step, this.engine === 'zxing-js' ? 120 : 60);
+    };
+    step();
   },
   fail(msg){ openModal(`<h2>Kamera</h2><p>${esc(msg)}</p><p class="muted small">Du kan òg bruke ein handskannar (Bluetooth/USB) eller skrive inn strekkoden i søkefeltet.</p><div class="btnrow"><button class="btn primary" data-act="modal-close">OK</button></div>`); },
   found(code){ beep(); try{ navigator.vibrate && navigator.vibrate(70); }catch(e){} const cb = this.cb; this.close(); if (cb) cb(String(code).trim()); },
-  stopStream(){ const s = this.stream || ($('#scan-video') && $('#scan-video').srcObject); if (s && s.getTracks) s.getTracks().forEach(t => t.stop()); this.stream = null; },
+  stopStream(){ const v = $('#scan-video'); const s = this.stream || (v && v.srcObject); if (s && s.getTracks) s.getTracks().forEach(t => t.stop()); this.stream = null; try{ if (v) v.srcObject = null; }catch(e){} },
   close(){
-    this.active = false; clearTimeout(this.timer);
-    try{ if (this.reader) this.reader.reset(); }catch(e){}
-    this.reader = null; this.stopStream();
-    try{ $('#scan-video').srcObject = null; }catch(e){}
+    this.active = false; this.seq++; clearTimeout(this.timer); clearTimeout(this.hintTimer); this.busy = false;
+    this.stopStream();
     $('#scanner').hidden = true; this.torchOn = false;
+  },
+  skrivInn(){
+    const sel = this.manual; this.close();
+    const el = (sel && $(sel)) || $('#kode') || $('#f-ean');
+    if (el){ el.focus(); try{ el.scrollIntoView({block:'center'}); }catch(e){} }
   },
   async torch(){
     try{ const s = $('#scan-video').srcObject; const tr = s && s.getVideoTracks()[0]; if (!tr) return;
@@ -1151,7 +1290,7 @@ function parseHash(){
   const h = (location.hash || '').replace(/^#/, '');
   const m = /^sek-([A-Za-z0-9]+)$/.exec(h);
   if (m) return {v:'sek', id:m[1].toUpperCase()};
-  if (['kart','rapport','analyse','lister','varer','oppsett'].includes(h)) return {v:h, id:null};
+  if (['kart','rapport','analyse','lister','varer','oppsett','hjelp'].includes(h)) return {v:h, id:null};
   return {v:'kart', id:null};
 }
 function go(hash){ if (location.hash === '#'+hash) render(); else location.hash = hash; }
@@ -1169,8 +1308,8 @@ function renderTop(){
 function render(){
   renderTop();
   const v = $('#view');
-  if (STAFF && !['kart','sek','oppsett'].includes(route.v)) route = {v:'kart', id:null};
-  const views = {kart:viewKart, sek:viewSek, rapport:viewRapport, analyse:viewAnalyse, lister:viewLister, varer:viewVarer, oppsett:STAFF ? viewOppsettStaff : viewOppsett};
+  if (STAFF && !['kart','sek','oppsett','hjelp'].includes(route.v)) route = {v:'kart', id:null};
+  const views = {kart:viewKart, sek:viewSek, rapport:viewRapport, analyse:viewAnalyse, lister:viewLister, varer:viewVarer, oppsett:STAFF ? viewOppsettStaff : viewOppsett, hjelp:viewHjelp};
   v.innerHTML = storeFailHTML() + (views[route.v] || viewKart)();
   if (route.v === 'sek') afterSek();
   if (route.v === 'varer') afterVarer();
@@ -1874,9 +2013,14 @@ function rowToItem(r, map){
   const g = k => map[k] != null ? r[map[k]] : '';
   const namn = String(g('namn') || '').trim(); if (!namn) return null;
   const grp = String(g('grp') || '').trim();
-  let mva = mvaVal(g('mva'), grp); const mvaGuess = mva == null; if (mva == null) mva = 25;
+  let mva = mvaVal(g('mva'), grp); let mvaGuess = mva == null; if (mva == null) mva = 25;
   let pris = parseNum(g('pris'));
   const pe = parseNum(g('prisEks'));
+  // Har fila både inkl. og eks. mva, men ingen sikker mva-sats: rekn ut satsen frå forholdet mellom prisane
+  if (mvaGuess && !isNaN(pris) && !isNaN(pe) && pe > 0 && pris >= pe){
+    const r = (pris / pe - 1) * 100, s = [25, 15, 12, 0].find(x => Math.abs(r - x) <= 1.5);
+    if (s != null){ mva = s; mvaGuess = false; }
+  }
   if (isNaN(pris) && !isNaN(pe)) pris = round2(pe * (1 + mva / 100));
   const inn = parseNum(g('innpris'));
   const varenr = String(g('varenr') ?? '').trim().replace(/\.0$/, '');
@@ -2159,7 +2303,187 @@ function viewOppsettStaff(){
     <details style="margin-top:10px"><summary class="small">Legg inn nøkkel manuelt</summary><label>Tilgangsnøkkel<input id="g-token" type="password" value="${esc(tok)}" autocomplete="off"></label><div class="btnrow"><button class="btn" data-act="s-token">Lagre</button></div></details></div>
   ${tryggHTML()}
   <div class="card"><h2>Sikkerheitskopi</h2><p class="small muted" style="margin-top:0">Er telefonen ikkje kopla til, kan du laste ned linjene og sende fila til den som styrer teljinga.</p><button class="btn" data-act="json-ut">⬇ Last ned linjene (JSON)</button></div>
+  <div class="btnrow"><button class="btn wide" data-act="hjelp">? Brukarhandbok</button></div>
   <p class="tiny muted" style="text-align:center">Krambua Varetelling v${APP_VER} · versjon for tilsette</p>`;
+}
+
+
+/* ------------------------------ HJELP: brukarhandbok inne i appen ------------------------------ */
+const HJ_ADMIN = ['hj-kva','hj-kort','hj-for','hj-tel','hj-trygg','hj-etter','hj-analyse','hj-feil'];
+const HJ_STAFF = ['hj-kort','hj-tel','hj-trygg','hj-feil'];
+const HJ_TITLAR = {'hj-kva':'Kva appen gjer','hj-kort':'Kortversjon','hj-for':'Før teljinga','hj-tel':'Slik tel du','hj-trygg':'Tryggleik og deling','hj-etter':'Etter teljinga','hj-analyse':'Analyse','hj-feil':'Feilsøking'};
+function hjSeksjon(id){
+  const S = {
+'hj-kva':`<h2>Kva appen gjer</h2>
+<p>Krambua Varetelling er appen for den årlege varetellinga. De tel vare for vare på telefonen, og appen reknar ut verdien og lagar rapporten til revisor og rekneskap. Dato, klokkeslett og namnet på den som tel kjem på kvar linje av seg sjølv.</p>
+<div class="tablewrap"><table class="t"><thead><tr><th>Versjon</th><th>For kven</th><th>Kva ein kan gjere</th></tr></thead><tbody>
+<tr><td><b>Administrator</b><br><span class="tiny muted">…/telling/</span></td><td>Den som styrer teljinga</td><td>Alt: teljing, varelista frå PCK, tellelister, rapport, Excel, analyse og oppsett</td></tr>
+<tr><td><b>Tilsette</b><br><span class="tiny muted">…/telling/tilsett/</span></td><td>Dei som tel</td><td>Kart, teljing og nye varer. Ingen kronebeløp, rapportar eller oppsett</td></tr></tbody></table></div>
+<h3>Dette trengst</h3><ul>
+<li><b>Telefon eller PC</b> med Chrome eller Safari. Ikkje bruk privat modus, for då kan nettlesaren slette tala.</li>
+<li><b>Nett for å dele</b> mellom telefonane. Sjølve teljinga går fint utan nett.</li>
+<li><b>Tilgangsnøkkel</b> for delinga (berre administrator): eit fine-grained token på GitHub med «Contents: Read and write» til repoet Krambua-varetelling. Dei tilsette får han med QR-koden.</li>
+<li><b>Handskannar (valfritt):</b> ein Bluetooth- eller USB-skannar kan brukast i staden for kameraet.</li></ul>`,
+'hj-kort':`<h2>Kortversjon for tilsette</h2>
+<p>Ti steg er alt du treng for å telje.</p><ol class="hj-steg">
+<li><b>Opne appen</b> frå heimeskjermen. Første gong: skann QR-koden «Kople til telefon» frå den som styrer teljinga, og legg appen til på heimeskjermen.</li>
+<li><b>Vel namnet ditt.</b> Appen spør «Kven tel?». Seinare byter du med namneknappen øvst til høgre.</li>
+<li><b>Opne reolen.</b> Trykk på reolen på kartet, eller trykk «📷 Skann reol-kode på tellelista» og skann strekkoden øvst på papirlista.</li>
+<li><b>Finn vara.</b> Trykk «📷 Skann strekkode» og skann vara. Har ho ingen strekkode, skriv namnet i søkefeltet og vel i lista.</li>
+<li><b>Skriv mengda</b> og trykk «Lagre linje» (eller Enter). Feltet er straks klart for neste vare.</li>
+<li><b>Skruar, muttrar o.l.:</b> vel «Vekt → tal». Tel opp 10 stk og vege dei, vege så alt saman. Appen reknar ut kor mange det er.</li>
+<li><b>Ny vare som ikkje finst:</b> skriv namnet, skann strekkoden om vara har det, skriv prisen om du veit han, og vel mva-sats.</li>
+<li><b>Feil?</b> Trykk ✎ på linja for å endre, flytte til ein annan reol eller slette.</li>
+<li><b>Ferdig med reolen:</b> trykk «✓ Ferdig med …». Reolen blir grøn på kartet.</li>
+<li><b>Sjå merket øvst før du går heim.</b> «✓ Alt delt» betyr at alt er trygt. Står det «⏳ ventar» eller «⚠ ikkje delt», er tala lagra på telefonen og blir sende når nettet er tilbake. Ikkje slett appen før det står «✓ Alt delt».</li></ol>`,
+'hj-for':`<h2>Før teljinga (administrator)</h2>
+<p>Gjer dette éin gong før teljingsdagen. Det tek om lag ein halvtime, og prøveteljinga til slutt er det viktigaste steget.</p>
+<h3>1. Slå på delinga</h3><ol>
+<li>Gå til <b>Oppsett → Deling mellom telefonar (GitHub)</b>.</li>
+<li>Sjekk feltene: eigar <i>kristoffertungesvik-stack</i>, repo <i>Krambua-varetelling</i>, grein <i>main</i>, mappe <i>data</i>.</li>
+<li>Lim inn tilgangsnøkkelen og trykk <b>Lagre og test</b>. Er nøkkelen lagt inn i den gamle varetellingsappen, står han der frå før.</li>
+<li>Merket øvst skal no vise <b>✓ Alt delt</b>.</li></ol>
+<h3>2. Set opp teljinga</h3><ol>
+<li>Gå til <b>Oppsett → Teljinga</b>.</li>
+<li>Set <b>Varebeholdning per dato</b> til 31.12. Datoen blir elles dagens dato når teljinga blir oppretta.</li>
+<li>Fyll inn firma, org.nr. og stad. Dei kjem på forsida av rapporten.</li>
+<li>Sjekk <b>bruttoavansen</b>: 38 % som standard. Du kan setje eigen avanse for jernvarerom, butikk, lager og kjøkken.</li>
+<li>Trykk <b>Lagre</b>. Under <b>Tellarar</b> legg du til eller fjernar namn.</li></ol>
+<h3>3. Last inn varelista frå PCK</h3><ol>
+<li>Eksporter varene frå PCK til Excel eller CSV med varenummer, varenamn, strekkode, utsalspris inkl. mva og mva-sats eller hovudgruppe. Ta gjerne med innkjøpspris.</li>
+<li>Gå til <b>Varer → 📥 Vel fil (Excel eller CSV)</b>.</li>
+<li>Sjekk at kolonnane er rett kopla, og sjå over førehandsvisinga.</li>
+<li>Vel <b>Oppdater og legg til</b> for vanleg oppdatering. <b>Erstatt lista</b> fjernar varer som ikkje er i fila, men beheld varer som er lagde inn for hand.</li>
+<li>Trykk <b>Importer</b>. Varelista blir delt til alle telefonane.</li></ol>
+<p class="small muted">Innkjøpspris blir berre brukt om du kryssar av for det. Repoet er offentleg, så innkjøpsprisane blir synlege for alle som finn det.</p>
+<h3>4. Kople til telefonane</h3><ol>
+<li>Gå til <b>Oppsett → Versjon for tilsette → Vis QR-kode «Kople til telefon»</b>.</li>
+<li>Den tilsette skannar koden med kameraet. Tilsett-versjonen opnar seg og er kopla til.</li>
+<li>Legg appen til på heimeskjermen. iPhone: Del → Legg til på Heim-skjerm. Android: ⋮ → Legg til på startskjermen.</li>
+<li>Kan ikkje den tilsette skanne, trykk <b>Kopier lenke med tilgang</b> og send lenka.</li></ol>
+<p class="small muted">QR-koden og lenka inneheld tilgangsnøkkelen. Vis og send dei berre til tilsette, og heng dei aldri opp. Plakatane i butikken har ein QR-kode utan nøkkel, som berre opnar appen.</p>
+<h3>5. Skriv ut tellelister (valfritt)</h3><ol>
+<li>Gå til <b>Lister</b>.</li>
+<li>Vel <b>Tomme lister</b> eller <b>Med varer og strekkodar</b>.</li>
+<li>Vel seksjonar og trykk <b>Vis og skriv ut</b>.</li></ol>
+<p class="small muted">Strekkoden øvst på kvar liste opnar rett seksjon i appen. Listene er òg ein reserve på papir.</p>
+<h3>6. Ta ei prøveteljing</h3><ol>
+<li>Gå til <b>Oppsett → Byt telling</b>, skriv <i>test</i> og trykk <b>Opne / lag</b>. Dei ekte tala blir ikkje rørte.</li>
+<li>Kople til minst éin iPhone og éin Android med QR-koden.</li>
+<li>Tel 15–20 minutt med 2–3 personar samstundes. Slå av nettet på éin telefon ei stund.</li>
+<li>Lag rapporten og Excel-fila, og sjå at tala stemmer.</li>
+<li>Byt tilbake til den ekte teljinga og lag ny QR-kode.</li></ol>`,
+'hj-tel':`<h2>Slik tel du</h2>
+<p>Ei linje er éi vare på éin stad med mengd og pris. Same vare kan ha linjer på fleire reolar, og appen summerer dei i rapporten.</p>
+<div class="hj-flyt"><span>Opne seksjonen</span>→<span>Skann eller søk</span>→<span>Finst vara? Ja: namn og pris kjem. Nei: ny vare</span>→<span>Skriv mengda</span>→<span class="on">Lagre linje</span>→<span>neste vare … til ✓ Ferdig</span></div>
+<h3>Vel kven du er</h3><p>Første gong spør appen «Kven tel?». Trykk namnet ditt, eller skriv det under «Anna namn». Namnet blir hugsa og står på kvar linje du lagrar. Byt med namneknappen øvst til høgre.</p>
+<h3>Opne rett seksjon</h3><p>Kartet viser 27 seksjonar: J01–J13 i jernvarerommet, B01–B11 i butikken, L01–L02 for lageret og K01 for kjøkkenet.</p><ul>
+<li><b>Trykk på reolen</b> på kartet eller i lista under. <b>+ Større kart</b> gjer kartet lettare å treffe.</li>
+<li><b>Eller skann reol-koden</b> øvst på papirlista med «📷 Skann reol-kode på tellelista».</li>
+<li><b>Fargane:</b> kvit er ikkje starta, oransje er påbyrja og grøn er ferdig. Talet i rundingen er kor mange linjer som er talde.</li></ul>
+<h3>Finn vara</h3><ul>
+<li><b>Kamera:</b> trykk «📷 Skann strekkode» og hald strekkoden i ramma, 15–25 cm unna. «Lys» slår på lommelykta (der telefonen støttar det). Les han ikkje, trykk «Byt kamera». «Skriv inn» lukkar kameraet så du kan skrive koden.</li>
+<li><b>Handskannar:</b> skann rett inn i søkefeltet.</li>
+<li><b>Søk:</b> skriv namn${STAFF ? '' : ' eller varenummer'}, og vel vara i lista.</li></ul>
+<p>Finst vara i varelista, kjem namn, pris og mva-sats fram av seg sjølv, merkt «Frå kassa».</p>
+<h3>Legg inn ei ny vare</h3><ol>
+<li>Skriv <b>varenamnet</b>, gjerne med storleik, t.d. «Skrue 4x40 forsinka».</li>
+<li>Har vara strekkode, trykk <b>📷 Skann</b> ved feltet «Strekkode». Utan strekkode lar du feltet stå tomt.</li>
+<li>Skriv <b>prisen</b> inkl. mva om du veit han. Veit du ikkje, la feltet stå tomt. Administrator fyller han inn seinare.</li>
+<li>Vel <b>mva-sats</b> og <b>eining</b>.</li></ol>
+<p>Vara blir lagra i varelista, så ho blir funnen neste gong nokon skannar eller søkjer på namnet.</p>
+<h3>Vel mva-sats</h3><p>Trykk 25 %, 15 %, 12 % eller 0 %. Seksjonen føreslår ein sats: 15 % for snacks, godteri, småis, daglegvarer, brus og kjøkken, 25 % for resten. Endre satsen om vara har ein annan.</p>
+<h3>Skriv mengda</h3><p>Vel <b>Tel</b> og skriv talet, eller bruk − og +. Vel rett <b>eining</b>: stk, pk, eske, kg, m, l, sett, rull eller par. Tau tel du til dømes i meter.</p>
+<h3>Tel skruar og smådeler med vekt</h3><ol>
+<li>Vel <b>Vekt → tal (skruar o.l.)</b>.</li>
+<li>Tel opp nokre stk, til dømes 10, og vege dei. Skriv <b>Tal i prøva</b> og <b>Prøva veg</b>.</li>
+<li>Vege alt saman og skriv <b>Totalvekt</b>.</li>
+<li>Skriv vekta av boksen eller posen i <b>Tara</b>.</li>
+<li>Appen viser talet. Døme: 1 250 g − 50 g tara, og 10 stk veg 42 g, gjev 286 stk.</li></ol>
+<p>Bruk same eining, gram eller kg, på alle vektene. Prøva blir hugsa, så neste gong treng du berre totalvekta.</p>
+<h3>Lagre</h3><p>Trykk <b>Lagre linje</b> eller Enter. Linja kjem øvst i «Talde varer», og søkefeltet er klart for neste vare.</p>
+<h3>Same vare fleire stader</h3><p>Er vara alt talt, viser appen «⚠ Alt talt:» med reol, mengd, kven og klokkeslett. Det er rett når vara står fleire stader. Pass på at du ikkje tel dei same varene to gonger.</p>
+<h3>Endre, flytte eller slette ei linje</h3><p>Trykk ✎ på linja.</p><ul>
+<li><b>Endre:</b> rett mengd, pris eller mva-sats, og trykk <b>Lagre endring</b>.</li>
+<li><b>Flytte:</b> vel ein annan seksjon under «Seksjon – vel ein annan for å flytte linja», og lagre.</li>
+<li><b>Slette:</b> trykk <b>Slett linja</b>. Ved ein feil trykkjer du <b>Angre</b> i meldinga nedst.</li></ul>
+<h3>Ferdig med seksjonen</h3><p>Trykk <b>✓ Ferdig med …</b> (koden for seksjonen du står i). Seksjonen blir grøn på kartet, og appen sender linjene med ein gong. Skal du leggje til meir etterpå, trykk <b>Opne att for å legge til</b>.</p>`,
+'hj-trygg':`<h2>Tryggleik og deling</h2>
+<p>Kvar linje blir lagra på telefonen med ein gong du trykkjer Lagre, og blir sendt til GitHub innan eit minutt når det er nett. Linjer som ventar, går ikkje tapt om appen blir lukka. Dei blir sende neste gong appen er open med nett.</p>
+<div class="tablewrap"><table class="t"><thead><tr><th>Merke øvst</th><th>Kva det tyder</th><th>Kva du gjer</th></tr></thead><tbody>
+<tr><td><span class="hj-pill ok">✓ Alt delt 14:32</span></td><td>Alt er trygt i GitHub</td><td>Ingenting</td></tr>
+<tr><td><span class="hj-pill busy">⏳ 3 ventar</span></td><td>Lagra på telefonen, blir sendt innan eit minutt</td><td>Tel vidare</td></tr>
+<tr><td><span class="hj-pill busy">↻ Delar</span></td><td>Appen sender eller hentar no</td><td>Tel vidare</td></tr>
+<tr><td><span class="hj-pill feil">⚠ 3 ikkje delt</span></td><td>Ikkje kontakt med GitHub, som regel utan nett</td><td>Tel vidare. Sjekk nettet. Ikkje slett appen</td></tr>
+<tr><td><span class="hj-pill feil">⏸ 3 ventar</span></td><td>GitHub ber appen vente litt</td><td>Tel vidare. Går av seg sjølv</td></tr>
+<tr><td><span class="hj-pill av">● Lokalt</span></td><td>Telefonen er ikkje kopla til</td><td>Kople til med QR-koden</td></tr>
+<tr><td><span class="hj-pill feil">⚠ Lagringsfeil</span></td><td>Telefonen klarte ikkje lagre</td><td>Ikkje lukk appen. Last ned sikkerheitskopi og si frå</td></tr></tbody></table></div>
+<p>Ei linje med ⏳ før namnet er ikkje delt enno. Trykk på merket øvst for detaljar og knappen <b>Del no</b>.</p>
+<h3>Utan nett</h3><p>Tel som vanleg. Appen hugsar kva som ikkje er sendt, òg om telefonen blir slått av. Når nettet kjem tilbake, sender han alt.</p>
+<h3>Gode vanar</h3><ul>
+<li>Legg appen til på heimeskjermen. Det gjev betre vern mot at nettlesaren ryddar vekk data, særleg på iPhone.</li>
+<li>Ikkje bruk privat modus, og ikkje tøm historikk eller nettlesardata medan teljinga pågår.</li>
+<li>Sjå at det står «✓ Alt delt» før du gjev frå deg telefonen eller går heim.</li></ul>
+<h3>Lokale kopiar</h3><p>Appen tek ein kopi av teljinga på telefonen kvart 15. minutt og tek vare på dei 12 siste. Er linjer sletta ved ein feil: gå til <b>Oppsett → Tryggleik → Lokale kopiar …</b> og trykk <b>Hent tilbake</b> på ein kopi frå før feilen. Appen legg til att linjer som manglar eller er sletta. Ingenting blir fjerna.</p>
+<h3>Sikkerheitskopi til fil</h3><p><b>Oppsett → Last ned</b> lagrar teljinga som ei fil.${STAFF ? ' Send fila til den som styrer teljinga om telefonen ikkje kan koplast til.' : ' På ein annan eining kan fila hentast inn med <b>Slå saman frå fil</b>, som legg linjene til utan å slette noko.'}</p>
+${STAFF ? '' : '<h3>Kvar tala ligg</h3><p>I repoet ligg teljinga i mappa <i>data/telling-&lt;kode&gt;/</i>, med éi fil per seksjon per telefon. Kvar telefon skriv berre sine eigne filer, så ingen kan skrive over kvarandre. GitHub tek vare på kvar versjon under History.</p>'}`,
+'hj-etter':`<h2>Etter teljinga (administrator)</h2>
+<p>Når alle reolane er grøne, sjekkar du tre lister under <b>Rapport</b>. Deretter avsluttar du teljinga og sender PDF-rapporten og Excel-fila til rekneskapsføraren.</p><ol>
+<li><b>Sjå at alle telefonane har delt.</b> «Telefonar som har delt» viser kven som har levert og når. Ein telefon som ikkje har vore på nett, har tala sine berre på telefonen.</li>
+<li><b>Fyll inn prisar som manglar.</b> Skriv utsalspris inkl. mva og trykk <b>Lagre</b>. Vara i varelista får same pris.</li>
+<li><b>Sjekk mogleg dobbelttelling.</b> Trykk <b>✓ Rett</b> når det stemmer. Er det ein feil, opnar du seksjonen og rettar eller slettar linja.</li>
+<li><b>Sjå over tala.</b> Kostverdien er utsalsverdi eks. mva × (1 − avanse). Varer med innkjøpspris frå PCK får mengd × innkjøpspris. Nedskriving for ukurans legg du inn under Oppsett.</li>
+<li><b>Avslutt teljinga.</b> Trykk <b>✓ Avslutt varetellinga</b>. Linjene blir låste, og rapporten får dato og namnet ditt. Må noko rettast, trykk <b>Opne att</b>.</li>
+<li><b>Lag rapporten til revisor.</b> Trykk <b>🖨 Rapport til revisor (PDF/utskrift)</b>, så <b>🖨 Skriv ut / PDF</b>, og vel «Lagre som PDF».</li>
+<li><b>Last ned Excel til rekneskapen.</b> Trykk <b>⬇ Excel til rekneskap</b>.</li>
+<li><b>Ta vare på ein sikkerheitskopi.</b> Trykk <b>⬇ Sikkerheitskopi (JSON)</b> og lagre fila saman med PDF-en.</li>
+<li><b>Signer.</b> Skriv ut forsida og la tellarane, den som har kontrollert og dagleg leiar signere.</li></ol>
+<h3>Kva rapporten inneheld</h3><p>Rapporten er laga etter krava i bokføringsforskrifta § 6-1: varens art, mengd med måleeining og verdi for kvar vare, datert og med kven som har talt. Før teljinga er avslutta, er kvar side merkt «UTKAST».</p>
+<div class="tablewrap"><table class="t"><thead><tr><th>Del</th><th>Innhald</th></tr></thead><tbody>
+<tr><td><b>Forside</b></td><td>Tellingsinformasjon, samandrag per mva-sats, verdsetjing, varebeholdning til balansen, kontroll av dobbelttelling, kontrollsum og signaturfelt</td></tr>
+<tr><td><b>Samandrag per telleliste</b></td><td>Éi rad per seksjon med linjer, verdi, tellarar og når han vart ferdig</td></tr>
+<tr><td><b>Tellelister</b></td><td>Éi side per seksjon med strekkode, alle varelinjer, utrekninga for veging og sum per mva-sats</td></tr>
+<tr><td><b>Excel-fila</b></td><td>Ark for samandrag, per telleliste, alle varelinjer (med filter) og per vare</td></tr></tbody></table></div>`,
+'hj-analyse':`<h2>Analyse: lagerverdi mot sal per reol</h2>
+<p>Analyse-fanen viser kor mykje pengar som står på kvar reol, og kor mange dagar lageret rekk med dagens sal. Tala er rette først når heile butikken er talt.</p>
+<h3>Hent inn salstal</h3><ol>
+<li>Eksporter sal per vare frå min.pckasse.no til Excel eller CSV, helst for dei siste 12 månadene, med varenummer, namn og sum beløp.</li>
+<li>Gå til <b>Analyse → 📥 Importer salstal</b> og vel fila.</li>
+<li>Sjekk kor mange månader fila dekkjer.</li>
+<li>Kryss av for «Fila har alle varer» berre om fila er komplett. Er ho ei toppliste, blir varer som manglar rekna som ukjent sal.</li></ol>
+<p class="small muted">Salstala blir lagra berre på eininga du importerer dei på, ikkje i GitHub.</p>
+<h3>Les kartet</h3><p>Grøn: 60 dagar eller mindre · gul: 61–180 · oransje: 181–365 · raud: over eitt år · skravert: for lite salsdata (under 60 % av lagerverdien har salstal).</p>
+<ul><li><b>Per reol – tregast først</b> viser lagerverdi, sal per år og dagar på lager.</li>
+<li><b>Mest pengar i varer som sel lite</b> viser varer med meir enn eitt års lager, som kan seljast ned, sendast i retur eller skrivast ned.</li>
+<li><b>⬇ Analysen til Excel</b> lagar ei fil med tala per reol og per vare.</li></ul>
+<h3>Generelle kasseknappar</h3><p>Sal på knappar som «Jernvarer» og «Maling» blir fordelt på reolane du vel, etter lagerverdien deira. Trykk på ein knapp i lista og <b>Endre</b>. <b>Standard</b> set tilbake: Jernvarer → J04–J07 og J10–J13 · Maling → J01, J02 · Batteri → B08 · Fiskeutstyr → J08, J09 · Båtutstyr → J03, J08, J09 · Bil Rekv → J07 · Olje → J12 · Tobakk → B11 · Kolon → B05. Kiosk 15 % er ikkje fordelt.</p>`,
+'hj-feil':`<h2>Feilsøking og vanlege spørsmål</h2>
+<p>Dei fleste problema løyser seg ved å telje vidare og sjekke merket øvst. Ingenting du har lagra, forsvinn av å lukke appen.</p>
+<div class="tablewrap"><table class="t"><thead><tr><th>Problem</th><th>Løysing</th></tr></thead><tbody>
+<tr><td><b>Kameraet startar ikkje</b></td><td>Gje appen løyve til kameraet i nettlesaren (iPhone: Innstillingar → Safari → Kamera). Lukk andre appar som brukar kameraet. Bruk elles handskannar eller skriv strekkoden i søkefeltet.</td></tr>
+<tr><td><b>Kameraet les ikkje strekkoden</b></td><td>Hald telefonen 15–25 cm unna i godt lys, og hald strekkoden vassrett i ramma. Prøv «Byt kamera» – nokre telefonar startar med vidvinkelkameraet, som ikkje kan fokusere nært. Appen hugsar kameraet du vel.</td></tr>
+<tr><td><b>Strekkoden blir ikkje funnen</b></td><td>Vara manglar i varelista. Legg henne inn som ny vare, så blir ho funnen neste gong.</td></tr>
+<tr><td><b>Prisen er feil</b></td><td>Rett prisen i skjemaet før du lagrar. Det gjeld berre den linja.${STAFF ? '' : ' Rett prisen i varelista under Varer.'}</td></tr>
+<tr><td><b>«⚠ ikkje delt» lenge</b></td><td>Sjekk nettet, trykk på merket og <b>Del no</b>. Tel vidare: linjene ligg trygt på telefonen.</td></tr>
+<tr><td><b>Ser ikkje det andre har talt</b></td><td>Appen hentar nytt kvart 45. sekund. Vent litt, eller trykk på merket og <b>Del no</b>.</td></tr>
+<tr><td><b>Talde i feil seksjon</b></td><td>Trykk ✎ på linja, vel rett seksjon og trykk <b>Lagre endring</b>.</td></tr>
+<tr><td><b>Sletta ei linje ved ein feil</b></td><td>Trykk <b>Angre</b> i meldinga, eller gå til Oppsett → Lokale kopiar og <b>Hent tilbake</b>.</td></tr>
+<tr><td><b>Seksjonen er ferdig, men noko manglar</b></td><td>Opne seksjonen og trykk <b>Opne att for å legge til</b>.</td></tr>
+<tr><td><b>Teljinga er avslutta, men noko må rettast</b></td><td>${STAFF ? 'Si frå til den som styrer teljinga.' : 'Trykk <b>Opne att</b> under Rapport, rett og avslutt på nytt.'}</td></tr>
+<tr><td><b>Ny telefon midt i teljinga</b></td><td>Skann QR-koden «Kople til telefon». Alt som er talt blir henta frå GitHub.</td></tr>
+<tr><td><b>Ein telefon blir borte eller går i stykke</b></td><td>Alt han har delt, ligg i GitHub. Berre linjer som ikkje var delte, er borte.</td></tr>
+<tr><td><b>«⚠ Lagringsfeil»</b></td><td>Ikkje lukk appen. Sjekk at du ikkje er i privat modus, last ned sikkerheitskopi under Oppsett, og si frå.</td></tr>
+<tr><td><b>«● Lokalt»</b></td><td>Telefonen er ikkje kopla til. Skann QR-koden «Kople til telefon».</td></tr></tbody></table></div>`
+  };
+  return S[id] || '';
+}
+function viewHjelp(){
+  const ids = STAFF ? HJ_STAFF : HJ_ADMIN;
+  return `<div class="btnrow" style="margin:0 0 8px"><a class="btn ghost" href="#kart" style="flex:0 0 auto;padding-left:4px">← Kart</a></div>
+  <h1>Brukarhandbok</h1>
+  <div class="card"><div class="lbl" style="margin-top:0">Innhald</div><div class="chips">${ids.map(id => `<button class="chip" data-act="hj-goto" data-id="${id}">${HJ_TITLAR[id]}</button>`).join('')}</div></div>
+  ${ids.map(id => `<div class="card hj" id="${id}">${hjSeksjon(id)}<div class="tiny" style="margin-top:10px"><a href="#hjelp" data-act="hj-top">↑ Til toppen</a></div></div>`).join('')}
+  <p class="tiny muted" style="text-align:center">Krambua Varetelling v${APP_VER}${STAFF ? ' · versjon for tilsette' : ''}</p>`;
 }
 
 /* ------------------------------ OPPSETT ------------------------------ */
@@ -2209,6 +2533,7 @@ function viewOppsett(){
   <div class="card"><h2>Sikkerheitskopi</h2>
     <div class="btnrow"><button class="btn" data-act="json-ut">⬇ Last ned (JSON)</button><button class="btn" data-act="json-inn">⬆ Slå saman frå fil</button></div>
     <p class="tiny muted">«Slå saman» legg linjer frå ein annan telefon inn i denne teljinga utan å slette noko. Nyttig om deling ikkje er slått på.</p></div>
+  <div class="btnrow"><button class="btn wide" data-act="hjelp">? Brukarhandbok</button></div>
   <p class="tiny muted" style="text-align:center">Krambua Varetelling v${APP_VER}</p>`;
 }
 function saveOppsett(){
@@ -2258,9 +2583,11 @@ const ACT = {
   'sek':el => go('sek-' + el.dataset.id),
   'map-zoom':() => { mapZoom = !mapZoom; render(); },
   'scan-reol':() => Scanner.open(code => handleCode(code)),
-  'scan-vare':() => Scanner.open(code => handleCode(code)),
+  'scan-vare':() => Scanner.open(code => handleCode(code), '#kode'),
   'scan-close':() => Scanner.close(),
   'scan-torch':() => Scanner.torch(),
+  'scan-cam':() => Scanner.nextCam(),
+  'scan-manual':() => Scanner.skrivInn(),
   'kode-ok':() => handleCode($('#kode').value),
   'velg-vare':el => { const it = CAT.items[el.dataset.k]; if (it) showForm(newDraft(route.id, {item:it})); $('#kode').value = ''; },
   'ny-vare':() => { const q = $('#kode').value; $('#kode').value = ''; showForm(newDraft(route.id, {text:q})); },
@@ -2274,7 +2601,7 @@ const ACT = {
     const it = lookupCode(code);
     if (it && draft && !draft.id){ toast('Vara finst alt i varelista: ' + it.namn); showForm(newDraft(draft.sek, {item:it, code})); return; }
     if (draft){ draft.ean = code; const e = $('#f-ean'); if (e) e.value = code; const p = $('#f-pris'); if (p) p.focus(); }
-  }),
+  }, '#f-ean'),
   'dup-ok':el => { T.dobbel[el.dataset.k] = {ok:true, sig:el.dataset.sig, av:curTellar(), tid:nowISO(), updatedAt:nowISO()}; saveLocal(); render(); },
   'dup-angre':el => { T.dobbel[el.dataset.k] = {ok:false, sig:'', av:curTellar(), tid:nowISO(), updatedAt:nowISO()}; saveLocal(); render(); },
   'pris-set':el => {
@@ -2343,6 +2670,9 @@ const ACT = {
   'g-sync':() => { closeModal(); syncNow(true).then(() => { if (route.v === 'oppsett') render(); toast(SYNC.status === 'ok' ? 'Synka' : 'Feil: ' + SYNC.err, SYNC.status === 'ok' ? 'ok' : 'err'); }); },
   'g-av':() => confirmBox('Slå av deling?', 'Nøkkelen vert fjerna frå denne eininga. Data i repoet vert ikkje sletta.', 'Slå av', () => { setToken(''); SYNC.status = 'av'; render(); }, true),
   't-opne':el => openTelling(el.dataset.id),
+  'hjelp':() => go('hjelp'),
+  'hj-goto':el => { const t = document.getElementById(el.dataset.id); if (t) t.scrollIntoView({behavior:'smooth', block:'start'}); },
+  'hj-top':() => window.scrollTo({top:0, behavior:'smooth'}),
   'kopi-liste':() => kopiListe(),
   'kopi-hent':el => kopiHent(el.dataset.id),
   'kopi-no':async () => { await lagKopi(true); await STORE.chain; kopiListe(); },
@@ -2423,6 +2753,7 @@ $('#view').innerHTML = '<div class="card muted">Opnar teljinga…</div>';
   if (!curTellar()) setTimeout(() => velTellar(), 400);
   setInterval(() => { if (document.visibilityState === 'visible' && ghOn() && !SYNC.busy) syncNow(); }, POLL_MS);
   setInterval(() => lagKopi(false), window.KRB_TEST_FAST ? 4000 : 15 * 60000);
+  setTimeout(() => Scanner.preload(), window.KRB_TEST_FAST ? 300 : 3000);
   setTimeout(() => lagKopi(false), window.KRB_TEST_FAST ? 2000 : 60000);
 })().catch(e => { $('#view').innerHTML = `<div class="banner err"><b>Appen klarte ikkje starte:</b> ${esc(e.message || e)}</div>`; console.error(e); });
 </script>
