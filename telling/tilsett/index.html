@@ -294,7 +294,7 @@ body.preview #app,body.preview #nav{display:none}
    Krambua Varetelling – éi fil, køyrer på GitHub Pages.
    Data: lokalt i nettlesaren + (valfritt) delt via GitHub-repoet.
    ===================================================================== */
-const APP_VER = '2.2';
+const APP_VER = '2.3';
 const MODUS = 'tilsett';
 const STAFF = MODUS === 'tilsett';
 const NAV_ITEMS = STAFF ? ['kart','oppsett'] : ['kart','rapport','analyse','lister','varer','oppsett'];
@@ -2285,7 +2285,7 @@ async function kopleQR(){
   openModal(`<h2>Kople til telefon</h2><p class="small muted" style="margin-top:0">Opne kameraet på telefonen til den tilsette og skann koden. Tilsett-versjonen opnar seg og vert kopla til «${esc(T.meta.namn)}». Legg han gjerne til på heimeskjermen etterpå.</p>
     <div class="qr" style="background:#fff;padding:8px">${qr.createSvgTag({cellSize:4, margin:4, scalable:true})}</div>
     <p class="tiny muted">Koden inneheld tilgangsnøkkelen. Vis han berre til tilsette.</p>
-    <div class="btnrow"><button class="btn" data-act="modal-close">Lukk</button></div>`);
+    <div class="btnrow"><button class="btn" data-act="kople-plakat">🖨 Skriv ut som plakat</button><button class="btn" data-act="modal-close">Lukk</button></div>`);
 }
 async function kopleKopier(plain){
   const url = plain ? staffUrl() : kopleLenke();
@@ -2360,8 +2360,9 @@ function hjSeksjon(id){
 <li>Gå til <b>Oppsett → Versjon for tilsette → Vis QR-kode «Kople til telefon»</b>.</li>
 <li>Den tilsette skannar koden med kameraet. Tilsett-versjonen opnar seg og er kopla til.</li>
 <li>Legg appen til på heimeskjermen. iPhone: Del → Legg til på Heim-skjerm. Android: ⋮ → Legg til på startskjermen.</li>
-<li>Kan ikkje den tilsette skanne, trykk <b>Kopier lenke med tilgang</b> og send lenka.</li></ol>
-<p class="small muted">QR-koden og lenka inneheld tilgangsnøkkelen. Vis og send dei berre til tilsette, og heng dei aldri opp. Plakatane i butikken har ein QR-kode utan nøkkel, som berre opnar appen.</p>
+<li>Kan ikkje den tilsette skanne, trykk <b>Kopier lenke med tilgang</b> og send lenka.</li>
+<li>Vil du heller henge opp koden: trykk <b>🖨 Skriv ut plakatar med kople-kode</b>. Du får plakatane «Slik tel du» og «Kva merket øvst betyr» med kople-koden på. Heng dei berre på bakrommet.</li></ol>
+<p class="small muted">QR-koden og lenka inneheld tilgangsnøkkelen. Vis og send dei berre til tilsette. Plakatar med kople-koden skal berre henge der kundar ikkje ser dei. Bruk gjerne ein eigen nøkkel for teljinga som går ut etter nokre dagar, og slett han når de er ferdige – då er plakatane verdilause etterpå.</p>
 <h3>5. Skriv ut tellelister (valfritt)</h3><ol>
 <li>Gå til <b>Lister</b>.</li>
 <li>Vel <b>Tomme lister</b> eller <b>Med varer og strekkodar</b>.</li>
@@ -2486,6 +2487,106 @@ function viewHjelp(){
   <p class="tiny muted" style="text-align:center">Krambua Varetelling v${APP_VER}${STAFF ? ' · versjon for tilsette' : ''}</p>`;
 }
 
+
+/* ------------------------------ PLAKATAR med kople-QR (berre administrator) ------------------------------ */
+const PLK_CSS = `<style>
+.plk{width:186mm;height:266mm;display:flex;flex-direction:column;overflow:hidden;font-family:Inter,"Helvetica Neue",Arial,system-ui,sans-serif;color:#1E2A30;-webkit-print-color-adjust:exact;print-color-adjust:exact;line-height:1.3}
+.plk *{box-sizing:border-box}
+.plk .ph{background:#263238;color:#fff;border-radius:5mm;padding:6mm 7mm;display:flex;gap:7mm;align-items:center}
+.plk .ph .t{flex:1;min-width:0}
+.plk .pf{font-size:8.5pt;letter-spacing:2.2px;font-weight:700;opacity:.75;text-transform:uppercase}
+.plk h1{font-size:31pt;line-height:1.03;margin:2mm 0 1.6mm;font-weight:800;letter-spacing:-.4px;color:#fff;border:0;padding:0}
+.plk .pl{font-size:11pt;line-height:1.34;opacity:.92;margin:0}
+.plk .pq{background:#fff;border-radius:4mm;padding:3.5mm;text-align:center;color:#1E2A30;flex:0 0 auto}
+.plk .pq svg{display:block;width:46mm;height:46mm}
+.plk .pq.s svg{width:32mm;height:32mm}
+.plk .pq b{display:block;font-size:10pt;margin-top:2mm}
+.plk .pq span{display:block;font-size:7pt;color:#5D6B70;margin-top:.6mm}
+.plk .pw{margin-top:3.5mm;display:flex;gap:3mm;align-items:center;background:#B3261E;color:#fff;border-radius:3mm;padding:2.4mm 4mm;font-size:9.5pt;font-weight:600}
+.plk .pfirst{margin-top:3.5mm;border:2px solid #C98A1A;background:#FFF6E6;border-radius:4mm;padding:3mm 4.5mm;font-size:10.5pt;line-height:1.38}
+.plk .pfirst b{color:#8A5A00}
+.plk ol{list-style:none;padding:0;margin:4mm 0 0;display:grid;gap:2.1mm}
+.plk ol li{display:grid;grid-template-columns:10.5mm 1fr;gap:3.6mm;align-items:start}
+.plk .n{width:10.5mm;height:10.5mm;border-radius:50%;background:#C98A1A;color:#fff;font-weight:800;font-size:14pt;display:flex;align-items:center;justify-content:center}
+.plk li.last .n{background:#2E8B47}
+.plk .st{font-size:10pt;line-height:1.32;color:#33434A}
+.plk .st b{display:block;font-size:12pt;margin:.2mm 0 .4mm;color:#1E2A30}
+.plk .q{font-weight:700;color:#1E2A30;white-space:nowrap}
+.plk .pfoot{margin-top:auto;padding-top:3mm;border-top:1px solid #DCD8CE;display:flex;justify-content:space-between;font-size:8.5pt;color:#5D6B70}
+.plk h2{font-size:13.5pt;margin:4mm 0 1.6mm;border:0;padding:0;letter-spacing:-.2px}
+.plk table{width:100%;border-collapse:separate;border-spacing:0;font-size:10pt;line-height:1.28}
+.plk th{text-align:left;font-size:8pt;letter-spacing:1px;text-transform:uppercase;color:#5D6B70;padding:0 2.6mm 1.6mm;font-weight:700}
+.plk td{padding:1.35mm 2.6mm;vertical-align:middle;border-top:1px solid #E4E0D6}
+.plk tr:last-child td{border-bottom:1px solid #E4E0D6}
+.plk td.w{font-weight:700}
+.plk .pill{display:inline-flex;align-items:center;gap:1.4mm;border-radius:99px;padding:1.1mm 3mm;font-weight:700;font-size:10pt;white-space:nowrap}
+.plk .pill svg{width:3.6mm;height:3.6mm}
+.plk .ok{background:#2E8B47;color:#fff}.plk .busy{background:#3D5560;color:#fff}.plk .warn{background:#F2B33D;color:#1E2A30}.plk .av{background:#E4E7E8;color:#1E2A30}
+.plk .rules{display:grid;grid-template-columns:repeat(3,1fr);gap:3.5mm;margin-top:4mm}
+.plk .rule{background:#263238;color:#fff;border-radius:4mm;padding:3mm 4mm;font-size:10pt;line-height:1.3}
+.plk .rule b{display:block;font-size:17pt;color:#F2B33D;line-height:1;margin-bottom:1.6mm}
+</style>`;
+function plakatHTML(qrSvg){
+  const HOUR = '<svg viewBox="0 0 16 16"><path d="M4 1.5h8M4 14.5h8M5 1.5c0 3.5 6 3.5 6 6.5s-6 3-6 6.5M11 1.5c0 3.5-6 3.5-6 6.5s6 3 6 6.5" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round"/></svg>';
+  const PAUSE = '<svg viewBox="0 0 16 16"><rect x="3.5" y="2.5" width="3" height="11" rx="1" fill="currentColor"/><rect x="9.5" y="2.5" width="3" height="11" rx="1" fill="currentColor"/></svg>';
+  const firm = esc(T.meta.firma || 'Krambua Bensin & Storkiosk');
+  const qbox = (cls) => `<div class="pq ${cls || ''}">${qrSvg}<b>Skann for å kople til</b><span>Teljing: ${esc(T.meta.namn)}</span></div>`;
+  const warn = `<div class="pw"><span style="font-size:13pt">⚠</span><span>Berre for tilsette – skal henge på bakrommet. QR-koden gjev tilgang til teljinga. Ikkje del bilete av han.</span></div>`;
+  const foot = `<div class="pfoot"><span>Full handbok: trykk <b>?</b> øvst i appen</span><span>Skriven ut ${esc(fmtDato(nowISO().slice(0, 10)))}</span></div>`;
+  const STEPS = [
+    ['Vel namnet ditt', 'Trykk namnet ditt når appen spør <span class="q">«Kven tel?»</span>. Byt seinare med namneknappen øvst til høgre.'],
+    ['Opne reolen', 'Trykk på reolen på kartet, eller trykk <span class="q">«Skann reol-kode på tellelista»</span> og skann koden øvst på papirlista.'],
+    ['Finn vara', 'Trykk <span class="q">«Skann strekkode»</span> og hald strekkoden i ramma, 15–25 cm unna. Utan strekkode: skriv namnet i søkefeltet og vel i lista.'],
+    ['Skriv mengda og lagre', 'Skriv talet og trykk <span class="q">«Lagre linje»</span> eller Enter. Feltet er straks klart for neste vare.'],
+    ['Skruar og småting', 'Vel <span class="q">«Vekt → tal»</span>. Tel opp 10 stk og vege dei, vege så alt saman og trekk frå boksen. Appen reknar ut talet.'],
+    ['Ny vare', 'Skriv namnet, skann strekkoden om vara har det, og skriv prisen om du veit han. Vel mva-sats: 15 % for mat og drikke, elles 25 %.'],
+    ['Feil?', 'Trykk <span class="q">✎</span> på linja for å endre mengd, flytte til ein annan reol eller slette.'],
+    ['Ferdig med reolen', 'Trykk <span class="q">«✓ Ferdig med …»</span>. Reolen blir grøn på kartet.'],
+    ['Sjå merket øvst før du går heim', 'Det skal stå <span class="pill ok" style="font-size:9pt;padding:.6mm 2.4mm">✓ Alt delt</span>. Står det noko anna, er tala trygge på telefonen – men ikkje slett appen.']
+  ];
+  const p1 = `<div class="page"><div class="plk">
+    <div class="ph"><div class="t"><div class="pf">${firm} · Varetelling</div><h1>Slik tel du</h1><p class="pl">Éi linje per vare på kvar reol. Namnet ditt, dato og klokkeslett kjem av seg sjølv.</p></div>${qbox()}</div>
+    ${warn}
+    <div class="pfirst"><b>Første gong:</b> skann QR-koden med kameraet på telefonen. Appen opnar seg og er kopla til teljinga. Legg han så til på heimeskjermen – iPhone: Del → Legg til på Heim-skjerm · Android: ⋮ → Legg til på startskjermen.</div>
+    <ol>${STEPS.map((s, i) => `<li class="${i === STEPS.length - 1 ? 'last' : ''}"><span class="n">${i + 1}</span><div class="st"><b>${s[0]}</b>${s[1]}</div></li>`).join('')}</ol>
+    ${foot}</div></div>`;
+  const BADGES = [
+    ['<span class="pill ok">✓ Alt delt 14:32</span>', 'Alt er trygt lagra og delt', 'Ingenting'],
+    [`<span class="pill busy">${HOUR} 3 ventar</span>`, 'Lagra på telefonen. Blir sendt innan eit minutt', 'Tel vidare'],
+    ['<span class="pill warn">⚠ 3 ikkje delt</span>', 'Ikkje nett, eller ikkje kontakt', 'Tel vidare. Ikkje slett appen. Blir sendt når nettet er tilbake'],
+    [`<span class="pill warn">${PAUSE} 3 ventar</span>`, 'Appen må vente litt før han får sende meir', 'Tel vidare. Går av seg sjølv'],
+    ['<span class="pill av">● Lokalt</span>', 'Telefonen er ikkje kopla til', 'Skann QR-koden på denne plakaten'],
+    ['<span class="pill warn">⚠ Lagringsfeil</span>', 'Telefonen klarte ikkje lagre', 'Ikkje lukk appen. Si frå med ein gong']
+  ];
+  const PROB = [
+    ['Kameraet les ikkje koden', 'Hald 15–25 cm unna i godt lys. Prøv «Byt kamera». Elles: trykk «Skriv inn».'],
+    ['Vara blir ikkje funnen', 'Legg ho inn som ny vare. Då blir ho funnen neste gong.'],
+    ['Talde i feil reol', 'Trykk ✎ på linja, vel rett seksjon og trykk «Lagre endring».'],
+    ['Sletta ei linje ved ein feil', 'Trykk «Angre» i meldinga nedst med ein gong.'],
+    ['Reolen er ferdig, men noko manglar', 'Opne reolen og trykk «Opne att for å legge til».'],
+    ['Ser ikkje det dei andre har talt', 'Vent eit minutt, eller trykk på merket øvst og «Del no».']
+  ];
+  const p2 = `<div class="page"><div class="plk">
+    <div class="ph"><div class="t"><div class="pf">${firm} · Varetelling</div><h1>Kva merket øvst betyr</h1><p class="pl">Alt du tel blir lagra på telefonen med ein gong. Merket øvst til høgre viser om det òg er sendt vidare. Lukkar du appen ved ein feil, er ingenting tapt.</p></div>${qbox('s')}</div>
+    ${warn}
+    <table style="margin-top:4mm"><thead><tr><th style="width:48mm">Merket</th><th>Det betyr</th><th style="width:58mm">Du gjer</th></tr></thead><tbody>
+    ${BADGES.map(b => `<tr><td>${b[0]}</td><td>${b[1]}</td><td class="w">${b[2]}</td></tr>`).join('')}</tbody></table>
+    <h2>Vanlege problem</h2>
+    <table><tbody>${PROB.map(p => `<tr><td class="w" style="width:58mm">${p[0]}</td><td>${p[1]}</td></tr>`).join('')}</tbody></table>
+    <div class="rules"><div class="rule"><b>1</b>Ikkje bruk privat modus i nettlesaren.</div><div class="rule"><b>2</b>Ikkje slett appen eller nettlesardata medan teljinga pågår.</div><div class="rule"><b>3</b>Sjå at det står «✓ Alt delt» før du går heim.</div></div>
+    ${foot}</div></div>`;
+  return PLK_CSS + p1 + p2;
+}
+async function koplePlakat(){
+  if (STAFF) return;
+  if (!getToken()) return toast('Slå på deling først', 'err');
+  try{ await loadScript(QR_URLS); }catch(e){ return toast(e.message, 'err'); }
+  const qr = qrcode(0, 'M'); qr.addData(kopleLenke()); qr.make();
+  const svg = qr.createSvgTag({cellSize:4, margin:0, scalable:true});
+  closeModal();
+  showPreview('Plakatar for tilsette – med kople-kode', plakatHTML(svg));
+}
+
 /* ------------------------------ OPPSETT ------------------------------ */
 function viewOppsett(){
   const M = T.meta, g = ghCfg(), tok = getToken();
@@ -2524,6 +2625,7 @@ function viewOppsett(){
     <p class="small muted" style="margin-top:0">Tilsett-versjonen har berre kart og teljing. Han viser ingen kronebeløp, rapportar eller oppsett. Nye varer kan leggjast inn med namn og strekkode.</p>
     <div class="small" style="word-break:break-all"><b>Adresse:</b> ${esc(staffUrl())}</div>
     <div class="btnrow"><button class="btn primary" data-act="kople-qr" ${tok ? '' : 'disabled'}>Vis QR-kode «Kople til telefon»</button><button class="btn" data-act="kople-kopier" ${tok ? '' : 'disabled'}>Kopier lenke med tilgang</button><button class="btn" data-act="kople-adr">Kopier adresse</button></div>
+    <div class="btnrow"><button class="btn ochre wide" data-act="kople-plakat" ${tok ? '' : 'disabled'}>🖨 Skriv ut plakatar med kople-kode</button></div>
     <p class="tiny muted">${tok ? 'QR-koden og lenka inneheld tilgangsnøkkelen, så telefonen vert kopla til delinga med éin gong. Vis eller send dei berre til tilsette.' : 'Slå på deling over først. Då kan telefonane koplast til med ein QR-kode.'}</p></div>
   <div class="card"><h2>Byt telling</h2>
     <p class="small muted" style="margin-top:0">Kvar telling har sin eigen kode, t.d. årstalet. Opnar du ein kode som finst i repoet, vert han henta.</p>
@@ -2616,6 +2718,7 @@ const ACT = {
   'gen-edit':el => genEdit(el.dataset.v),
   'an-excel':() => analyseExcel(),
   'kople-qr':() => kopleQR(),
+  'kople-plakat':() => koplePlakat(),
   'kople-kopier':() => kopleKopier(false),
   'kople-adr':() => kopleKopier(true),
   's-token':() => { setToken($('#g-token').value.trim()); SY.known = {}; SY.dirSha = null; SY.legacySha = null; SYC.sha = null; if (!ghOn()){ render(); return; } markAllPending(); syncNow(true).then(() => { render(); toast(SYNC.status === 'ok' ? 'Kopla til' : 'Feil: ' + SYNC.err, SYNC.status === 'ok' ? 'ok' : 'err'); }); },
