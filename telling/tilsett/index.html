@@ -1,0 +1,2087 @@
+<!DOCTYPE html>
+<html lang="nn">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<meta name="theme-color" content="#263238">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<title>Krambua Varetelling – tilsette</title>
+<style>
+:root{--slate:#263238;--reol:#37525A;--ochre:#C98A1A;--kjol:#7FB3C8;--red:#C8102E;--cream:#F6EFE0;--jv:#E6ECEF;--bg:#F2F0EB;--card:#fff;--line:#DCD8CE;--muted:#5D6B70;--ok:#2E8B47;--okbg:#E3F2E7;--warn:#C27700;--warnbg:#FFF2D9;--err:#B3261E;--errbg:#FCE8E6;--txt:#1E2A30;--focus:#2B6CB0}
+*{box-sizing:border-box}
+html,body{margin:0;background:var(--bg);color:var(--txt);font:16px/1.45 system-ui,-apple-system,"Segoe UI",Roboto,"Helvetica Neue",Arial,sans-serif;-webkit-text-size-adjust:100%}
+button,input,select,textarea{font:inherit;color:inherit}
+a{color:var(--focus)}
+#topbar{position:sticky;top:0;z-index:30;background:var(--slate);color:#fff;padding:calc(env(safe-area-inset-top) + 8px) 14px 9px;display:flex;align-items:center;gap:10px}
+#topbar .ttl{flex:1;min-width:0}
+#topbar .ttl b{display:block;font-size:13.5px;letter-spacing:.6px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+#topbar .ttl span{display:block;font-size:12.5px;opacity:.8;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.pill-btn{border:1px solid rgba(255,255,255,.35);background:rgba(255,255,255,.08);color:#fff;border-radius:999px;padding:6px 11px;font-size:13.5px;display:inline-flex;align-items:center;gap:6px;max-width:46vw;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;cursor:pointer}
+.pill-btn.need{background:#F2B33D;color:#1E2A30;border-color:#F2B33D;font-weight:600}
+#sync{font-size:12px;border-radius:999px;padding:4px 9px;cursor:pointer;border:0;white-space:nowrap}
+#sync.av{background:rgba(255,255,255,.12);color:#cfd8dc}
+#sync.ok{background:#2E8B47;color:#fff}
+#sync.busy{background:#3d5560;color:#fff}
+#sync.feil{background:#F2B33D;color:#1E2A30}
+main{padding:12px 12px 96px;max-width:860px;margin:0 auto}
+#nav{position:fixed;bottom:0;left:0;right:0;z-index:30;display:flex;background:#fff;border-top:1px solid var(--line);padding-bottom:env(safe-area-inset-bottom)}
+#nav button[hidden]{display:none}
+#nav button{flex:1;border:0;background:none;padding:8px 2px 9px;font-size:11.5px;color:var(--muted);display:flex;flex-direction:column;align-items:center;gap:2px;cursor:pointer}
+#nav button svg{width:22px;height:22px}
+#nav button.on{color:var(--slate);font-weight:700}
+#nav button.on svg{stroke:var(--ochre)}
+h1{font-size:21px;margin:4px 0 10px}
+h2{font-size:17px;margin:0 0 10px}
+h3{font-size:15px;margin:14px 0 8px}
+.card{background:var(--card);border:1px solid var(--line);border-radius:12px;padding:14px;margin-bottom:12px}
+.muted{color:var(--muted)}
+.small{font-size:13.5px}
+.tiny{font-size:12px}
+.btn{display:inline-flex;align-items:center;justify-content:center;gap:7px;min-height:44px;padding:9px 15px;border-radius:10px;border:1px solid #C9C4B8;background:#fff;cursor:pointer;font-weight:600;font-size:15px;text-decoration:none;color:var(--txt)}
+.btn:active{transform:translateY(1px)}
+.btn.primary{background:var(--slate);color:#fff;border-color:var(--slate)}
+.btn.ok{background:var(--ok);color:#fff;border-color:var(--ok)}
+.btn.ochre{background:var(--ochre);color:#fff;border-color:var(--ochre)}
+.btn.danger{color:var(--err);border-color:#E3B5B1}
+.btn.ghost{border-color:transparent;background:transparent}
+.btn.big{min-height:54px;font-size:17px}
+.btn.wide{width:100%}
+.btn[disabled]{opacity:.45;pointer-events:none}
+.btnrow{display:flex;flex-wrap:wrap;gap:8px;margin-top:10px}
+.btnrow .btn{flex:1 1 auto}
+label{display:block;font-size:13.5px;color:var(--muted);font-weight:600;margin:10px 0 0}
+label input,label select,label textarea{display:block;width:100%;margin-top:4px}
+input[type=text],input:not([type]),input[type=password],input[type=date],input[type=number],select,textarea{border:1px solid #C9C4B8;border-radius:9px;padding:10px 11px;background:#fff;min-height:44px;font-size:16px;color:var(--txt);font-weight:500}
+input:focus,select:focus,textarea:focus,button:focus-visible{outline:3px solid rgba(43,108,176,.35);outline-offset:1px;border-color:var(--focus)}
+label.check{display:flex;gap:9px;align-items:center;color:var(--txt);font-weight:500;font-size:15px}
+label.check input{width:22px;height:22px;margin:0}
+.row2{display:grid;grid-template-columns:1fr 1fr;gap:10px}
+.row3{display:grid;grid-template-columns:1fr 1fr 1fr;gap:8px}
+.lbl{font-size:13.5px;color:var(--muted);font-weight:600;margin:12px 0 5px}
+.chips{display:flex;gap:7px;flex-wrap:wrap}
+.chip{border:1.5px solid #C9C4B8;background:#fff;border-radius:999px;padding:8px 15px;font-weight:700;cursor:pointer;min-height:42px;font-size:15px}
+.chip.on{background:var(--slate);color:#fff;border-color:var(--slate)}
+.seg{display:flex;border:1.5px solid #C9C4B8;border-radius:10px;overflow:hidden}
+.seg button{flex:1;border:0;background:#fff;padding:10px 6px;font-weight:600;cursor:pointer;min-height:44px;font-size:14.5px}
+.seg button+button{border-left:1.5px solid #C9C4B8}
+.seg button.on{background:var(--ochre);color:#fff}
+.seg.small button{padding:6px;min-height:36px;font-size:13px}
+.tag{display:inline-block;font-size:12px;font-weight:700;border-radius:6px;padding:2px 7px;background:#ECEAE4;color:var(--muted);vertical-align:middle}
+.tag.ok{background:var(--okbg);color:var(--ok)}
+.tag.warn{background:var(--warnbg);color:var(--warn)}
+.tag.err{background:var(--errbg);color:var(--err)}
+.tag.st1{background:var(--warnbg);color:var(--warn)}
+.tag.st2{background:var(--okbg);color:var(--ok)}
+.banner{border-radius:10px;padding:11px 13px;margin-bottom:12px;font-size:14.5px;border:1px solid}
+.banner.warn{background:var(--warnbg);border-color:#F0D49B}
+.banner.ok{background:var(--okbg);border-color:#B7DDC2}
+.banner.info{background:#EAF1F7;border-color:#C5D7E8}
+.banner.err{background:var(--errbg);border-color:#F1C3BF}
+.stats{display:grid;grid-template-columns:repeat(3,1fr);gap:8px;margin-bottom:12px}
+.stat{background:#fff;border:1px solid var(--line);border-radius:12px;padding:10px 11px}
+.stat b{display:block;font-size:19px;line-height:1.2;font-variant-numeric:tabular-nums}
+.stat span{font-size:12px;color:var(--muted)}
+.progress{height:8px;background:#E4E0D6;border-radius:99px;overflow:hidden;margin-top:6px}
+.progress i{display:block;height:100%;background:var(--ok);border-radius:99px}
+.mapwrap{background:#fff;border:1px solid var(--line);border-radius:12px;padding:6px;margin-bottom:12px;overflow:auto;-webkit-overflow-scrolling:touch}
+.mapwrap.zoom svg{width:165%;max-width:none}
+svg.map{display:block;width:100%;height:auto;max-width:640px;margin:0 auto;user-select:none;-webkit-user-select:none}
+.map .ml{font-size:12.5px;font-weight:600;fill:#22313A}
+.map .ml.w{fill:#fff}
+.map .sm{font-size:11px;font-weight:500}
+.map .rl{font-size:17px;font-weight:700;fill:#22313A}
+.map .area{font-size:13px;letter-spacing:3px;font-weight:700;fill:#6B7A80}
+.map .hit{fill:transparent;cursor:pointer;pointer-events:all;stroke:transparent;stroke-width:2;rx:4}
+.map .hit:hover{fill:rgba(38,50,56,.07);stroke:rgba(38,50,56,.35)}
+.map .hit.st1{fill:rgba(242,170,30,.30);stroke:#D98A00}
+.map .hit.st2{fill:rgba(46,139,71,.30);stroke:#2E8B47}
+.map .hit.h0{fill:url(#hatch);stroke:#8A9599}
+.map .hit.h1{fill:rgba(46,139,71,.40);stroke:#2E8B47}
+.map .hit.h2{fill:rgba(235,195,30,.50);stroke:#B89400}
+.map .hit.h3{fill:rgba(240,135,25,.50);stroke:#C9650A}
+.map .hit.h4{fill:rgba(200,30,40,.45);stroke:#B3261E}
+.map .badge.h0 rect{fill:#6B7A80}.map .badge.h1 rect{fill:#2E8B47}.map .badge.h2 rect{fill:#8C7100}.map .badge.h3 rect{fill:#B85A08}.map .badge.h4 rect{fill:#B3261E}
+.dupg{border:1px solid var(--line);border-radius:10px;padding:9px 11px;margin-top:8px;background:#FFFCF5}
+.dupg.ok{background:#F6FBF7;border-color:#CFE6D6}
+.dupg .row{display:flex;gap:8px;align-items:center;justify-content:space-between;flex-wrap:wrap}
+.qr svg{display:block;width:100%;max-width:320px;height:auto;margin:0 auto}
+.heat-leg i{display:inline-block;width:12px;height:12px;border-radius:3px;vertical-align:-1px;margin-right:4px}
+.map .badge{pointer-events:none}
+.map .badge circle{fill:#263238}
+.map .badge.st2 circle{fill:#2E8B47}
+.map .badge.st1 circle{fill:#C27700}
+.map .badge text{fill:#fff;font-size:10.5px;font-weight:700}
+.legend{display:flex;gap:14px;flex-wrap:wrap;font-size:12.5px;color:var(--muted);margin:2px 4px 8px}
+.legend i{display:inline-block;width:12px;height:12px;border-radius:3px;vertical-align:-1px;margin-right:5px;border:1.5px solid}
+.seklist{display:flex;flex-direction:column;gap:6px}
+.sekrow{display:flex;align-items:center;gap:10px;background:#fff;border:1px solid var(--line);border-radius:10px;padding:9px 11px;cursor:pointer;text-align:left;width:100%}
+.sekrow .code{font-weight:800;font-size:13px;background:#ECEAE4;border-radius:6px;padding:3px 6px;min-width:40px;text-align:center}
+.sekrow.st1 .code{background:var(--warnbg);color:var(--warn)}
+.sekrow.st2 .code{background:var(--okbg);color:var(--ok)}
+.sekrow .nm{flex:1;min-width:0}
+.sekrow .nm b{display:block;font-size:15px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.sekrow .nm span{font-size:12.5px;color:var(--muted)}
+.sekrow .rt{text-align:right;font-size:13px;white-space:nowrap;font-variant-numeric:tabular-nums}
+.grp-h{font-size:12.5px;font-weight:800;letter-spacing:1px;text-transform:uppercase;color:var(--muted);margin:14px 2px 6px}
+.sek-head{display:flex;gap:12px;align-items:flex-start}
+.sek-head .code{font-weight:800;font-size:20px;background:var(--slate);color:#fff;border-radius:9px;padding:6px 10px}
+.search{display:flex;gap:8px;position:relative}
+.search input{flex:1;min-width:0}
+#forslag{margin-top:6px;display:flex;flex-direction:column;gap:5px}
+.sugg{display:flex;justify-content:space-between;gap:10px;border:1px solid var(--line);background:#FBFAF7;border-radius:9px;padding:9px 11px;cursor:pointer;text-align:left;width:100%}
+.sugg b{font-weight:600}
+.sugg .pr{white-space:nowrap;font-variant-numeric:tabular-nums;font-weight:600}
+.sugg.new{background:var(--warnbg);border-color:#F0D49B}
+.form{border:2px solid var(--ochre);border-radius:12px;padding:12px 13px;margin-top:12px;background:#FFFCF5}
+.vare-namn{font-size:18px;font-weight:700;line-height:1.25}
+.vare-meta{font-size:13px;color:var(--muted);margin-top:3px}
+.antal-row{display:grid;grid-template-columns:62px minmax(0,1fr) 62px;gap:8px;margin-top:12px}
+.antal-row input{text-align:center;font-size:26px;font-weight:700;min-height:58px;min-width:0;width:100%}
+.search input{min-width:0}
+.row2>label,.row3>label{min-width:0}
+table.t td:first-child{white-space:nowrap}
+.antal-row .btn{font-size:26px;min-height:58px;padding:0}
+.calc{margin-top:10px;background:#fff;border:1px dashed #C9C4B8;border-radius:9px;padding:9px 11px;font-size:14.5px}
+.calc b{font-size:22px}
+.sumline{margin-top:12px;font-size:15px;background:var(--slate);color:#fff;border-radius:9px;padding:10px 12px;font-variant-numeric:tabular-nums}
+.sumline b{font-size:18px}
+.lines{display:flex;flex-direction:column;gap:6px}
+.line{display:flex;gap:10px;align-items:center;background:#fff;border:1px solid var(--line);border-radius:10px;padding:9px 10px}
+.line .nr{font-size:12px;font-weight:700;color:var(--muted);min-width:26px}
+.line .mid{flex:1;min-width:0}
+.line .mid b{display:block;font-size:14.5px;font-weight:600;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.line .mid span{font-size:12.5px;color:var(--muted)}
+.line .sum{text-align:right;font-weight:700;font-size:14px;white-space:nowrap;font-variant-numeric:tabular-nums}
+.line .sum span{display:block;font-weight:500;font-size:12px;color:var(--muted)}
+.line button{border:1px solid var(--line);background:#fff;border-radius:8px;width:40px;height:40px;cursor:pointer;font-size:17px}
+table.t{width:100%;border-collapse:collapse;font-size:14px;font-variant-numeric:tabular-nums}
+table.t th,table.t td{padding:7px 6px;border-bottom:1px solid #ECE8DF;text-align:left;vertical-align:top}
+table.t th{font-size:12px;color:var(--muted);font-weight:700;text-transform:uppercase;letter-spacing:.3px}
+table.t td.n,table.t th.n{text-align:right;white-space:nowrap}
+table.t tr.sum td{font-weight:800;border-top:2px solid var(--slate);border-bottom:0}
+.tablewrap{overflow-x:auto}
+#toast{position:fixed;left:50%;bottom:calc(84px + env(safe-area-inset-bottom));transform:translateX(-50%) translateY(20px);background:#1E2A30;color:#fff;padding:11px 16px;border-radius:10px;font-size:14.5px;opacity:0;pointer-events:none;transition:.2s;z-index:90;max-width:92vw;box-shadow:0 6px 20px rgba(0,0,0,.25)}
+#toast.show{opacity:1;transform:translateX(-50%) translateY(0);pointer-events:auto}
+#toast.err{background:var(--err)}
+#toast.ok{background:var(--ok)}
+#toast button{background:none;border:0;color:#FFD36E;font-weight:700;margin-left:10px;cursor:pointer}
+.modal-bg{position:fixed;inset:0;background:rgba(20,28,32,.55);z-index:80;display:flex;align-items:flex-end;justify-content:center}
+.modal{background:#fff;border-radius:16px 16px 0 0;padding:18px 16px calc(18px + env(safe-area-inset-bottom));width:100%;max-width:560px;max-height:88vh;overflow:auto}
+@media (min-width:640px){.modal-bg{align-items:center}.modal{border-radius:16px}}
+.modal h2{margin-bottom:6px}
+.namelist{display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-top:10px}
+.namelist .btn{justify-content:flex-start;text-align:left}
+.namelist .btn.on{background:var(--slate);color:#fff}
+#scanner{position:fixed;inset:0;background:#000;z-index:95}
+#scanner[hidden]{display:none}
+#scanner video{position:absolute;inset:0;width:100%;height:100%;object-fit:cover}
+#scanner .frame{position:absolute;left:8%;right:8%;top:32%;height:28%;border:3px solid rgba(255,255,255,.9);border-radius:14px;box-shadow:0 0 0 2000px rgba(0,0,0,.35)}
+#scanner .frame::after{content:"";position:absolute;left:6%;right:6%;top:50%;height:2px;background:#FF4D4D;box-shadow:0 0 8px #FF4D4D}
+#scanner .top{position:absolute;top:calc(env(safe-area-inset-top) + 16px);left:0;right:0;text-align:center;color:#fff;font-weight:600;font-size:16px;text-shadow:0 1px 4px #000}
+#scanner .bot{position:absolute;bottom:calc(env(safe-area-inset-bottom) + 22px);left:0;right:0;display:flex;justify-content:center;gap:12px}
+#scanner .bot .btn{min-width:120px}
+.kv{display:grid;grid-template-columns:auto 1fr;gap:4px 14px;font-size:14.5px}
+.kv dt{color:var(--muted)}
+.kv dd{margin:0;font-weight:600}
+.drop{border:2px dashed #C9C4B8;border-radius:12px;padding:18px;text-align:center;background:#FBFAF7}
+.itemrow{display:flex;gap:10px;align-items:center;border-bottom:1px solid #ECE8DF;padding:8px 2px;cursor:pointer}
+.itemrow:last-child{border-bottom:0}
+.itemrow .mid{flex:1;min-width:0}
+.itemrow b{display:block;font-weight:600;font-size:14.5px}
+.itemrow span{font-size:12.5px;color:var(--muted)}
+.hide{display:none!important}
+details summary{cursor:pointer;font-weight:700}
+/* ---------- utskrift ---------- */
+#print-root{display:none}
+body.preview #print-root{display:block;position:fixed;inset:0;overflow:auto;background:#7d878b;z-index:100;-webkit-overflow-scrolling:touch}
+body.preview #app,body.preview #nav{display:none}
+.pv-bar{position:sticky;top:0;z-index:2;display:flex;gap:8px;align-items:center;padding:calc(env(safe-area-inset-top) + 8px) 10px 8px;background:var(--slate);color:#fff}
+.pv-bar b{flex:1;font-size:14px}
+.pv-bar .btn{min-height:40px;padding:6px 13px}
+.doc{font-family:"Helvetica Neue",Arial,system-ui,sans-serif;color:#111;font-size:9.5pt;line-height:1.35}
+.page{background:#fff;width:210mm;max-width:calc(100vw - 16px);min-height:200mm;margin:10px auto;padding:13mm 12mm;box-shadow:0 2px 10px rgba(0,0,0,.3);position:relative;overflow:hidden}
+.doc h1{font-size:17pt;margin:2mm 0 1mm;letter-spacing:.2px}
+.doc h2{font-size:11pt;margin:4mm 0 1.5mm;padding-bottom:1mm;border-bottom:1.5px solid #263238}
+.doc .firm{font-size:8.5pt;letter-spacing:1.6px;font-weight:700;color:#37474F;text-transform:uppercase}
+.doc .sub{color:#444;font-size:9.5pt}
+.doc table{width:100%;border-collapse:collapse;font-variant-numeric:tabular-nums}
+.doc th,.doc td{border-bottom:.6pt solid #BFC5C7;padding:1.3mm 1.4mm;text-align:left;vertical-align:top}
+.doc th{background:#ECEFF0;font-size:7.6pt;text-transform:uppercase;letter-spacing:.3px;border-bottom:.9pt solid #263238}
+.doc thead{display:table-header-group}
+.doc tr{break-inside:avoid}
+.doc td.n,.doc th.n{text-align:right;white-space:nowrap}
+.doc td.c,.doc th.c{text-align:center;white-space:nowrap}
+.doc tr.sum td{font-weight:700;border-top:1.2pt solid #263238;border-bottom:1.2pt solid #263238;background:#F6F7F7}
+.doc tr.sub td{background:#FAFAFA;font-weight:600}
+.doc .info td{border:0;padding:.45mm 2mm .45mm 0}
+.doc .info td:first-child{color:#555;width:46mm}
+.doc .box{border:1.2pt solid #263238;padding:3mm 4mm;margin-top:3mm;display:flex;justify-content:space-between;align-items:center;font-size:11.5pt;font-weight:700}
+.doc .note{font-size:8pt;color:#333;margin:2.5mm 0 0}
+.doc .sig{display:grid;grid-template-columns:1fr 1fr;gap:0 10mm;break-inside:avoid}
+.doc .sig div{border-top:.8pt solid #111;padding-top:1mm;font-size:8pt;color:#333;margin-top:10mm}
+.doc .sigblock{break-inside:avoid}
+.doc .wm{border:1.5pt solid #B3261E;color:#B3261E;background:#FDF0EF;font-weight:800;font-size:9pt;padding:1mm 3mm;letter-spacing:1px;text-align:center;margin:0 0 3mm}
+.doc .lh{display:flex;justify-content:space-between;gap:6mm;align-items:flex-start}
+.doc .lh .bc{text-align:center;font-size:7.5pt}
+.doc .lnum{font-size:22pt;font-weight:800;line-height:1}
+.doc .vekt{font-size:7.6pt;color:#444;font-style:italic}
+.doc .fld{display:grid;grid-template-columns:repeat(3,1fr);gap:4mm;margin:3mm 0 2mm;font-size:8.5pt}
+.doc .fld div{border-bottom:.8pt solid #111;padding-bottom:4mm;color:#444}
+.doc .blankrow td{height:9.5mm}
+.doc .foot{margin-top:4mm;font-size:7.5pt;color:#666}
+.doc svg.bcd{display:block}
+.doc .meth{font-size:7pt;color:#555}
+@page{size:A4;margin:12mm 11mm 14mm}
+@media print{
+  html,body{background:#fff!important}
+  body.preview #print-root{position:static;overflow:visible;background:#fff}
+  #app,#nav,#topbar,.pv-bar,#toast,#modal-root,#scanner{display:none!important}
+  .page{width:auto;max-width:none;min-height:0;margin:0;padding:0;box-shadow:none;overflow:visible}
+  .page+.page{break-before:page}
+  .doc{font-size:9pt}
+}
+</style>
+</head>
+<body>
+<div id="app">
+  <header id="topbar">
+    <div class="ttl"><b>KRAMBUA VARETELLING</b><span id="tb-sub"></span></div>
+    <button id="sync" class="av" data-act="sync-info" title="Deling">● Lokalt</button>
+    <button id="tb-tellar" class="pill-btn" data-act="vel-tellar"></button>
+  </header>
+  <main id="view"></main>
+  <nav id="nav">
+    <button data-nav="kart"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 6l6-3 6 3 6-3v15l-6 3-6-3-6 3z"/><path d="M9 3v15M15 6v15"/></svg>Kart</button>
+    <button data-nav="rapport"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M14 3H6a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V9z"/><path d="M14 3v6h6M8 13h8M8 17h5"/></svg>Rapport</button>
+    <button data-nav="analyse"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 3v18h18"/><path d="M7 15l4-4 3 3 6-7"/></svg>Analyse</button>
+    <button data-nav="lister"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M6 9V3h12v6M6 18H4a2 2 0 0 1-2-2v-5a2 2 0 0 1 2-2h16a2 2 0 0 1 2 2v5a2 2 0 0 1-2 2h-2"/><path d="M6 14h12v7H6z"/></svg>Lister</button>
+    <button data-nav="varer"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 5v14M7 5v14M11 5v14M14 5v14M18 5v14M21 5v14"/></svg>Varer</button>
+    <button data-nav="oppsett"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.7 1.7 0 0 0 .3 1.8l.1.1a2 2 0 1 1-2.8 2.8l-.1-.1a1.7 1.7 0 0 0-1.8-.3 1.7 1.7 0 0 0-1 1.5V21a2 2 0 1 1-4 0v-.1a1.7 1.7 0 0 0-1.1-1.5 1.7 1.7 0 0 0-1.8.3l-.1.1a2 2 0 1 1-2.8-2.8l.1-.1a1.7 1.7 0 0 0 .3-1.8 1.7 1.7 0 0 0-1.5-1H3a2 2 0 1 1 0-4h.1a1.7 1.7 0 0 0 1.5-1.1 1.7 1.7 0 0 0-.3-1.8l-.1-.1a2 2 0 1 1 2.8-2.8l.1.1a1.7 1.7 0 0 0 1.8.3H9a1.7 1.7 0 0 0 1-1.5V3a2 2 0 1 1 4 0v.1a1.7 1.7 0 0 0 1 1.5 1.7 1.7 0 0 0 1.8-.3l.1-.1a2 2 0 1 1 2.8 2.8l-.1.1a1.7 1.7 0 0 0-.3 1.8V9a1.7 1.7 0 0 0 1.5 1H21a2 2 0 1 1 0 4h-.1a1.7 1.7 0 0 0-1.5 1z"/></svg>Oppsett</button>
+  </nav>
+</div>
+<div id="modal-root"></div>
+<div id="toast"></div>
+<div id="scanner" hidden>
+  <video id="scan-video" playsinline muted autoplay></video>
+  <div class="frame"></div>
+  <div class="top">Rett kameraet mot strekkoden</div>
+  <div class="bot"><button class="btn" data-act="scan-torch">Lys</button><button class="btn primary" data-act="scan-close">Lukk</button></div>
+</div>
+<div id="print-root"></div>
+<input type="file" id="file-vareliste" accept=".xlsx,.xls,.csv,.txt,.xlsm" hidden>
+<input type="file" id="file-json" accept=".json,application/json" hidden>
+<input type="file" id="file-sal" accept=".xlsx,.xls,.csv,.txt,.xlsm" hidden>
+<script>
+'use strict';
+/* =====================================================================
+   Krambua Varetelling – éi fil, køyrer på GitHub Pages.
+   Data: lokalt i nettlesaren + (valfritt) delt via GitHub-repoet.
+   ===================================================================== */
+const APP_VER = '1.2';
+const MODUS = 'tilsett';
+const STAFF = MODUS === 'tilsett';
+const NAV_ITEMS = STAFF ? ['kart','oppsett'] : ['kart','rapport','analyse','lister','varer','oppsett'];
+const QR_URLS = ['https://cdn.jsdelivr.net/npm/qrcode-generator@1.4.4/qrcode.js','https://unpkg.com/qrcode-generator@1.4.4/qrcode.js'];
+const ZXING_URLS = ['https://cdn.jsdelivr.net/npm/@zxing/library@0.21.3/umd/index.min.js','https://unpkg.com/@zxing/library@0.21.3/umd/index.min.js'];
+const XLSX_URLS = ['https://cdn.jsdelivr.net/npm/xlsx@0.18.5/dist/xlsx.full.min.js','https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js'];
+const LS = {
+  active:'krb-telling-aktiv', list:'krb-telling-liste', data:id=>'krb-telling-data-'+id, dirty:id=>'krb-telling-dirty-'+id,
+  cat:'krb-telling-vareliste', catDirty:'krb-telling-vareliste-dirty', tellar:'krb-telling-tellar', gh:'krb-telling-github',
+  token:'krambua-varetelling-gh-token', hints:'krb-telling-hint', sal:'krb-telling-salsdata'
+};
+const GH_DEF = {owner:'kristoffertungesvik-stack', repo:'Krambua-varetelling', branch:'main', dir:'data'};
+const OLD = '2000-01-01T00:00:00.000Z';
+const MVA_SATSAR = [25,15,12,0];
+const EININGAR = ['stk','pk','eske','kg','m','l','sett','rull','par'];
+const DEFAULT_TELLARAR = ['Kristoffer Moe Tungesvik','Vetle Gunleiksrud','Torbjørn Holmedal Åsheim','Malin Johansen','Nora Funderud','Dagmar Born'];
+const OMRADE = {J:'Jernvarerom', B:'Butikk', L:'Lager', K:'Kjøkken', X:'Andre seksjonar'};
+const OMR_ORDER = ['J','B','L','K','X'];
+/* Generelle kasseknappar i PCK (sal som ikkje er skanna som eigne varer) – standard fordeling på seksjonar */
+const DEFAULT_GENERISK = {
+  '100007':{namn:'Jernvarer', sek:['J04','J05','J06','J07','J10','J11','J12','J13'], mva:25},
+  '100016':{namn:'Maling', sek:['J01','J02'], mva:25},
+  '100017':{namn:'Batteri', sek:['B08'], mva:25},
+  '100006':{namn:'Fiskeutstyr', sek:['J08','J09'], mva:25},
+  '100015':{namn:'Båtutstyr', sek:['J03','J08','J09'], mva:25},
+  '100022':{namn:'Bil Rekv', sek:['J07'], mva:25},
+  '100012':{namn:'Tobakk', sek:['B11'], mva:25},
+  '100010':{namn:'Kolon', sek:['B05'], mva:15},
+  '100011':{namn:'Kolon 15%', sek:['B05'], mva:15},
+  '100014':{namn:'Olje', sek:['J12'], mva:25},
+  '100003':{namn:'Kiosk 15%', sek:[], mva:15}
+};
+const GEN_RE = /^(kiosk\s*\d+\s*%?|jernvarer|maling|batteri|fiskeutstyr|båtutstyr|bil\s*rekv\.?|tobakk|kolon|gass|diesel\s*liter|bensin\s*liter|farga\s*diesel\s*liter|kai\s*leige)$/i;
+const SEKSJONAR = [
+  {id:'J01',namn:'Maling',stad:'Veggreol, bakvegg',omr:'J',mva:25},
+  {id:'J02',namn:'Maling',stad:'Veggreol, venstre vegg',omr:'J',mva:25},
+  {id:'J03',namn:'Båtutstyr',stad:'Veggreol mot lageret',omr:'J',mva:25},
+  {id:'J04',namn:'Maleverktøy',stad:'Reol 1, side mot maling',omr:'J',mva:25},
+  {id:'J05',namn:'Verktøy',stad:'Reol 1, side mot midten',omr:'J',mva:25},
+  {id:'J06',namn:'Verktøy',stad:'Reol 2, øvre side',omr:'J',mva:25},
+  {id:'J07',namn:'Bilprodukt · sprayar',stad:'Reol 2, nedre side',omr:'J',mva:25},
+  {id:'J08',namn:'Båt · fiske',stad:'Veggreol under lageret',omr:'J',mva:25},
+  {id:'J09',namn:'Båt- og fiskeutstyr',stad:'Reol 3, øvre side',omr:'J',mva:25},
+  {id:'J10',namn:'Skruar, muttrar, hengsler osv.',stad:'Reol 3, nedre side',omr:'J',mva:25},
+  {id:'J11',namn:'Redningsvest · hageutstyr',stad:'Veggreol, høgre vegg',omr:'J',mva:25},
+  {id:'J12',namn:'Tau · oljer',stad:'Veggreol ved bua, venstre',omr:'J',mva:25},
+  {id:'J13',namn:'Redskap, klemmer',stad:'Veggreol ved bua, høgre',omr:'J',mva:25},
+  {id:'B01',namn:'Snacks · chips',stad:'Reol ved inngangen, øvre side',omr:'B',mva:15},
+  {id:'B02',namn:'Sjokolade · godteri',stad:'Reol ved inngangen, nedre side',omr:'B',mva:15},
+  {id:'B03',namn:'Småis',stad:'Frysar',omr:'B',mva:15},
+  {id:'B04',namn:'Vinterprodukt',stad:'Midtreol, øvre side',omr:'B',mva:25},
+  {id:'B05',namn:'Daglegvarer',stad:'Midtreol, nedre side',omr:'B',mva:15},
+  {id:'B06',namn:'El-ting',stad:'Bakre reol, øvre side',omr:'B',mva:25},
+  {id:'B07',namn:'Diverse',stad:'Bakre reol, nedre side',omr:'B',mva:25},
+  {id:'B08',namn:'Batteri',stad:'Veggreol ved kjøkkenet',omr:'B',mva:25},
+  {id:'B09',namn:'Lyspærer, sikringar',stad:'Veggreol, bakvegg',omr:'B',mva:25},
+  {id:'B10',namn:'Brus/drikke',stad:'Kjøleskap',omr:'B',mva:15},
+  {id:'B11',namn:'Kassa (bak disken)',stad:'Kassa',omr:'B',mva:25},
+  {id:'L01',namn:'Lager',stad:'Lagerrom ved jernvarerommet',omr:'L',mva:25},
+  {id:'L02',namn:'Lager (ute)',stad:'Ytre lager',omr:'L',mva:25},
+  {id:'K01',namn:'Kjøkken',stad:'Kjøkken – råvarer i kjøl/frys/skap',omr:'K',mva:15}
+];
+/* Treffområde på kartet: [x, y, breidd, høgd] i kart-koordinatar */
+const HITS = {
+  K01:[243,646,117,295], L01:[482,228,224,148], L02:[482,163,224,56],
+  J01:[171,226,290,36], J02:[163,262,38,300], J03:[440,262,40,114], J04:[222,322,180,34], J05:[222,356,180,34],
+  J06:[216,449,180,34], J07:[216,483,180,34], J08:[482,377,188,33], J09:[485,459,180,34], J10:[485,493,180,34],
+  J11:[672,410,38,160], J12:[171,570,193,34], J13:[494,570,204,34],
+  B01:[503,693,152,30], B02:[503,723,152,30], B03:[520,845,81,30], B04:[497,878,179,35], B05:[497,913,179,35],
+  B06:[500,972,179,35], B07:[500,1007,179,35], B08:[242,945,121,40], B09:[242,1052,121,38], B10:[365,1039,89,53], B11:[312,777,51,82]
+};
+const MAP_STATIC = `
+<defs><pattern id="hatch" width="7" height="7" patternUnits="userSpaceOnUse" patternTransform="rotate(45)"><rect width="7" height="7" fill="rgba(138,149,153,.18)"/><line x1="0" y1="0" x2="0" y2="7" stroke="rgba(90,100,105,.45)" stroke-width="2.5"/></pattern><marker id="arr" viewBox="0 0 10 10" refX="6" refY="5" markerWidth="5" markerHeight="5" orient="auto-start-reverse"><path d="M0 0L10 5L0 10z" fill="#C8102E"/></marker></defs>
+<rect x="166" y="225" width="542" height="379" fill="#E6ECEF"/>
+<rect x="367" y="600" width="126" height="46" fill="#E6ECEF"/>
+<rect x="240" y="643" width="448" height="449" fill="#F6EFE0"/>
+<rect x="480" y="226" width="226" height="152" fill="#DDE1E0"/>
+<rect x="241" y="644" width="122" height="299" fill="#DDE1E0"/>
+<rect x="482" y="163" width="224" height="56" rx="4" fill="#F4F5F5" stroke="#5F6B70" stroke-width="1.5" stroke-dasharray="6 4"/>
+<g fill="none" stroke="#263238" stroke-width="6" stroke-linecap="square">
+<path d="M367 604H166V225H708V604H493"/><path d="M479 225V380"/><path d="M367 604V643M493 604V643"/>
+<path d="M367 643H240V1092H470M555 1092H688V797M688 722V643H493"/><path d="M363 643V943H240"/>
+</g>
+<g fill="#C98A1A">
+<rect x="171" y="228" width="304" height="8"/><rect x="168" y="236" width="8" height="364"/><rect x="468" y="236" width="8" height="140"/>
+<rect x="482" y="378" width="224" height="8"/><rect x="698" y="387" width="8" height="213"/><rect x="171" y="594" width="193" height="8"/>
+<rect x="494" y="594" width="204" height="8"/><rect x="244" y="949" width="117" height="14"/><rect x="244" y="1075" width="117" height="11"/>
+</g>
+<g fill="#37525A">
+<rect x="228" y="345" width="166" height="22"/><rect x="222" y="472" width="166" height="22"/><rect x="491" y="482" width="166" height="22"/>
+<rect x="503" y="693" width="152" height="60"/><rect x="503" y="902" width="167" height="22"/><rect x="506" y="996" width="167" height="22"/>
+</g>
+<g fill="#7FB3C8"><rect x="530" y="851" width="61" height="22"/><rect x="367" y="1041" width="85" height="49"/></g>
+<rect x="316" y="781" width="43" height="74" fill="#C8102E"/>
+<g class="ml" text-anchor="middle">
+<text x="323" y="252">Maling</text><text x="188" y="412" transform="rotate(-90 188 412)">Maling</text>
+<text x="459" y="319" transform="rotate(-90 459 319)">Båtutstyr</text>
+<text x="311" y="339">Maleverktøy</text><text x="311" y="382">Verktøy</text>
+<text x="305" y="466">Verktøy</text><text x="305" y="509">Bilprodukt · sprayar</text>
+<text x="576" y="401">Båt · fiske</text>
+<text x="574" y="476">Båt og fiskeutstyr</text><text x="574" y="518">Skruar, muttrar, hengsler osv</text>
+<text x="690" y="490" transform="rotate(-90 690 490)">Redningsvest · hageutstyr</text>
+<text x="268" y="589">Tau · oljer</text><text x="596" y="589">Redskap, klemmer</text>
+<text x="586" y="896">Vinterprodukt</text><text x="586" y="940">Daglegvarer</text>
+<text x="589" y="990">El-ting</text><text x="589" y="1033">Diverse</text>
+<text x="302" y="979">Batteri</text><text x="302" y="1068">Lyspærer, sikringar</text>
+<text x="726" y="745">Inngang</text><text x="512" y="1114">Gammal dør · fungerer</text>
+<text x="430" y="628" class="sm">Bue</text>
+</g>
+<g class="ml w" text-anchor="middle">
+<text x="579" y="713">Snacks · chips</text><text x="579" y="741">Sjokolade · godteri</text>
+<text x="560" y="866">Småis</text><text x="409" y="1070">Brus/drikke</text><text x="337" y="822">Kassa</text>
+</g>
+<g class="rl" text-anchor="middle"><text x="594" y="306">Lager</text><text x="301" y="730">Kjøkken</text><text x="594" y="196" class="sm" style="font-weight:600">Lager (ute)</text></g>
+<g class="area" text-anchor="middle"><text x="319" y="297">JERNVAREROM</text><text x="430" y="860">BUTIKK</text></g>
+<path d="M760 760H706" stroke="#C8102E" stroke-width="3" marker-end="url(#arr)"/>
+`;
+
+/* ---------------------------- hjelparar ---------------------------- */
+const $ = (s, r=document) => r.querySelector(s);
+const esc = s => String(s ?? '').replace(/[&<>"']/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
+const nowISO = () => new Date().toISOString();
+const uid = () => Date.now().toString(36) + Math.random().toString(36).slice(2, 8);
+const round2 = x => Math.round((x + Number.EPSILON) * 100) / 100;
+const nf2 = new Intl.NumberFormat('nb-NO', {minimumFractionDigits:2, maximumFractionDigits:2});
+const nfq = new Intl.NumberFormat('nb-NO', {maximumFractionDigits:3});
+const kr = x => nf2.format(round2(x || 0));
+const qty = x => nfq.format(x || 0);
+const slug = s => String(s).toLowerCase().normalize('NFKD').replace(/[̀-ͯ]/g,'').replace(/æ/g,'ae').replace(/ø/g,'o').replace(/å/g,'a').replace(/[^a-z0-9]+/g,'-').replace(/^-|-$/g,'');
+const VEKEDAG = ['sundag','måndag','tysdag','onsdag','torsdag','fredag','laurdag'];
+const MANAD = ['januar','februar','mars','april','mai','juni','juli','august','september','oktober','november','desember'];
+const pad = n => String(n).padStart(2, '0');
+function todayISO(){ const d = new Date(); return d.getFullYear()+'-'+pad(d.getMonth()+1)+'-'+pad(d.getDate()); }
+function parseDato(s){ const m = /^(\d{4})-(\d{2})-(\d{2})/.exec(s||''); return m ? new Date(+m[1], +m[2]-1, +m[3]) : new Date(s); }
+function fmtDato(s){ const d = typeof s === 'string' && s.length === 10 ? parseDato(s) : new Date(s); if (isNaN(d)) return ''; return pad(d.getDate())+'.'+pad(d.getMonth()+1)+'.'+d.getFullYear(); }
+function fmtLangDato(s){ const d = parseDato(s); if (isNaN(d)) return ''; return d.getDate()+'. '+MANAD[d.getMonth()]+' '+d.getFullYear(); }
+function fmtKl(s){ const d = new Date(s); if (isNaN(d)) return ''; return pad(d.getHours())+':'+pad(d.getMinutes()); }
+function fmtDT(s){ return s ? fmtDato(s)+' kl. '+fmtKl(s) : ''; }
+function parseNum(v){
+  if (v == null) return NaN;
+  if (typeof v === 'number') return v;
+  let s = String(v).trim().replace(/[\s ]/g,'').replace(/kr|nok/gi,'');
+  if (!s) return NaN;
+  s = s.replace(/[^0-9,.\-]/g,'');
+  const lc = s.lastIndexOf(','), ld = s.lastIndexOf('.');
+  if (lc > -1 && ld > -1){ s = lc > ld ? s.replace(/\./g,'').replace(',','.') : s.replace(/,/g,''); }
+  else if (lc > -1){ const p = s.split(','); s = p.length > 2 ? p.join('') : s.replace(',','.'); }
+  else if (ld > -1){ const p = s.split('.'); if (p.length > 2) s = p.join(''); }
+  const n = parseFloat(s);
+  return isNaN(n) ? NaN : n;
+}
+const fmtIn = v => (v === '' || v == null || isNaN(v)) ? '' : String(v).replace('.', ',');
+function lsGet(k, def){ try{ const v = localStorage.getItem(k); return v == null ? def : JSON.parse(v); }catch(e){ return def; } }
+function lsSet(k, v){ try{ localStorage.setItem(k, JSON.stringify(v)); return true; }catch(e){ toast('Klarte ikkje lagre på eininga: '+e.message, 'err'); return false; } }
+function getToken(){ try{ const v = localStorage.getItem(LS.token); if (!v) return ''; try{ const p = JSON.parse(v); return typeof p === 'string' ? p : v; }catch(e){ return v; } }catch(e){ return ''; } }
+function setToken(t){ try{ if (t) localStorage.setItem(LS.token, t); else localStorage.removeItem(LS.token); }catch(e){} }
+function sortKeys(o){ if (Array.isArray(o)) return o.map(sortKeys); if (o && typeof o === 'object'){ const r = {}; Object.keys(o).sort().forEach(k => r[k] = sortKeys(o[k])); return r; } return o; }
+const stable = o => JSON.stringify(sortKeys(o));
+function loadScript(urls){
+  return new Promise((resolve, reject) => {
+    let i = 0;
+    const next = () => {
+      if (i >= urls.length) return reject(new Error('Fekk ikkje lasta bibliotek (sjekk internett)'));
+      const s = document.createElement('script'); s.src = urls[i++]; s.async = true;
+      s.onload = () => resolve(); s.onerror = () => { s.remove(); next(); };
+      document.head.appendChild(s);
+    };
+    next();
+  });
+}
+let toastTimer = null;
+function toast(msg, kind='', action=null){
+  const t = $('#toast');
+  t.className = 'show ' + kind;
+  t.innerHTML = esc(msg) + (action ? ` <button id="toast-act">${esc(action.label)}</button>` : '');
+  if (action) $('#toast-act').onclick = () => { t.className = ''; action.fn(); };
+  clearTimeout(toastTimer); toastTimer = setTimeout(() => t.className = '', action ? 6000 : 2600);
+}
+function beep(){
+  try{ const C = window.AudioContext || window.webkitAudioContext; const a = beep.ctx || (beep.ctx = new C());
+    const o = a.createOscillator(), g = a.createGain(); o.frequency.value = 1150; g.gain.value = .08; o.connect(g); g.connect(a.destination); o.start(); o.stop(a.currentTime + .09);
+  }catch(e){}
+}
+function download(name, blob){
+  const a = document.createElement('a'); a.href = URL.createObjectURL(blob); a.download = name;
+  document.body.appendChild(a); a.click(); setTimeout(() => { URL.revokeObjectURL(a.href); a.remove(); }, 1500);
+}
+
+/* ------------------------------ modal ------------------------------ */
+function openModal(html, onMount){
+  const root = $('#modal-root');
+  root.innerHTML = `<div class="modal-bg" data-act="modal-bg"><div class="modal" role="dialog" aria-modal="true">${html}</div></div>`;
+  if (onMount) onMount(root.querySelector('.modal'));
+}
+function closeModal(){ $('#modal-root').innerHTML = ''; }
+function confirmBox(title, text, okLabel, onOk, danger){
+  openModal(`<h2>${esc(title)}</h2><p class="muted">${text}</p><div class="btnrow"><button class="btn" data-act="modal-close">Avbryt</button><button class="btn ${danger?'danger':'primary'}" id="cb-ok">${esc(okLabel)}</button></div>`,
+    m => m.querySelector('#cb-ok').onclick = () => { closeModal(); onOk(); });
+}
+
+/* ------------------------------ telling ------------------------------ */
+function nyTelling(id){
+  const t = {id:String(id), v:1, oppretta:nowISO(),
+    meta:{namn:'Varetelling '+id, perDato:todayISO(), firma:'Krambua Bensin & Storkiosk AS', orgnr:'', stad:'Skånevik',
+          avanse:38, avanseOmr:{}, ukurans:0, ukuransTekst:'', updatedAt:OLD},
+    avslutta:{status:false, av:'', tid:'', updatedAt:OLD},
+    tellarar:{}, seksjonar:{}, status:{}, linjer:{}, dobbel:{}};
+  DEFAULT_TELLARAR.forEach(n => { const k = 't-'+slug(n); t.tellarar[k] = {id:k, namn:n, updatedAt:OLD, deleted:false}; });
+  return t;
+}
+function normTelling(t){
+  ['tellarar','seksjonar','status','linjer','dobbel'].forEach(k => { if (!t[k] || typeof t[k] !== 'object') t[k] = {}; });
+  if (!t.meta) t.meta = nyTelling(t.id).meta;
+  if (!t.avslutta) t.avslutta = {status:false, av:'', tid:'', updatedAt:OLD};
+  if (!t.meta.avanseOmr) t.meta.avanseOmr = {};
+  return t;
+}
+let T = null;
+let tDirty = false, tVersion = 0;
+function loadTelling(id){
+  T = normTelling(lsGet(LS.data(id), null) || nyTelling(id));
+  tDirty = !!lsGet(LS.dirty(id), false);
+  lsSet(LS.active, T.id);
+  const list = lsGet(LS.list, []);
+  if (!list.includes(T.id)){ list.push(T.id); lsSet(LS.list, list); }
+  saveLocal(false);
+}
+function saveLocal(markDirty=true){
+  lsSet(LS.data(T.id), T);
+  if (markDirty){ tDirty = true; tVersion++; lsSet(LS.dirty(T.id), true); scheduleSync(); }
+}
+const locked = () => !!(T.avslutta && T.avslutta.status);
+function newer(x, y){
+  if (!x) return y; if (!y) return x;
+  const a = x.updatedAt || '', b = y.updatedAt || '';
+  if (a !== b) return b > a ? y : x;
+  return stable(y) > stable(x) ? y : x;
+}
+function mergeMap(a={}, b={}){ const o = {...a}; for (const k in b) o[k] = newer(a[k], b[k]); return o; }
+function mergeTelling(a, b){
+  a = normTelling(a); b = normTelling(b);
+  return {id:a.id, v:1, oppretta:[a.oppretta, b.oppretta].filter(Boolean).sort()[0] || nowISO(),
+    meta:newer(a.meta, b.meta), avslutta:newer(a.avslutta, b.avslutta),
+    tellarar:mergeMap(a.tellarar, b.tellarar), seksjonar:mergeMap(a.seksjonar, b.seksjonar),
+    status:mergeMap(a.status, b.status), linjer:mergeMap(a.linjer, b.linjer), dobbel:mergeMap(a.dobbel, b.dobbel)};
+}
+function allSek(){
+  const extra = Object.values(T.seksjonar).filter(s => !s.deleted).sort((a,b) => a.id.localeCompare(b.id)).map(s => ({...s, omr:'X'}));
+  return [...SEKSJONAR, ...extra];
+}
+function sekById(id){ return allSek().find(s => s.id === id) || Object.values(T.seksjonar).find(s => s.id === id) || null; }
+function tellarList(){ return Object.values(T.tellarar).filter(t => !t.deleted).sort((a,b) => a.namn.localeCompare(b.namn, 'nb')); }
+function curTellar(){ return lsGet(LS.tellar, ''); }
+function avanseFor(sekId){
+  const s = sekById(sekId); const o = s && T.meta.avanseOmr ? T.meta.avanseOmr[s.omr] : null;
+  const v = parseNum(o); return isNaN(v) ? (parseNum(T.meta.avanse) || 0) : v;
+}
+function activeLines(sekId){
+  let ls = Object.values(T.linjer).filter(l => !l.deleted);
+  if (sekId) ls = ls.filter(l => l.sek === sekId);
+  return ls.sort((a,b) => (a.tid||'').localeCompare(b.tid||'') || a.id.localeCompare(b.id));
+}
+function grpKey(l){ return l.key ? 'K:' + l.key : (l.ean ? 'E:' + String(l.ean).replace(/\s+/g, '') : 'N:' + slug(l.namn || '')); }
+function dobbelGroups(){
+  const g = new Map();
+  activeLines().forEach(l => { const k = grpKey(l); if (!g.has(k)) g.set(k, []); g.get(k).push(l); });
+  const out = [];
+  g.forEach((ls, k) => {
+    if (ls.length < 2) return;
+    const sig = ls.map(l => l.id).sort().join(',');
+    const chk = T.dobbel[k];
+    out.push({k, ls, sekN:new Set(ls.map(l => l.sek)).size, sig, ok:!!(chk && chk.ok && chk.sig === sig), chk});
+  });
+  out.sort((a, b) => (a.ok - b.ok) || (b.sekN - a.sekN) || a.ls[0].namn.localeCompare(b.ls[0].namn, 'nb'));
+  return out;
+}
+function lineCalc(l){
+  const antal = parseNum(l.antal) || 0, pris = parseNum(l.pris) || 0, sats = parseNum(l.mva) || 0;
+  const inkl = round2(antal * pris);
+  const eks = round2(inkl / (1 + sats / 100));
+  const mva = round2(inkl - eks);
+  const inn = parseNum(l.innpris);
+  const av = avanseFor(l.sek);
+  let kost, metode;
+  if (!isNaN(inn) && inn > 0){ kost = round2(antal * inn); metode = 'I'; }
+  else { kost = round2(eks * (1 - av / 100)); metode = 'A'; }
+  return {inkl, eks, mva, kost, metode, avanse:av};
+}
+function vektAntal(v){
+  if (!v) return null;
+  const pa = parseNum(v.proveAntal), pv = parseNum(v.proveVekt), t = parseNum(v.total), ta = parseNum(v.tara) || 0;
+  if (!(pa > 0 && pv > 0 && t > 0)) return null;
+  const netto = t - ta; if (netto <= 0) return 0;
+  return Math.round(netto / (pv / pa));
+}
+function vektTekst(l){
+  const v = l.vekt; if (!v) return '';
+  const u = v.unit || 'g', pa = parseNum(v.proveAntal), pv = parseNum(v.proveVekt);
+  const per = pa > 0 ? pv / pa : 0;
+  return `Vege: ${qty(parseNum(v.total))} ${u}${parseNum(v.tara) ? ' − tara '+qty(parseNum(v.tara))+' '+u : ''}; prøve ${qty(pa)} ${l.eining} = ${qty(pv)} ${u} (${nfq.format(round2(per*1000)/1000)} ${u}/${l.eining}) → ${qty(parseNum(l.antal))} ${l.eining}`;
+}
+function sekStats(){
+  const st = {};
+  allSek().forEach(s => st[s.id] = {n:0, inkl:0, ferdig:false});
+  activeLines().forEach(l => { const c = lineCalc(l); if (!st[l.sek]) st[l.sek] = {n:0, inkl:0, ferdig:false}; st[l.sek].n++; st[l.sek].inkl += c.inkl; });
+  Object.keys(st).forEach(k => { const s = T.status[k]; st[k].ferdig = !!(s && s.ferdig); st[k].state = st[k].ferdig ? 2 : (st[k].n ? 1 : 0); });
+  return st;
+}
+
+/* ------------------------------ varelista ------------------------------ */
+let CAT = lsGet(LS.cat, null) || {v:1, items:{}, meta:{kjelde:'', importert:'', tal:0, updatedAt:OLD}};
+let catDirty = !!lsGet(LS.catDirty, false);
+let IDX = null;
+function buildIdx(){
+  const ean = new Map(), eanNZ = new Map(), varenr = new Map(), list = [];
+  for (const k in CAT.items){
+    const it = CAT.items[k]; if (it.deleted) continue;
+    list.push(it);
+    (it.ean || []).forEach(e => { ean.set(e, it); eanNZ.set(e.replace(/^0+/, ''), it); });
+    if (it.varenr){ varenr.set(String(it.varenr), it); varenr.set(String(it.varenr).replace(/^0+/, ''), it); }
+    it._s = (it.namn + ' ' + (it.varenr||'') + ' ' + (it.ean||[]).join(' ')).toLowerCase();
+  }
+  list.sort((a,b) => a.namn.localeCompare(b.namn, 'nb'));
+  IDX = {ean, eanNZ, varenr, list};
+}
+function saveCat(markDirty=true){
+  const clean = {v:1, items:{}, meta:CAT.meta};
+  for (const k in CAT.items){ const {_s, ...rest} = CAT.items[k]; clean.items[k] = rest; }
+  CAT = clean; lsSet(LS.cat, CAT); buildIdx();
+  if (markDirty){ catDirty = true; lsSet(LS.catDirty, true); scheduleSync(); }
+}
+function catKey(it){ return it.varenr ? 'V'+String(it.varenr).trim() : (it.ean && it.ean[0] ? 'E'+it.ean[0] : 'M'+uid()); }
+function lookupCode(code){
+  const c = String(code || '').trim().replace(/\s+/g, '');
+  if (!c) return null;
+  return IDX.ean.get(c) || (/^\d+$/.test(c) ? IDX.eanNZ.get(c.replace(/^0+/, '')) : null) || IDX.varenr.get(c) || IDX.varenr.get(c.replace(/^0+/, '')) || null;
+}
+function searchCat(q, max=8){
+  const toks = q.toLowerCase().split(/\s+/).filter(Boolean);
+  if (!toks.length) return [];
+  const out = [];
+  for (const it of IDX.list){ if (toks.every(t => it._s.includes(t))){ out.push(it); if (out.length >= max) break; } }
+  return out;
+}
+function mergeCat(a, b){ return {v:1, items:mergeMap(a.items, b.items), meta:newer(a.meta, b.meta)}; }
+
+/* ------------------------------ GitHub-deling ------------------------------ */
+function ghCfg(){ return Object.assign({}, GH_DEF, lsGet(LS.gh, {})); }
+const ghOn = () => !!getToken();
+const tellingPath = id => `${ghCfg().dir}/telling-${id}.json`;
+const catPath = () => `${ghCfg().dir}/vareliste.json`;
+function utf8ToB64(str){ const bytes = new TextEncoder().encode(str); let bin = ''; for (let i = 0; i < bytes.length; i += 0x8000) bin += String.fromCharCode.apply(null, bytes.subarray(i, i + 0x8000)); return btoa(bin); }
+function b64ToUtf8(b64){ const bin = atob(b64.replace(/\s/g, '')); const bytes = new Uint8Array(bin.length); for (let i = 0; i < bin.length; i++) bytes[i] = bin.charCodeAt(i); return new TextDecoder().decode(bytes); }
+async function ghFetch(url, opt={}){
+  /* unik adresse på GET, så ingen mellomlager (t.d. service worker frå den gamle appen) gjev gamle svar */
+  if (!opt.method || opt.method === 'GET') url += (url.includes('?') ? '&' : '?') + '_=' + Date.now();
+  const res = await fetch(url, {cache:'no-store', ...opt, headers:{'Authorization':'Bearer '+getToken(), 'Accept':'application/vnd.github+json', ...(opt.headers||{})}});
+  return res;
+}
+const ghBase = () => { const c = ghCfg(); return `https://api.github.com/repos/${encodeURIComponent(c.owner)}/${encodeURIComponent(c.repo)}`; };
+const encPath = p => p.split('/').map(encodeURIComponent).join('/');
+async function ghErr(res){ let t = ''; try{ const j = await res.json(); t = j.message || ''; }catch(e){} const m = {401:'Ugyldig nøkkel (token)', 403:'Nøkkelen manglar skrivetilgang', 404:'Fann ikkje repoet'}; return new Error((m[res.status] || 'GitHub-feil '+res.status) + (t ? ': '+t : '')); }
+async function ghGetJson(path){
+  const res = await ghFetch(`${ghBase()}/contents/${encPath(path)}?ref=${encodeURIComponent(ghCfg().branch)}`);
+  if (res.status === 404){ let j = {}; try{ j = await res.json(); }catch(e){} if (/repo|Not Found/i.test(j.message||'') && !(await ghRepoOk())) throw new Error('Fann ikkje repoet '+ghCfg().owner+'/'+ghCfg().repo); return {sha:null, json:null}; }
+  if (!res.ok) throw await ghErr(res);
+  const meta = await res.json();
+  let text;
+  if (meta.content && meta.encoding === 'base64') text = b64ToUtf8(meta.content);
+  else { const r2 = await ghFetch(`${ghBase()}/contents/${encPath(path)}?ref=${encodeURIComponent(ghCfg().branch)}`, {headers:{'Accept':'application/vnd.github.raw+json'}}); if (!r2.ok) throw await ghErr(r2); text = await r2.text(); }
+  return {sha:meta.sha, json:JSON.parse(text)};
+}
+let repoOkCache = null;
+async function ghRepoOk(){ if (repoOkCache !== null) return repoOkCache; const r = await ghFetch(ghBase()); repoOkCache = r.ok; return r.ok; }
+async function ghPutJson(path, json, sha, msg){
+  const body = {message:msg, content:utf8ToB64(JSON.stringify(json)), branch:ghCfg().branch};
+  if (sha) body.sha = sha;
+  const res = await ghFetch(`${ghBase()}/contents/${encPath(path)}`, {method:'PUT', headers:{'Content-Type':'application/json'}, body:JSON.stringify(body)});
+  if (res.status === 409 || res.status === 422){ const e = new Error('Konflikt'); e.conflict = true; throw e; }
+  if (!res.ok) throw await ghErr(res);
+  const j = await res.json();
+  return {sha:j.content && j.content.sha, commit:j.commit && j.commit.sha};
+}
+async function ghLatestCommit(path){
+  const res = await ghFetch(`${ghBase()}/commits?path=${encodeURIComponent(path)}&sha=${encodeURIComponent(ghCfg().branch)}&per_page=1`);
+  if (!res.ok) throw await ghErr(res);
+  const j = await res.json(); return j && j[0] ? j[0].sha : null;
+}
+const SYNC = {status:'av', last:null, err:'', busy:false, again:false, timer:null, tCommit:{}, cCommit:null, cCheck:0};
+function scheduleSync(delay=2500){
+  updateSyncUI();
+  if (!ghOn()) return;
+  clearTimeout(SYNC.timer);
+  SYNC.timer = setTimeout(() => syncNow(), delay);
+}
+async function syncNow(force=false){
+  if (!ghOn()){ updateSyncUI(); return; }
+  if (SYNC.busy){ SYNC.again = true; return; }
+  SYNC.busy = true; updateSyncUI();
+  try{
+    await syncTelling(force);
+    await syncCatalog(force);
+    SYNC.status = 'ok'; SYNC.last = new Date(); SYNC.err = '';
+  }catch(e){ SYNC.status = 'feil'; SYNC.err = e.message || String(e); }
+  SYNC.busy = false; updateSyncUI();
+  if (SYNC.again){ SYNC.again = false; scheduleSync(400); }
+}
+async function syncTelling(force){
+  const id = T.id, path = tellingPath(id);
+  if (!force && !tDirty && SYNC.tCommit[id]){
+    const c = await ghLatestCommit(path);
+    if (c === SYNC.tCommit[id]) return;
+  }
+  for (let attempt = 0; attempt < 4; attempt++){
+    const startVer = tVersion;
+    const r = await ghGetJson(path);
+    if (T.id !== id) return;
+    const merged = r.json ? mergeTelling(T, r.json) : T;
+    if (stable(merged) !== stable(T)){ T = mergeTelling(T, merged); lsSet(LS.data(T.id), T); refreshLive(); }
+    if (!r.json || stable(merged) !== stable(r.json)){
+      try{ const p = await ghPutJson(path, merged, r.sha, `Varetelling ${id}: ${curTellar() || 'oppdatering'}`); SYNC.tCommit[id] = p.commit; }
+      catch(e){ if (e.conflict) continue; throw e; }
+    } else {
+      SYNC.tCommit[id] = await ghLatestCommit(path);
+    }
+    if (tVersion === startVer){ tDirty = false; lsSet(LS.dirty(id), false); } else SYNC.again = true;
+    return;
+  }
+  throw new Error('Klarte ikkje lagre etter fleire forsøk (konflikt)');
+}
+async function syncCatalog(force){
+  const path = catPath();
+  if (!force && !catDirty){
+    if (Date.now() - SYNC.cCheck < 120000 && SYNC.cCommit) return;
+    SYNC.cCheck = Date.now();
+    const c = await ghLatestCommit(path);
+    if (!c || c === SYNC.cCommit) { if (!c && !Object.keys(CAT.items).length) return; if (c) return; }
+  }
+  for (let attempt = 0; attempt < 4; attempt++){
+    const r = await ghGetJson(path);
+    const merged = r.json ? mergeCat(CAT, r.json) : CAT;
+    if (stable(merged) !== stable(CAT)){ CAT = mergeCat(CAT, merged); saveCat(false); refreshLive('cat'); }
+    if (!r.json || stable(merged) !== stable(r.json)){
+      if (!Object.keys(merged.items).length && !r.json){ catDirty = false; lsSet(LS.catDirty, false); return; }
+      try{ const p = await ghPutJson(path, merged, r.sha, 'Varelista: oppdatering'); SYNC.cCommit = p.commit; }
+      catch(e){ if (e.conflict) continue; throw e; }
+    } else SYNC.cCommit = await ghLatestCommit(path);
+    catDirty = false; lsSet(LS.catDirty, false); SYNC.cCheck = Date.now();
+    return;
+  }
+  throw new Error('Varelista: konflikt');
+}
+function updateSyncUI(){
+  const b = $('#sync'); if (!b) return;
+  if (!ghOn()){ b.className = 'av'; b.textContent = '● Lokalt'; return; }
+  if (SYNC.busy){ b.className = 'busy'; b.textContent = '↻ Synkar…'; return; }
+  if (SYNC.status === 'feil'){ b.className = 'feil'; b.textContent = '⚠ Ikkje delt'; return; }
+  if (tDirty || catDirty){ b.className = 'busy'; b.textContent = '↻ Ventar'; return; }
+  b.className = 'ok'; b.textContent = '✓ Delt ' + (SYNC.last ? fmtKl(SYNC.last) : '');
+}
+
+/* ------------------------------ strekkodar (teikning) ------------------------------ */
+const C128 = ['212222','222122','222221','121223','121322','131222','122213','122312','132212','221213','221312','231212','112232','122132','122231','113222','123122','123221','223211','221132','221231','213212','223112','312131','311222','321122','321221','312212','322112','322211','212123','212321','232121','111323','131123','131321','112313','132113','132311','211313','231113','231311','112133','112331','132131','113123','113321','133121','313121','211331','231131','213113','213311','213131','311123','311321','331121','312113','312311','332111','314111','221411','431111','111224','111422','121124','121421','141122','141221','112214','112412','122114','122411','142112','142211','241211','221114','413111','241112','134111','111242','121142','121241','114212','124112','124211','411212','421112','421211','212141','214121','412121','111143','111341','131141','114113','114311','411113','411311','113141','114131','311141','411131','211412','211214','211232','2331112'];
+function code128Bits(str){
+  const vals = [];
+  if (/^\d+$/.test(str) && str.length >= 4){
+    vals.push(105); const ev = str.length - (str.length % 2);
+    for (let i = 0; i < ev; i += 2) vals.push(+str.substr(i, 2));
+    if (ev < str.length){ vals.push(100); vals.push(str.charCodeAt(ev) - 32); }
+  } else {
+    vals.push(104);
+    for (const ch of str){ const c = ch.charCodeAt(0); if (c < 32 || c > 126) return null; vals.push(c - 32); }
+  }
+  let sum = vals[0]; for (let i = 1; i < vals.length; i++) sum += vals[i] * i;
+  vals.push(sum % 103); vals.push(106);
+  let bits = '';
+  vals.forEach(v => { const p = C128[v]; for (let i = 0; i < p.length; i++) bits += (i % 2 === 0 ? '1' : '0').repeat(+p[i]); });
+  return bits;
+}
+const EAN_L = ['0001101','0011001','0010011','0111101','0100011','0110001','0101111','0111011','0110111','0001011'];
+const EAN_G = ['0100111','0110011','0011011','0100001','0011101','0111001','0000101','0010001','0001001','0010111'];
+const EAN_R = ['1110010','1100110','1101100','1000010','1011100','1001110','1010000','1000100','1001000','1110100'];
+const EAN_P = ['LLLLLL','LLGLGG','LLGGLG','LLGGGL','LGLLGG','LGGLLG','LGGGLL','LGLGLG','LGLGGL','LGGLGL'];
+function eanValid(c){
+  if (!/^\d+$/.test(c) || ![8,12,13].includes(c.length)) return false;
+  const d = c.split('').map(Number), chk = d.pop(); let s = 0;
+  d.reverse().forEach((x, i) => s += x * (i % 2 === 0 ? 3 : 1));
+  return (10 - s % 10) % 10 === chk;
+}
+function eanBits(c){
+  if (c.length === 12) c = '0' + c;
+  const d = c.split('').map(Number);
+  if (c.length === 13){
+    const p = EAN_P[d[0]]; let b = '101';
+    for (let i = 1; i <= 6; i++) b += (p[i-1] === 'L' ? EAN_L : EAN_G)[d[i]];
+    b += '01010'; for (let i = 7; i <= 12; i++) b += EAN_R[d[i]]; return b + '101';
+  }
+  let b = '101'; for (let i = 0; i < 4; i++) b += EAN_L[d[i]]; b += '01010'; for (let i = 4; i < 8; i++) b += EAN_R[d[i]]; return b + '101';
+}
+function barcodeSVG(code, {h=12, mw=0.3, text=true, fs=2.6}={}){
+  code = String(code || '').trim(); if (!code) return '';
+  let bits = null;
+  if (eanValid(code)) bits = eanBits(code); else bits = code128Bits(code);
+  if (!bits) return '';
+  const q = 10, W = bits.length + q * 2, th = text ? fs + 0.8 : 0;
+  let rects = '', x = 0;
+  while (x < bits.length){ if (bits[x] === '1'){ let w = 1; while (bits[x + w] === '1') w++; rects += `<rect x="${x + q}" y="0" width="${w}" height="${h / mw}"/>`; x += w; } else x++; }
+  const totalH = h / mw + th / mw;
+  return `<svg class="bcd" xmlns="http://www.w3.org/2000/svg" width="${(W * mw).toFixed(2)}mm" height="${(h + th).toFixed(2)}mm" viewBox="0 0 ${W} ${totalH.toFixed(2)}" shape-rendering="crispEdges"><rect width="${W}" height="${totalH.toFixed(2)}" fill="#fff"/><g fill="#000">${rects}</g>${text ? `<text x="${W/2}" y="${(totalH - 0.25/mw).toFixed(2)}" font-family="Arial,Helvetica,sans-serif" font-size="${(fs/mw).toFixed(2)}" text-anchor="middle" fill="#000">${esc(code)}</text>` : ''}</svg>`;
+}
+
+/* ------------------------------ kamera-skannar ------------------------------ */
+const Scanner = {
+  active:false, stream:null, timer:null, reader:null, cb:null, torchOn:false,
+  async open(cb){
+    this.cb = cb; this.active = true; $('#scanner').hidden = false;
+    const video = $('#scan-video');
+    if (!navigator.mediaDevices || !navigator.mediaDevices.getUserMedia){ this.close(); return this.fail('Kameraet er ikkje tilgjengeleg her. Appen må opnast via https (GitHub Pages).'); }
+    try{
+      let formats = ['ean_13','ean_8','code_128','upc_a','upc_e','code_39','itf'];
+      let useNative = 'BarcodeDetector' in window;
+      if (useNative){ try{ const sup = await BarcodeDetector.getSupportedFormats(); formats = formats.filter(f => sup.includes(f)); if (!formats.length) useNative = false; }catch(e){ useNative = false; } }
+      if (useNative){
+        const det = new BarcodeDetector({formats});
+        this.stream = await navigator.mediaDevices.getUserMedia({video:{facingMode:{ideal:'environment'}, width:{ideal:1280}, height:{ideal:720}}, audio:false});
+        if (!this.active){ this.stopStream(); return; }
+        video.srcObject = this.stream; await video.play();
+        const loop = async () => {
+          if (!this.active) return;
+          try{ const r = await det.detect(video); if (r && r.length && r[0].rawValue){ return this.found(r[0].rawValue); } }catch(e){}
+          this.timer = setTimeout(loop, 110);
+        };
+        loop(); return;
+      }
+      await loadScript(ZXING_URLS);
+      if (!this.active) return;
+      const hints = new Map(), F = ZXing.BarcodeFormat;
+      hints.set(ZXing.DecodeHintType.POSSIBLE_FORMATS, [F.EAN_13, F.EAN_8, F.CODE_128, F.UPC_A, F.UPC_E, F.CODE_39, F.ITF]);
+      hints.set(ZXing.DecodeHintType.TRY_HARDER, true);
+      this.reader = new ZXing.BrowserMultiFormatReader(hints, 120);
+      await this.reader.decodeFromConstraints({video:{facingMode:{ideal:'environment'}}, audio:false}, video, (res) => { if (res && this.active) this.found(res.getText()); });
+    }catch(e){
+      this.close();
+      this.fail(e && e.name === 'NotAllowedError' ? 'Appen fekk ikkje lov til å bruke kameraet. Gje løyve i nettlesaren og prøv igjen.' : 'Klarte ikkje starte kameraet: ' + (e.message || e));
+    }
+  },
+  fail(msg){ openModal(`<h2>Kamera</h2><p>${esc(msg)}</p><p class="muted small">Du kan òg bruke ein handskannar (Bluetooth/USB) eller skrive inn strekkoden i søkefeltet.</p><div class="btnrow"><button class="btn primary" data-act="modal-close">OK</button></div>`); },
+  found(code){ beep(); try{ navigator.vibrate && navigator.vibrate(70); }catch(e){} const cb = this.cb; this.close(); if (cb) cb(String(code).trim()); },
+  stopStream(){ const s = this.stream || ($('#scan-video') && $('#scan-video').srcObject); if (s && s.getTracks) s.getTracks().forEach(t => t.stop()); this.stream = null; },
+  close(){
+    this.active = false; clearTimeout(this.timer);
+    try{ if (this.reader) this.reader.reset(); }catch(e){}
+    this.reader = null; this.stopStream();
+    try{ $('#scan-video').srcObject = null; }catch(e){}
+    $('#scanner').hidden = true; this.torchOn = false;
+  },
+  async torch(){
+    try{ const s = $('#scan-video').srcObject; const tr = s && s.getVideoTracks()[0]; if (!tr) return;
+      const cap = tr.getCapabilities ? tr.getCapabilities() : {}; if (!cap.torch){ toast('Lyset kan ikkje styrast på denne eininga'); return; }
+      this.torchOn = !this.torchOn; await tr.applyConstraints({advanced:[{torch:this.torchOn}]});
+    }catch(e){ toast('Lyset kan ikkje styrast på denne eininga'); }
+  }
+};
+
+/* ------------------------------ ruting ------------------------------ */
+let route = {v:'kart', id:null};
+let draft = null;
+let mapZoom = false;
+function parseHash(){
+  const h = (location.hash || '').replace(/^#/, '');
+  const m = /^sek-([A-Za-z0-9]+)$/.exec(h);
+  if (m) return {v:'sek', id:m[1].toUpperCase()};
+  if (['kart','rapport','analyse','lister','varer','oppsett'].includes(h)) return {v:h, id:null};
+  return {v:'kart', id:null};
+}
+function go(hash){ if (location.hash === '#'+hash) render(); else location.hash = hash; }
+window.addEventListener('hashchange', () => { const r = parseHash(); if (r.v !== 'sek' || r.id !== route.id) draft = null; route = r; render(); window.scrollTo(0, 0); });
+
+function renderTop(){
+  const d = new Date();
+  $('#tb-sub').textContent = `${T.meta.namn} · ${VEKEDAG[d.getDay()]} ${fmtDato(d)}`;
+  const tb = $('#tb-tellar'); const t = curTellar();
+  tb.className = 'pill-btn' + (t ? '' : ' need');
+  tb.textContent = t ? '👤 ' + t.split(' ')[0] : '👤 Vel tellar';
+  document.querySelectorAll('#nav button').forEach(b => b.classList.toggle('on', b.dataset.nav === (route.v === 'sek' ? 'kart' : route.v)));
+  updateSyncUI();
+}
+function render(){
+  renderTop();
+  const v = $('#view');
+  if (STAFF && !['kart','sek','oppsett'].includes(route.v)) route = {v:'kart', id:null};
+  const views = {kart:viewKart, sek:viewSek, rapport:viewRapport, analyse:viewAnalyse, lister:viewLister, varer:viewVarer, oppsett:STAFF ? viewOppsettStaff : viewOppsett};
+  v.innerHTML = (views[route.v] || viewKart)();
+  if (route.v === 'sek') afterSek();
+  if (route.v === 'varer') afterVarer();
+}
+function refreshLive(what){
+  renderTop();
+  if (what === 'cat'){ if (route.v === 'kart' && !draft) render(); if (route.v === 'varer'){ const q = $('#cat-q'); renderCatList(q ? q.value : ''); const s = $('#cat-stats'); if (s) s.innerHTML = catStatsHTML(); } return; }
+  if (route.v === 'sek'){ const a = $('#sek-live'); if (a) a.innerHTML = sekLiveHTML(route.id); const hd = $('#sek-status'); if (hd) hd.innerHTML = sekStatusHTML(route.id); return; }
+  if (route.v === 'kart' || route.v === 'rapport' || route.v === 'analyse') render();
+}
+
+/* ------------------------------ KART ------------------------------ */
+function mapSVG(st, opt={}){
+  let hits = '', badges = '';
+  Object.keys(HITS).forEach(id => {
+    const [x, y, w, h] = HITS[id]; const s = sekById(id); const ss = st[id] || {n:0, state:0};
+    const cls = opt.cls ? opt.cls(id) : 'st' + ss.state;
+    hits += `<rect class="hit ${cls}" x="${x}" y="${y}" width="${w}" height="${h}" rx="4" data-act="${opt.act || 'sek'}" data-id="${id}"><title>${id} ${esc(s ? s.namn : '')}</title></rect>`;
+    if (opt.badge){
+      const label = opt.badge(id); if (label == null) return;
+      let bx, by;
+      if (id === 'L01' || id === 'K01' || id === 'L02'){ bx = x + w - 18; by = y + 14; }
+      else if (w < 50){ bx = x + w / 2; by = y + 14; }
+      else { bx = x + w - 16; by = y + h / 2; }
+      badges += `<g class="badge ${cls}"><rect x="${bx - 15}" y="${by - 8.5}" width="30" height="17" rx="8.5" fill="#263238"/><circle cx="${bx}" cy="${by}" r="0"/><text x="${bx}" y="${by + 3.7}" text-anchor="middle">${esc(label)}</text></g>`;
+      return;
+    }
+    if (ss.n || ss.ferdig){
+      let bx, by;
+      if (id === 'L01' || id === 'K01' || id === 'L02'){ bx = x + w - 14; by = y + 14; }
+      else if (w < 50){ bx = x + w / 2; by = y + 12; }
+      else { bx = x + w - 11; by = y + h / 2; }
+      const label = ss.ferdig ? '✓' : (ss.n > 99 ? '99+' : ss.n);
+      badges += `<g class="badge st${ss.state}"><circle cx="${bx}" cy="${by}" r="${String(label).length > 2 ? 12 : 9.5}"/><text x="${bx}" y="${by + 3.7}" text-anchor="middle">${label}</text></g>`;
+    }
+  });
+  return `<svg class="map" viewBox="152 152 626 978" xmlns="http://www.w3.org/2000/svg" role="img" aria-label="Butikkart – trykk på ein reol">${MAP_STATIC}${hits}${badges}</svg>`;
+}
+function viewKart(){
+  const st = sekStats(), sek = allSek();
+  const ferdig = sek.filter(s => st[s.id].ferdig).length;
+  const lines = activeLines(); let inkl = 0; lines.forEach(l => inkl += lineCalc(l).inkl);
+  const pct = sek.length ? Math.round(ferdig / sek.length * 100) : 0;
+  let h = '';
+  if (locked()) h += `<div class="banner ok"><b>Teljinga er avslutta</b> ${esc(fmtDT(T.avslutta.tid))} av ${esc(T.avslutta.av)}. Linjene kan ikkje endrast. Sjå <a href="#rapport">Rapport</a>.</div>`;
+  if (STAFF){
+    if (!ghOn()) h += `<div class="banner warn">Telefonen er <b>ikkje kopla til</b> – teljinga vert berre lagra her. Be den som styrer teljinga om QR-koden «Kople til telefon» og skann han med kameraet.</div>`;
+    else if (!IDX.list.length) h += `<div class="banner info">Varelista er ikkje komen til telefonen enno. Du kan likevel telje – skriv inn namn på vara.</div>`;
+  } else {
+    if (!ghOn() && !lsGet(LS.hints, {}).lokal) h += `<div class="banner info">Teljinga vert lagra <b>berre på denne eininga</b>. Skal fleire telje samstundes på kvar sin telefon, slå på deling under <a href="#oppsett">Oppsett</a>. <button class="btn ghost small" data-act="hint-off" data-k="lokal" style="min-height:30px;padding:2px 8px">Skjul</button></div>`;
+    if (!IDX.list.length) h += `<div class="banner warn">Varelista frå kassa er ikkje lasta inn enno, så prisane kjem ikkje automatisk. Last ho inn under <a href="#varer">Varer</a>. Du kan likevel telje med manuell pris.</div>`;
+  }
+  const mine = lines.filter(l => l.tellar === curTellar()).length;
+  h += `<div class="stats">
+    <div class="stat"><b>${ferdig}/${sek.length}</b><span>seksjonar ferdige</span><div class="progress"><i style="width:${pct}%"></i></div></div>
+    <div class="stat"><b>${lines.length}</b><span>varelinjer talde</span></div>
+    ${STAFF ? `<div class="stat"><b>${mine}</b><span>talt av deg</span></div>` : `<div class="stat"><b>${kr(inkl)}</b><span>kr inkl. mva</span></div>`}</div>`;
+  h += `<div class="btnrow" style="margin:0 0 12px"><button class="btn ochre big" data-act="scan-reol">📷 Skann reol-kode på tellelista</button></div>`;
+  h += `<div class="mapwrap ${mapZoom ? 'zoom' : ''}" id="mapwrap">${mapSVG(st)}</div>
+    <div class="legend"><span><i style="background:#fff;border-color:#C9C4B8"></i>Ikkje starta</span><span><i style="background:rgba(242,170,30,.35);border-color:#D98A00"></i>Påbyrja</span><span><i style="background:rgba(46,139,71,.35);border-color:#2E8B47"></i>Ferdig</span>
+    <span style="margin-left:auto"><button class="btn ghost" data-act="map-zoom" style="min-height:30px;padding:2px 8px">${mapZoom ? '− Mindre kart' : '+ Større kart'}</button></span></div>`;
+  OMR_ORDER.forEach(o => {
+    const ss = sek.filter(s => s.omr === o); if (!ss.length) return;
+    h += `<div class="grp-h">${OMRADE[o]}</div><div class="seklist">`;
+    ss.forEach(s => {
+      const x = st[s.id];
+      const pill = x.ferdig ? '<span class="tag st2">Ferdig</span>' : (x.n ? '<span class="tag st1">Påbyrja</span>' : '');
+      h += `<button class="sekrow st${x.state}" data-act="sek" data-id="${s.id}"><span class="code">${s.id}</span><span class="nm"><b>${esc(s.namn)}</b><span>${esc(s.stad || '')}</span></span><span class="rt">${pill}<br>${x.n ? x.n + ' linjer' + (STAFF ? '' : ' · ' + kr(x.inkl)) : '<span class="muted">–</span>'}</span></button>`;
+    });
+    h += `</div>`;
+  });
+  return h;
+}
+
+/* ------------------------------ SEKSJON ------------------------------ */
+function sekStatusHTML(id){
+  const st = T.status[id], ls = activeLines(id); let inkl = 0; ls.forEach(l => inkl += lineCalc(l).inkl);
+  const ferdig = st && st.ferdig;
+  return `${ferdig ? `<span class="tag st2">Ferdig ${esc(fmtDT(st.tid))} · ${esc(st.av)}</span>` : (ls.length ? '<span class="tag st1">Påbyrja</span>' : '<span class="tag">Ikkje starta</span>')}
+    <span class="small muted"> ${ls.length} linjer${STAFF ? '' : ` · <b style="color:var(--txt)">${kr(inkl)} kr</b> inkl. mva`}</span>`;
+}
+function viewSek(){
+  const s = sekById(route.id);
+  if (!s) return `<div class="card">Fann ikkje seksjonen «${esc(route.id)}». <a href="#kart">Til kartet</a></div>`;
+  const st = T.status[s.id]; const ferdig = !!(st && st.ferdig);
+  let h = `<div class="btnrow" style="margin:0 0 8px"><a class="btn ghost" href="#kart" style="flex:0 0 auto;padding-left:4px">← Kart</a></div>
+  <div class="card"><div class="sek-head"><span class="code">${s.id}</span><div><h1 style="margin:0 0 2px;font-size:19px">${esc(s.namn)}</h1><div class="small muted">${esc(OMRADE[s.omr] || '')} · ${esc(s.stad || '')}</div><div id="sek-status" style="margin-top:6px">${sekStatusHTML(s.id)}</div></div></div></div>`;
+  if (locked()) h += `<div class="banner ok">Teljinga er avslutta – linjene er låste.</div>`;
+  else if (ferdig) h += `<div class="banner ok">Seksjonen er merka ferdig. <button class="btn" data-act="sek-opne" style="min-height:36px;margin-left:6px">Opne att for å legge til</button></div>`;
+  else {
+    h += `<div class="card" id="addcard"><h2>Legg til vare</h2>
+      <button class="btn ochre big wide" data-act="scan-vare">📷 Skann strekkode</button>
+      <div class="search" style="margin-top:10px"><input id="kode" type="text" placeholder="${STAFF ? 'Strekkode eller namn på vara' : 'Strekkode, varenr. eller namn'}" autocomplete="off" autocapitalize="off" spellcheck="false" enterkeyhint="search"><button class="btn primary" data-act="kode-ok">Finn</button></div>
+      <div class="tiny muted" style="margin-top:4px">Handskannar fungerer òg: skann rett inn i feltet.</div>
+      <div id="forslag"></div><div id="formwrap">${draft && draft.sek === s.id ? formHTML(draft) : ''}</div></div>`;
+  }
+  h += `<div id="sek-live">${sekLiveHTML(s.id)}</div>`;
+  if (!locked()){
+    h += ferdig ? '' : `<div class="btnrow"><button class="btn ok big wide" data-act="sek-ferdig">✓ Ferdig med ${esc(s.id)}</button></div>`;
+  }
+  return h;
+}
+function sekLiveHTML(id){
+  const ls = activeLines(id);
+  if (!ls.length) return `<div class="card muted small">Ingen varer talde her enno.</div>`;
+  const per = {}; let sum = 0;
+  const rows = ls.map((l, i) => {
+    const c = lineCalc(l); sum += c.inkl; per[l.mva] = (per[l.mva] || 0) + c.inkl;
+    const utanPris = !(parseNum(l.pris) > 0);
+    const info = STAFF ? `${l.modus === 'vekt' ? 'vege · ' : ''}${esc((l.tellar || '').split(' ')[0])} ${fmtKl(l.tid)}`
+      : `${qty(parseNum(l.antal))} ${esc(l.eining)}${l.modus === 'vekt' ? ' (vege)' : ''} × ${utanPris ? '<b style="color:var(--err)">manglar pris</b>' : kr(l.pris)} · ${esc(l.mva)} % · ${esc((l.tellar || '').split(' ')[0])} ${fmtKl(l.tid)}`;
+    const right = STAFF ? `${qty(parseNum(l.antal))}<span>${esc(l.eining)}</span>` : `${kr(c.inkl)}<span>kr</span>`;
+    return `<div class="line"><span class="nr">#${i + 1}</span><div class="mid"><b>${esc(l.namn)}</b><span>${info}</span></div><div class="sum">${right}</div>${locked() ? '' : `<button data-act="line-edit" data-id="${l.id}" aria-label="Endre">✎</button>`}</div>`;
+  }).reverse();
+  const perTxt = Object.keys(per).sort((a,b) => b - a).map(k => `${k} %: <b>${kr(per[k])}</b>`).join(' · ');
+  return `<div class="card"><h2>Talde varer (${ls.length})</h2><div class="lines">${rows.join('')}</div>
+    ${STAFF ? '' : `<div class="small" style="margin-top:10px">${perTxt}</div><div style="margin-top:4px;font-weight:800">Sum seksjon: ${kr(sum)} kr inkl. mva</div>`}</div>`;
+}
+function newDraft(sekId, src){
+  const s = sekById(sekId);
+  const d = {sek:sekId, id:null, key:null, fromCat:false, namn:'', ean:'', varenr:'', pris:'', innpris:'', mva:s ? s.mva : 25, eining:'stk',
+    modus:'stk', antal:'', vekt:{proveAntal:'10', proveVekt:'', total:'', tara:'', unit:'g'}, merknad:'', lagreICat:true};
+  if (src && src.item){
+    const it = src.item;
+    Object.assign(d, {key:it.k, fromCat:true, manuell:!!it.manuell, namn:it.namn, ean:(it.ean || [])[0] || '', varenr:it.varenr || '', pris:it.pris ?? '', innpris:it.innpris ?? '', mva:it.mva ?? d.mva, eining:it.eining || 'stk'});
+    if (src.code && (it.ean || []).includes(src.code)) d.ean = src.code;
+    if (it.prove && parseNum(it.prove.proveVekt) > 0){ d.modus = 'vekt'; d.vekt = {proveAntal:it.prove.proveAntal, proveVekt:it.prove.proveVekt, total:'', tara:'', unit:it.prove.unit || 'g'}; }
+  } else if (src && src.text){
+    const t = src.text.trim();
+    if (/^\d{6,14}$/.test(t)) d.ean = t; else d.namn = t;
+  }
+  return d;
+}
+function draftFromLine(l){
+  return {sek:l.sek, id:l.id, key:l.key || null, fromCat:!!l.key && !!CAT.items[l.key], manuell:!!(l.key && CAT.items[l.key] && CAT.items[l.key].manuell), namn:l.namn, ean:l.ean || '', varenr:l.varenr || '', pris:l.pris, innpris:l.innpris ?? '', mva:l.mva, eining:l.eining || 'stk',
+    modus:l.modus || 'stk', antal:l.antal, vekt:l.vekt ? {...l.vekt} : {proveAntal:'10', proveVekt:'', total:'', tara:'', unit:'g'}, merknad:l.merknad || '', lagreICat:false, tid:l.tid, tellar:l.tellar};
+}
+function formHTML(d){
+  const u = d.vekt.unit || 'g';
+  const gk = d.key ? 'K:' + d.key : (d.ean ? 'E:' + String(d.ean).replace(/\s+/g, '') : (d.namn ? 'N:' + slug(d.namn) : null));
+  const dup = gk ? activeLines().filter(l => l.id !== d.id && grpKey(l) === gk) : [];
+  const dupAnnan = dup.some(l => l.sek !== d.sek);
+  return `<div class="form" id="vareform">
+    ${d.id ? `<div class="tag warn" style="margin-bottom:6px">Endrar linje – talt av ${esc(d.tellar || '')} ${esc(fmtDT(d.tid))}</div>` : ''}
+    ${d.fromCat ? `<div class="vare-namn">${esc(d.namn)}</div><div class="vare-meta">${[d.varenr && 'Varenr. ' + esc(d.varenr), d.ean && 'Strekkode ' + esc(d.ean)].filter(Boolean).join(' · ')} ${d.manuell ? '<span class="tag">Lagt inn manuelt</span>' : '<span class="tag ok">Frå kassa</span>'}</div>`
+      : `<div class="tag warn">${d.id ? 'Manuell vare' : 'Ny vare – ikkje i varelista'}</div>
+         <label>Varenamn<input data-f="namn" type="text" value="${esc(d.namn)}" placeholder="t.d. Skrue 4x40 forsinka" autocomplete="off"></label>
+         <label>Strekkode (om vara har det)<span class="search" style="margin-top:4px"><input data-f="ean" id="f-ean" type="text" inputmode="numeric" value="${esc(d.ean)}" autocomplete="off" placeholder="Ingen strekkode"><button type="button" class="btn" data-act="f-scan-ean" aria-label="Skann strekkoden">📷 Skann</button></span></label>
+         ${d.id ? '' : '<div class="tiny muted" style="margin-top:4px">Vara vert lagra i varelista, så ho vert funnen neste gong nokon skannar eller søkjer på namnet.</div>'}`}
+    ${dup.length ? `<div class="banner ${dupAnnan ? 'warn' : 'info'} small" style="margin:8px 0 0">⚠ <b>Alt talt:</b> ${dup.map(l => `<b>${l.sek}</b> ${qty(parseNum(l.antal))} ${esc(l.eining)} (${esc((l.tellar || '').split(' ')[0])} ${fmtKl(l.tid)})`).join(' · ')}.<br>${dupAnnan ? 'Pass på at du ikkje tel dei same varene to gonger.' : 'Ny mengd vert lagra som eiga linje.'}</div>` : ''}
+    <div class="row2">
+      <label>Pris inkl. mva (kr)${d.fromCat ? '' : ' – kan stå tom'}<input data-f="pris" id="f-pris" type="text" inputmode="decimal" value="${esc(fmtIn(d.pris))}" autocomplete="off" ${d.fromCat ? '' : 'placeholder="Veit ikkje"'}></label>
+      <label>Eining<select data-f="eining">${EININGAR.map(e => `<option ${e === d.eining ? 'selected' : ''}>${e}</option>`).join('')}</select></label>
+    </div>
+    <div class="lbl">Mva-sats</div>
+    <div class="chips">${MVA_SATSAR.map(m => `<button type="button" class="chip ${+d.mva === m ? 'on' : ''}" data-act="f-mva" data-v="${m}">${m} %</button>`).join('')}</div>
+    <div class="lbl">Teljemåte</div>
+    <div class="seg"><button type="button" data-act="f-modus" data-v="stk" class="${d.modus === 'stk' ? 'on' : ''}">Tel</button><button type="button" data-act="f-modus" data-v="vekt" class="${d.modus === 'vekt' ? 'on' : ''}">Vekt → tal (skruar o.l.)</button></div>
+    ${d.modus === 'stk' ? `<div class="antal-row"><button type="button" class="btn" data-act="f-minus">−</button><input id="f-antal" data-f="antal" type="text" inputmode="decimal" value="${esc(fmtIn(d.antal))}" placeholder="0" autocomplete="off" enterkeyhint="done"><button type="button" class="btn" data-act="f-plus">+</button></div>`
+      : `<div class="calc" style="border-style:solid;margin-top:12px">
+          <div class="small"><b style="font-size:14px">1.</b> Vege ei prøve: tel opp nokre stk og vege dei.</div>
+          <div class="row2"><label>Tal i prøva (${esc(d.eining)})<input data-f="v.proveAntal" type="text" inputmode="decimal" value="${esc(fmtIn(d.vekt.proveAntal))}"></label><label>Prøva veg (${u})<input data-f="v.proveVekt" id="f-prove" type="text" inputmode="decimal" value="${esc(fmtIn(d.vekt.proveVekt))}"></label></div>
+          <div class="small" style="margin-top:10px"><b style="font-size:14px">2.</b> Vege alt saman.</div>
+          <div class="row2"><label>Totalvekt (${u})<input data-f="v.total" id="f-total" type="text" inputmode="decimal" value="${esc(fmtIn(d.vekt.total))}" enterkeyhint="done"></label><label>Tara – boks/pose (${u})<input data-f="v.tara" type="text" inputmode="decimal" value="${esc(fmtIn(d.vekt.tara))}" placeholder="0"></label></div>
+          <div class="seg small" style="margin-top:10px;max-width:220px"><button type="button" data-act="f-vunit" data-v="g" class="${u === 'g' ? 'on' : ''}">gram</button><button type="button" data-act="f-vunit" data-v="kg" class="${u === 'kg' ? 'on' : ''}">kg</button></div>
+          <div id="f-vcalc" style="margin-top:10px"></div></div>`}
+    <label>Merknad (valfritt)<input data-f="merknad" type="text" value="${esc(d.merknad)}" autocomplete="off"></label>
+    ${d.id ? `<label>Seksjon – vel ein annan for å flytte linja<select data-f="flyttSek">${allSek().map(s => `<option value="${s.id}" ${s.id === (d.flyttSek || d.sek) ? 'selected' : ''}>${s.id} ${esc(s.namn)}</option>`).join('')}</select></label>` : ''}
+    <div class="sumline" id="f-sum"></div>
+    <div class="btnrow"><button type="button" class="btn primary big" data-act="f-save" style="flex:2">${d.id ? 'Lagre endring' : 'Lagre linje'}</button><button type="button" class="btn big" data-act="f-cancel">Avbryt</button></div>
+    ${d.id ? `<div class="btnrow"><button type="button" class="btn danger wide" data-act="f-delete">Slett linja</button></div>` : ''}
+  </div>`;
+}
+function draftAntal(d){ return d.modus === 'vekt' ? vektAntal(d.vekt) : parseNum(d.antal); }
+function updateCalc(){
+  if (!draft) return;
+  const d = draft;
+  const a = draftAntal(d), p = parseNum(d.pris);
+  const vc = $('#f-vcalc');
+  if (vc){
+    const pa = parseNum(d.vekt.proveAntal), pv = parseNum(d.vekt.proveVekt);
+    if (a == null) vc.innerHTML = `<span class="muted small">Fyll inn prøve og totalvekt, så vert talet rekna ut.</span>`;
+    else vc.innerHTML = `= <b style="font-size:24px">${qty(a)} ${esc(d.eining)}</b> <span class="small muted">(${nfq.format(round2(pv / pa * 1000) / 1000)} ${esc(d.vekt.unit)} per ${esc(d.eining)})</span>`;
+  }
+  const s = $('#f-sum'); if (!s) return;
+  if (!(a > 0)) { s.innerHTML = `<span style="opacity:.8">Skriv inn mengd</span>`; return; }
+  if (STAFF) { s.innerHTML = `= <b>${qty(a)} ${esc(d.eining)}</b>${isNaN(p) && String(d.pris || '').trim() === '' ? ' <span style="opacity:.8;font-size:13px">· utan pris</span>' : ''}`; return; }
+  if (isNaN(p)) { s.innerHTML = `${qty(a)} ${esc(d.eining)} – <span style="opacity:.8">manglar pris</span>`; return; }
+  const c = lineCalc({antal:a, pris:p, mva:d.mva, innpris:d.innpris, sek:d.sek});
+  s.innerHTML = `${qty(a)} ${esc(d.eining)} × ${kr(p)} = <b>${kr(c.inkl)} kr</b> <span style="opacity:.8;font-size:13px">inkl. ${d.mva} % mva</span>`;
+}
+function showForm(d, focus){
+  draft = d;
+  const fw = $('#formwrap'); if (!fw) return;
+  fw.innerHTML = formHTML(d);
+  $('#forslag').innerHTML = '';
+  updateCalc();
+  const f = focus || (d.fromCat ? (isNaN(parseNum(d.pris)) ? '#f-pris' : (d.modus === 'vekt' ? (parseNum(d.vekt.proveVekt) > 0 ? '#f-total' : '#f-prove') : '#f-antal')) : (d.namn ? '#f-pris' : '[data-f=namn]'));
+  const el = $(f); if (el){ el.focus({preventScroll:true}); try{ el.select(); }catch(e){} }
+  $('#vareform').scrollIntoView({behavior:'smooth', block:'start'});
+}
+function afterSek(){
+  updateCalc();
+  const k = $('#kode');
+  if (k && !draft && matchMedia('(hover:hover)').matches) k.focus();
+}
+function handleCode(raw){
+  const code = String(raw || '').trim(); if (!code) return;
+  const m = /^KRB-([A-Z0-9]+)$/i.exec(code) || (sekById(code.toUpperCase()) && /^[A-Z]\d{2}$/i.test(code) ? [0, code] : null);
+  if (m){ const id = m[1].toUpperCase(); if (sekById(id)){ toast('Opnar ' + id + ' ' + sekById(id).namn); go('sek-' + id); return true; } }
+  if (route.v !== 'sek'){ toast('Vel seksjon først – skann koden på tellelista eller trykk på kartet', 'err'); return; }
+  const it = lookupCode(code);
+  const k = $('#kode'); if (k) k.value = '';
+  if (it) showForm(newDraft(route.id, {item:it, code}));
+  else {
+    const hits = /^\d{6,14}$/.test(code) ? [] : searchCat(code, 8);
+    if (hits.length === 1) showForm(newDraft(route.id, {item:hits[0]}));
+    else if (hits.length) { if (k) k.value = code; renderSugg(code); }
+    else { toast(/^\d{6,14}$/.test(code) ? 'Strekkoden finst ikkje i varelista – legg inn vara manuelt' : 'Ny vare'); showForm(newDraft(route.id, {text:code})); }
+  }
+}
+function renderSugg(q){
+  const box = $('#forslag'); if (!box) return;
+  q = (q || '').trim();
+  if (q.length < 2){ box.innerHTML = ''; return; }
+  const hits = searchCat(q, 8);
+  box.innerHTML = hits.map(it => `<button class="sugg" data-act="velg-vare" data-k="${esc(it.k)}"><span><b>${esc(it.namn)}</b><br><span class="tiny muted">${esc(it.varenr ? 'Varenr. ' + it.varenr : '')} ${esc((it.ean || [])[0] || '')}</span></span><span class="pr">${it.pris != null && it.pris !== '' ? kr(it.pris) : '–'}</span></button>`).join('')
+    + `<button class="sugg new" data-act="ny-vare"><span><b>+ Ny vare:</b> «${esc(q)}»</span><span class="pr">Manuelt</span></button>`;
+}
+function saveDraft(){
+  const d = draft; if (!d) return;
+  if (locked()) return toast('Teljinga er avslutta', 'err');
+  if (!curTellar()) return velTellar(() => saveDraft());
+  const namn = (d.namn || '').trim();
+  if (!namn) { toast('Skriv inn varenamn', 'err'); const e = $('[data-f=namn]'); if (e) e.focus(); return; }
+  const antal = draftAntal(d);
+  if (!(antal > 0)) { toast(d.modus === 'vekt' ? 'Fyll inn prøve og totalvekt' : 'Skriv inn mengd', 'err'); const e = $(d.modus === 'vekt' ? '#f-total' : '#f-antal'); if (e) e.focus(); return; }
+  const prisRaw = String(d.pris ?? '').trim();
+  const pris = prisRaw === '' ? null : parseNum(prisRaw);
+  if (pris !== null && (isNaN(pris) || pris < 0)) { toast('Ugyldig pris', 'err'); const e = $('#f-pris'); if (e) e.focus(); return; }
+  const now = nowISO();
+  const ean = String(d.ean || '').replace(/\s+/g, '');
+  let key = d.key;
+  if (!d.fromCat && !d.id){
+    const it = {k:'', varenr:String(d.varenr || '').trim(), ean:ean ? [ean] : [], namn, pris, innpris:null, mva:+d.mva, eining:d.eining, manuell:true, updatedAt:now, deleted:false};
+    it.k = catKey(it);
+    if (CAT.items[it.k] && !CAT.items[it.k].deleted){ const ex = CAT.items[it.k]; Object.assign(ex, {namn, mva:+d.mva, eining:d.eining, updatedAt:now}); if (pris !== null) ex.pris = pris; if (ean && !(ex.ean || []).includes(ean)) ex.ean = [...(ex.ean || []), ean]; }
+    else CAT.items[it.k] = it;
+    key = it.k; saveCat();
+  }
+  if (d.fromCat && key && CAT.items[key] && d.modus === 'vekt'){
+    const it = CAT.items[key]; const pr = {proveAntal:d.vekt.proveAntal, proveVekt:d.vekt.proveVekt, unit:d.vekt.unit};
+    if (stable(it.prove || {}) !== stable(pr)){ it.prove = pr; it.updatedAt = now; saveCat(); }
+  }
+  const old = d.id ? T.linjer[d.id] : null;
+  const nySek = d.id && d.flyttSek && d.flyttSek !== d.sek && sekById(d.flyttSek) ? d.flyttSek : d.sek;
+  const l = {id:d.id || uid(), sek:nySek, key:key || null, ean, varenr:String(d.varenr || '').trim(), namn, eining:d.eining, mva:+d.mva,
+    pris:pris === null ? null : round2(pris), innpris:(parseNum(d.innpris) > 0 ? parseNum(d.innpris) : null), modus:d.modus, antal:antal,
+    vekt:d.modus === 'vekt' ? {proveAntal:parseNum(d.vekt.proveAntal), proveVekt:parseNum(d.vekt.proveVekt), total:parseNum(d.vekt.total), tara:parseNum(d.vekt.tara) || 0, unit:d.vekt.unit} : null,
+    merknad:(d.merknad || '').trim(), tellar:old ? old.tellar : curTellar(), tid:old ? old.tid : now, updatedAt:now, deleted:false};
+  if (old) l.endraAv = curTellar();
+  if (old && nySek !== old.sek) l.flyttaFra = old.sek;
+  T.linjer[l.id] = l; saveLocal();
+  draft = null;
+  const fw = $('#formwrap'); if (fw) fw.innerHTML = '';
+  $('#sek-live').innerHTML = sekLiveHTML(d.sek); $('#sek-status').innerHTML = sekStatusHTML(d.sek);
+  if (nySek !== d.sek) toast(`Flytta til ${nySek}: ${qty(antal)} ${l.eining} ${namn}`, 'ok', {label:'Opne ' + nySek, fn:() => go('sek-' + nySek)});
+  else toast(`${old ? 'Endra' : 'Lagra'}: ${qty(antal)} ${l.eining} ${namn}${pris === null ? ' (utan pris)' : ''}`, 'ok');
+  const k = $('#kode'); if (k){ k.value = ''; k.focus({preventScroll:true}); }
+  $('#addcard') && $('#addcard').scrollIntoView({behavior:'smooth', block:'start'});
+}
+function deleteLine(id){
+  const l = T.linjer[id]; if (!l) return;
+  const before = {...l};
+  l.deleted = true; l.updatedAt = nowISO(); l.endraAv = curTellar(); saveLocal();
+  draft = null; render();
+  toast('Linja er sletta', '', {label:'Angre', fn:() => { T.linjer[id] = {...before, updatedAt:nowISO()}; saveLocal(); render(); }});
+}
+
+/* ------------------------------ tellar ------------------------------ */
+function velTellar(after){
+  const cur = curTellar();
+  openModal(`<h2>Kven tel?</h2><p class="muted small">Namnet vert lagra på kvar linje du tel. Dato og klokkeslett kjem av seg sjølv.</p>
+    <div class="namelist">${tellarList().map(t => `<button class="btn ${t.namn === cur ? 'on' : ''}" data-act="set-tellar" data-n="${esc(t.namn)}">${esc(t.namn)}</button>`).join('')}</div>
+    <label>Anna namn<div class="search" style="margin-top:4px"><input id="ny-tellar" type="text" placeholder="Fullt namn" autocomplete="off"><button class="btn primary" data-act="add-tellar">Legg til</button></div></label>
+    <div class="btnrow"><button class="btn" data-act="modal-close">Lukk</button></div>`);
+  velTellar.after = after || null;
+}
+function setTellar(n){
+  lsSet(LS.tellar, n); closeModal(); renderTop(); toast('Tellar: ' + n, 'ok');
+  const a = velTellar.after; velTellar.after = null; if (a) a();
+}
+
+/* ------------------------------ SAMANDRAG / RAPPORT ------------------------------ */
+function summary(){
+  const sek = allSek(), lines = activeLines();
+  const perMva = {}, perSek = {}, perTellar = {}, perOmr = {};
+  MVA_SATSAR.forEach(m => perMva[m] = {n:0, inkl:0, mva:0, eks:0, kost:0});
+  sek.forEach(s => perSek[s.id] = {n:0, inkl:0, eks:0, kost:0, tellarar:{}});
+  const tot = {n:0, inkl:0, mva:0, eks:0, kost:0, kostI:0, kostA:0, utanPris:0, vekt:0, tid0:null, tid1:null};
+  const rows = lines.map(l => {
+    const c = lineCalc(l);
+    const m = perMva[l.mva] || (perMva[l.mva] = {n:0, inkl:0, mva:0, eks:0, kost:0});
+    m.n++; m.inkl += c.inkl; m.mva += c.mva; m.eks += c.eks; m.kost += c.kost;
+    const s = perSek[l.sek] || (perSek[l.sek] = {n:0, inkl:0, eks:0, kost:0, tellarar:{}});
+    s.n++; s.inkl += c.inkl; s.eks += c.eks; s.kost += c.kost; s.tellarar[l.tellar] = (s.tellarar[l.tellar] || 0) + 1;
+    perTellar[l.tellar] = (perTellar[l.tellar] || 0) + 1;
+    const sk = sekById(l.sek); const o = sk ? sk.omr : 'X'; perOmr[o] = (perOmr[o] || 0) + c.kost;
+    tot.n++; tot.inkl += c.inkl; tot.mva += c.mva; tot.eks += c.eks; tot.kost += c.kost;
+    if (c.metode === 'I') tot.kostI += c.kost; else tot.kostA += c.kost;
+    if (!(parseNum(l.pris) > 0)) tot.utanPris++;
+    if (l.modus === 'vekt') tot.vekt++;
+    if (!tot.tid0 || l.tid < tot.tid0) tot.tid0 = l.tid;
+    if (!tot.tid1 || l.tid > tot.tid1) tot.tid1 = l.tid;
+    return {l, c};
+  });
+  Object.values(perMva).forEach(m => { m.inkl = round2(m.inkl); m.mva = round2(m.mva); m.eks = round2(m.eks); m.kost = round2(m.kost); });
+  ['inkl','mva','eks','kost','kostI','kostA'].forEach(k => tot[k] = round2(tot[k]));
+  const ukurans = round2(parseNum(T.meta.ukurans) || 0);
+  tot.balanse = round2(tot.kost - ukurans); tot.ukurans = ukurans;
+  const ikkjeFerdig = sek.filter(s => !(T.status[s.id] && T.status[s.id].ferdig));
+  const tomme = sek.filter(s => !perSek[s.id].n);
+  return {sek, rows, perMva, perSek, perTellar, perOmr, tot, ikkjeFerdig, tomme};
+}
+async function kontrollsum(S){
+  const txt = S.rows.map(({l}) => [l.id, l.sek, l.namn, l.antal, l.pris, l.mva, l.eining].join('|')).join('\n');
+  try{ const buf = await crypto.subtle.digest('SHA-256', new TextEncoder().encode(txt)); return Array.from(new Uint8Array(buf)).slice(0, 8).map(b => b.toString(16).padStart(2, '0')).join('').toUpperCase(); }
+  catch(e){ let h = 0x811c9dc5; for (let i = 0; i < txt.length; i++){ h ^= txt.charCodeAt(i); h = Math.imul(h, 0x01000193) >>> 0; } return h.toString(16).toUpperCase().padStart(8, '0'); }
+}
+function viewRapport(){
+  const S = summary(), t = S.tot;
+  let h = `<h1>Samandrag og rapport</h1>`;
+  if (locked()) h += `<div class="banner ok"><b>Avslutta</b> ${esc(fmtDT(T.avslutta.tid))} av ${esc(T.avslutta.av)}. Rapporten er endeleg.</div>`;
+  else h += `<div class="banner warn">Teljinga er <b>ikkje avslutta</b>. Rapporten vert merka «UTKAST» til teljinga er avslutta nedst på sida.</div>`;
+  const D = dobbelGroups(), dOpen = D.filter(g => !g.ok);
+  const warns = [];
+  if (S.ikkjeFerdig.length) warns.push(`${S.ikkjeFerdig.length} seksjonar er ikkje merka ferdige: ${S.ikkjeFerdig.map(s => s.id).join(', ')}`);
+  if (t.utanPris) warns.push(`${t.utanPris} linjer manglar pris – sjå under`);
+  if (dOpen.length) warns.push(`${dOpen.length} varer kan vere talde to gonger – sjå under`);
+  if (warns.length) h += `<div class="banner info small">${warns.map(esc).join('<br>')}</div>`;
+  const utan = S.rows.filter(r => !(parseNum(r.l.pris) > 0));
+  if (utan.length) h += `<div class="card"><h2>Manglar pris (${utan.length})</h2><p class="small muted" style="margin-top:0">Typisk nye varer som ein tilsett har lagt inn utan pris. Skriv inn utsalspris inkl. mva.</p>
+    ${utan.map(({l}) => `<div class="itemrow" style="cursor:default"><div class="mid"><b>${esc(l.namn)}</b><span><a href="#sek-${l.sek}">${l.sek}</a> · ${qty(parseNum(l.antal))} ${esc(l.eining)} · ${esc(l.mva)} % · ${esc((l.tellar || '').split(' ')[0])}${l.ean ? ' · ' + esc(l.ean) : ''}</span></div><input type="text" inputmode="decimal" data-pris="${l.id}" placeholder="kr" style="width:92px" ${locked() ? 'disabled' : ''}><button class="btn" data-act="pris-set" data-id="${l.id}" ${locked() ? 'disabled' : ''}>Lagre</button></div>`).join('')}</div>`;
+  if (D.length) h += `<div class="card"><h2>Mogleg dobbelttelling (${dOpen.length} å sjekke)</h2><p class="small muted" style="margin-top:0">Same vare er talt meir enn éin gong – på fleire stader eller fleire linjer i same seksjon. Det kan vere rett (t.d. både i hylla og på lageret). Sjekk og merk «Rett».</p>
+    ${D.map(g => `<div class="dupg ${g.ok ? 'ok' : ''}"><div class="row"><b>${esc(g.ls[0].namn)}</b><span class="tag ${g.sekN > 1 ? 'warn' : ''}">${g.ls.length} linjer · ${g.sekN} ${g.sekN > 1 ? 'stader' : 'stad'}</span></div>
+      <div class="small" style="margin:4px 0">${g.ls.map(l => `<a href="#sek-${l.sek}">${l.sek}</a> ${qty(parseNum(l.antal))} ${esc(l.eining)} <span class="muted">(${esc((l.tellar || '').split(' ')[0])} ${esc(fmtDato(l.tid).slice(0, 6))} ${fmtKl(l.tid)})</span>`).join(' · ')}</div>
+      <div class="row">${g.ok ? `<span class="tag ok">Kontrollert av ${esc((g.chk.av || '').split(' ')[0])} ${esc(fmtDT(g.chk.tid))}</span>${locked() ? '' : `<button class="btn ghost" data-act="dup-angre" data-k="${esc(g.k)}" style="min-height:34px">Angre</button>`}` : (locked() ? '<span class="tag warn">Ikkje kontrollert</span>' : `<button class="btn ok" data-act="dup-ok" data-k="${esc(g.k)}" data-sig="${esc(g.sig)}" style="min-height:38px">✓ Rett</button>`)}</div></div>`).join('')}</div>`;
+  h += `<div class="card"><h2>Per mva-sats</h2><div class="tablewrap"><table class="t"><thead><tr><th>Mva</th><th class="n">Linjer</th><th class="n">Inkl. mva</th><th class="n">Mva</th><th class="n">Eks. mva</th><th class="n">Kostverdi</th></tr></thead><tbody>
+    ${Object.keys(S.perMva).sort((a,b) => b - a).map(k => { const m = S.perMva[k]; return `<tr><td>${k} %</td><td class="n">${m.n}</td><td class="n">${kr(m.inkl)}</td><td class="n">${kr(m.mva)}</td><td class="n">${kr(m.eks)}</td><td class="n">${kr(m.kost)}</td></tr>`; }).join('')}
+    <tr class="sum"><td>Sum</td><td class="n">${t.n}</td><td class="n">${kr(t.inkl)}</td><td class="n">${kr(t.mva)}</td><td class="n">${kr(t.eks)}</td><td class="n">${kr(t.kost)}</td></tr></tbody></table></div>
+    <dl class="kv" style="margin-top:12px"><dt>Kostverdi</dt><dd>${kr(t.kost)} kr</dd><dt>− Ukurans</dt><dd>${kr(t.ukurans)} kr</dd><dt>Varelager til balansen</dt><dd style="font-size:18px">${kr(t.balanse)} kr</dd></dl>
+    <p class="small muted" style="margin-bottom:0">Kostverdi = utsalsverdi eks. mva × (1 − avanse). Avanse: ${esc(T.meta.avanse)} %${Object.keys(T.meta.avanseOmr || {}).filter(k => T.meta.avanseOmr[k] !== '' && T.meta.avanseOmr[k] != null).map(k => `, ${OMRADE[k]} ${esc(T.meta.avanseOmr[k])} %`).join('')}. Endre under <a href="#oppsett">Oppsett</a>.</p></div>`;
+  h += `<div class="card"><h2>Per seksjon</h2><div class="tablewrap"><table class="t"><thead><tr><th>Liste</th><th>Seksjon</th><th class="n">Linjer</th><th class="n">Inkl. mva</th><th class="n">Kost</th><th>Status</th></tr></thead><tbody>
+    ${S.sek.map(s => { const p = S.perSek[s.id], st = T.status[s.id]; return `<tr><td><a href="#sek-${s.id}">${s.id}</a></td><td>${esc(s.namn)}</td><td class="n">${p.n}</td><td class="n">${kr(p.inkl)}</td><td class="n">${kr(p.kost)}</td><td>${st && st.ferdig ? '<span class="tag st2">Ferdig</span>' : (p.n ? '<span class="tag st1">Påbyrja</span>' : '<span class="tag">–</span>')}</td></tr>`; }).join('')}
+    </tbody></table></div></div>`;
+  h += `<div class="card"><h2>Tellarar</h2>${Object.keys(S.perTellar).length ? `<dl class="kv">${Object.keys(S.perTellar).sort().map(n => `<dt>${esc(n)}</dt><dd>${S.perTellar[n]} linjer</dd>`).join('')}</dl>` : '<span class="muted small">Ingen linjer enno.</span>'}</div>`;
+  h += `<div class="card"><h2>Dokument</h2>
+    <div class="btnrow"><button class="btn primary big" data-act="rapport-print">🖨 Rapport til revisor (PDF/utskrift)</button></div>
+    <div class="btnrow"><button class="btn" data-act="excel">⬇ Excel til rekneskap</button><button class="btn" data-act="json-ut">⬇ Sikkerheitskopi (JSON)</button></div>
+    <p class="small muted" style="margin-bottom:0">Rapporten har forside med samandrag per mva-sats, verdsetjing, signaturfelt og alle tellelistene med varetekst, mengd, eining, pris og verdi per vare. Vel «Lagre som PDF» i utskriftsvindauget for å sende han til rekneskapsføraren.</p></div>`;
+  h += `<div class="card"><h2>${locked() ? 'Opne teljinga att' : 'Avslutt teljinga'}</h2>${locked()
+    ? `<p class="small muted">Teljinga er låst. Opnar du ho att, kan linjene endrast, og rapporten vert eit utkast igjen.</p><button class="btn danger" data-act="opne-telling">Opne att</button>`
+    : `<p class="small muted">Når alt er talt: avslutt teljinga. Då vert alle linjer låste, og rapporten får dato og namnet ditt som avsluttar.</p><button class="btn ok big wide" data-act="avslutt">✓ Avslutt varetellinga</button>`}</div>`;
+  return h;
+}
+function avslutt(){
+  if (!curTellar()) return velTellar(avslutt);
+  const S = summary();
+  const w = [];
+  const dOpen = dobbelGroups().filter(g => !g.ok).length;
+  if (dOpen) w.push(`<b>${dOpen} varer kan vere talde to gonger</b> og er ikkje kontrollerte.`);
+  if (S.ikkjeFerdig.length) w.push(`<b>${S.ikkjeFerdig.length} seksjonar er ikkje merka ferdige</b> (${S.ikkjeFerdig.map(s => s.id).join(', ')}).`);
+  if (S.tot.utanPris) w.push(`<b>${S.tot.utanPris} linjer manglar pris</b> og vert verdsette til 0 kr.`);
+  confirmBox('Avslutte varetellinga?', `${w.join('<br>')}${w.length ? '<br><br>' : ''}Sum: <b>${kr(S.tot.inkl)} kr</b> inkl. mva, kostverdi <b>${kr(S.tot.kost)} kr</b>, ${S.tot.n} linjer.<br>Linjene vert låste. Avslutta av: <b>${esc(curTellar())}</b>.`, 'Avslutt', () => {
+    T.avslutta = {status:true, av:curTellar(), tid:nowISO(), updatedAt:nowISO()}; saveLocal(); render(); toast('Varetellinga er avslutta', 'ok');
+  });
+}
+
+/* ----- dokumentbyggjar ----- */
+function docStyleTag(extra){
+  const left = `${T.meta.firma} · ${T.meta.namn} · per ${fmtDato(T.meta.perDato)}`.replace(/["\\<>]/g, '');
+  return `<style>@page{@bottom-left{content:"${left}";font-size:7.5pt;color:#666;font-family:Arial,sans-serif}@bottom-right{content:"Side " counter(page) " av " counter(pages);font-size:7.5pt;color:#666;font-family:Arial,sans-serif}}${extra || ''}</style>`;
+}
+function showPreview(title, pagesHTML){
+  const root = $('#print-root');
+  root.innerHTML = `<div class="pv-bar"><b>${esc(title)}</b><button class="btn" data-act="pv-close">Lukk</button><button class="btn ochre" data-act="pv-print">🖨 Skriv ut / PDF</button></div><div class="doc">${pagesHTML}</div>`;
+  document.body.classList.add('preview');
+  showPreview.prevTitle = showPreview.prevTitle || document.title;
+  document.title = title;
+  root.scrollTop = 0;
+}
+function closePreview(){ document.body.classList.remove('preview'); $('#print-root').innerHTML = ''; if (showPreview.prevTitle) document.title = showPreview.prevTitle; showPreview.prevTitle = null; }
+async function buildRapport(){
+  const S = summary(), t = S.tot, M = T.meta;
+  const sum = await kontrollsum(S);
+  const utkast = !locked();
+  const wm = utkast ? '<div class="wm">UTKAST – VARETELLINGA ER IKKJE AVSLUTTA</div>' : '';
+  const firmaLine = `${esc(M.firma)}${M.orgnr ? ' · Org.nr. ' + esc(M.orgnr) : ''}${M.stad ? ' · ' + esc(M.stad) : ''}`;
+  const avTxt = `${esc(M.avanse)} %` + OMR_ORDER.filter(o => M.avanseOmr && M.avanseOmr[o] !== '' && M.avanseOmr[o] != null).map(o => `, ${OMRADE[o]} ${esc(M.avanseOmr[o])} %`).join('');
+  const tellarar = Object.keys(S.perTellar).sort();
+  const ferdigN = S.sek.length - S.ikkjeFerdig.length;
+  const D = dobbelGroups(), dOpenN = D.filter(g => !g.ok).length;
+  let p1 = `<section class="page">${wm}
+    <div class="firm">${firmaLine}</div>
+    <h1>Varetelling per ${esc(fmtLangDato(M.perDato))}</h1>
+    <div class="sub">Spesifikasjon av varebeholdning med varens art, mengd med måleeining og verdi per vare (bokføringsforskrifta § 6-1)</div>
+    <h2>Tellingsinformasjon</h2>
+    <table class="info"><tbody>
+      <tr><td>Telling</td><td><b>${esc(M.namn)}</b></td></tr>
+      <tr><td>Varebeholdning per</td><td><b>${esc(fmtDato(M.perDato))}</b></td></tr>
+      <tr><td>Talt i perioden</td><td>${t.tid0 ? esc(fmtDT(t.tid0)) + ' – ' + esc(fmtDT(t.tid1)) : '–'}</td></tr>
+      <tr><td>Tellelister (seksjonar)</td><td>${S.sek.length} lister, nummererte ${esc(S.sek[0].id)}–${esc(S.sek[S.sek.length - 1].id)} · ${ferdigN} merka ferdige${S.tomme.length ? ' · ' + S.tomme.length + ' utan varer' : ''}</td></tr>
+      <tr><td>Varelinjer</td><td>${t.n} linjer${t.vekt ? ` (av dei ${t.vekt} talde ved veging)` : ''}</td></tr>
+      <tr><td>Talt av</td><td>${tellarar.length ? tellarar.map(n => `${esc(n)} (${S.perTellar[n]})`).join(', ') : '–'}</td></tr>
+      <tr><td>Avslutta</td><td>${locked() ? esc(fmtDT(T.avslutta.tid)) + ' av ' + esc(T.avslutta.av) : '<b style="color:#B3261E">Ikkje avslutta (utkast)</b>'}</td></tr>
+      <tr><td>Kontroll av dobbelttelling</td><td>${D.length ? `${D.length} varer er talde meir enn éin gong · ${D.length - dOpenN} kontrollerte${dOpenN ? ` · <b style="color:#B3261E">${dOpenN} ikkje kontrollerte</b>` : ''}` : 'Ingen varer er talde meir enn éin gong'}</td></tr>
+      ${t.utanPris ? `<tr><td>Linjer utan pris</td><td><b style="color:#B3261E">${t.utanPris} linjer er verdsette til 0 kr</b></td></tr>` : ''}
+      <tr><td>Kontrollsum</td><td style="font-family:monospace">${sum}</td></tr>
+    </tbody></table>
+    <h2>Samandrag per mva-sats</h2>
+    <table><thead><tr><th>Mva-sats</th><th class="n">Linjer</th><th class="n">Utsalsverdi inkl. mva</th><th class="n">Mva</th><th class="n">Utsalsverdi eks. mva</th><th class="n">Kostverdi</th></tr></thead><tbody>
+      ${Object.keys(S.perMva).sort((a,b) => b - a).map(k => { const m = S.perMva[k]; return `<tr><td>${k} %</td><td class="n">${m.n}</td><td class="n">${kr(m.inkl)}</td><td class="n">${kr(m.mva)}</td><td class="n">${kr(m.eks)}</td><td class="n">${kr(m.kost)}</td></tr>`; }).join('')}
+      <tr class="sum"><td>Sum</td><td class="n">${t.n}</td><td class="n">${kr(t.inkl)}</td><td class="n">${kr(t.mva)}</td><td class="n">${kr(t.eks)}</td><td class="n">${kr(t.kost)}</td></tr>
+    </tbody></table>
+    <h2>Verdsetjing</h2>
+    <table><tbody>
+      <tr><td>Kostverdi, varer med registrert innkjøpspris</td><td class="n">${kr(t.kostI)}</td></tr>
+      <tr><td>Kostverdi, rekna frå utsalspris (avanse ${avTxt})</td><td class="n">${kr(t.kostA)}</td></tr>
+      <tr class="sub"><td>Sum kostverdi</td><td class="n">${kr(t.kost)}</td></tr>
+      <tr><td>Nedskriving for ukurans${M.ukuransTekst ? ' – ' + esc(M.ukuransTekst) : ''}</td><td class="n">${t.ukurans ? '− ' + kr(t.ukurans) : kr(0)}</td></tr>
+    </tbody></table>
+    <div class="box"><span>Varebeholdning til balansen per ${esc(fmtDato(M.perDato))}</span><span>kr ${kr(t.balanse)}</span></div>
+    <p class="note">Alle varer er talde fysisk og registrerte per vare med varetekst, mengd og måleeining på nummererte tellelister (éi liste per reol/seksjon). Pris er utsalspris inkl. mva henta frå kassasystemet (PCK) eller lagt inn manuelt der vara ikkje finst i kassa. Utsalsverdi eks. mva = utsalsverdi inkl. mva ÷ (1 + mva-sats). Kostverdi = utsalsverdi eks. mva × (1 − bruttoavanse); for varer med registrert innkjøpspris er kostverdien mengd × innkjøpspris eks. mva. Småvarer som skruar og muttrar er talde ved veging: vekt per eining er målt på ei prøve, og mengda er rekna ut frå totalvekta – utrekninga står på kvar linje. Kvar linje har namnet på den som talde, og tidspunkt.</p>
+    <div class="sigblock"><h2>Signaturar</h2>
+    <div class="sig">
+      ${(tellarar.length ? tellarar : ['', '']).map(n => `<div>Talt av${n ? ': ' + esc(n) : ''}</div>`).join('')}
+      <div>Kontrollert av (namn og signatur)</div>
+      <div>Dagleg leiar / styreleiar (namn og signatur)</div>
+      <div>Stad og dato</div>
+    </div></div>
+    <div class="foot">Laga i Krambua Varetelling v${APP_VER} ${esc(fmtDT(nowISO()))}. Vedlegg: samandrag per telleliste og ${S.sek.length - S.tomme.length} tellelister med varelinjer.</div>
+  </section>`;
+  let p2 = `<section class="page">${wm}<div class="firm">${firmaLine}</div><h1 style="font-size:14pt">Samandrag per telleliste</h1><div class="sub">${esc(M.namn)} · varebeholdning per ${esc(fmtDato(M.perDato))}</div>
+    <table style="margin-top:3mm"><thead><tr><th>Liste</th><th>Seksjon / plassering</th><th class="n">Linjer</th><th class="n">Inkl. mva</th><th class="n">Eks. mva</th><th class="n">Kostverdi</th><th>Talt av</th><th>Ferdig</th></tr></thead><tbody>
+    ${S.sek.map(s => { const p = S.perSek[s.id], st = T.status[s.id]; return `<tr><td><b>${s.id}</b></td><td>${esc(s.namn)} <span class="meth">· ${esc(s.stad || '')}</span></td><td class="n">${p.n}</td><td class="n">${kr(p.inkl)}</td><td class="n">${kr(p.eks)}</td><td class="n">${kr(p.kost)}</td><td class="meth">${Object.keys(p.tellarar).map(n => esc(n.split(' ')[0])).join(', ') || '–'}</td><td class="meth">${st && st.ferdig ? esc(fmtDato(st.tid)) + ' ' + esc(fmtKl(st.tid)) + ' ' + esc((st.av || '').split(' ')[0]) : (p.n ? '<b>Ikkje merka ferdig</b>' : 'Ingen varer')}</td></tr>`; }).join('')}
+    <tr class="sum"><td></td><td>Sum</td><td class="n">${t.n}</td><td class="n">${kr(t.inkl)}</td><td class="n">${kr(t.eks)}</td><td class="n">${kr(t.kost)}</td><td></td><td></td></tr>
+    </tbody></table></section>`;
+  let lists = '';
+  S.sek.forEach(s => {
+    const rows = S.rows.filter(r => r.l.sek === s.id); if (!rows.length) return;
+    const p = S.perSek[s.id], st = T.status[s.id];
+    const per = {}; rows.forEach(({l, c}) => { per[l.mva] = per[l.mva] || {inkl:0, eks:0, kost:0}; per[l.mva].inkl += c.inkl; per[l.mva].eks += c.eks; per[l.mva].kost += c.kost; });
+    lists += `<section class="page">${wm}
+      <div class="lh"><div><div class="firm">Telleliste · ${esc(M.namn)} · per ${esc(fmtDato(M.perDato))}</div><div class="lnum">${s.id}</div><div style="font-size:12pt;font-weight:700">${esc(s.namn)}</div><div class="sub">${esc(OMRADE[s.omr] || '')} · ${esc(s.stad || '')}</div></div><div class="bc">${barcodeSVG('KRB-' + s.id, {h:9, mw:.26, fs:2.4})}</div></div>
+      <div class="sub" style="margin:2mm 0">Talt av: ${Object.keys(p.tellarar).map(n => esc(n) + ' (' + p.tellarar[n] + ')').join(', ')} · ${st && st.ferdig ? 'Ferdig ' + esc(fmtDT(st.tid)) + ' (' + esc(st.av) + ')' : 'Ikkje merka ferdig'}</div>
+      <table><thead><tr><th class="c">Nr</th><th>Varenr. / EAN</th><th>Varetekst</th><th class="n">Mengd</th><th>Eining</th><th class="n">Pris inkl. mva</th><th class="c">Mva</th><th class="n">Sum inkl. mva</th><th>Talt av / tid</th></tr></thead><tbody>
+      ${rows.map(({l, c}, i) => `<tr><td class="c">${i + 1}</td><td>${esc(l.varenr || '')}${l.varenr && l.ean ? '<br>' : ''}<span class="meth">${esc(l.ean || '')}</span></td><td>${esc(l.namn)}${l.vekt ? `<div class="vekt">${esc(vektTekst(l))}</div>` : ''}${l.merknad ? `<div class="vekt">${esc(l.merknad)}</div>` : ''}${l.endraAv ? `<div class="meth">${l.flyttaFra ? 'Flytta frå ' + esc(l.flyttaFra) + ' – e' : 'E'}ndra av ${esc(l.endraAv)} ${esc(fmtDT(l.updatedAt))}</div>` : ''}</td><td class="n">${qty(parseNum(l.antal))}</td><td>${esc(l.eining)}</td><td class="n">${kr(l.pris)}</td><td class="c">${esc(l.mva)} %</td><td class="n">${kr(c.inkl)}</td><td class="meth" style="white-space:nowrap">${esc((l.tellar || '').split(' ')[0])}<br>${esc(fmtDato(l.tid).slice(0, 6))} ${esc(fmtKl(l.tid))}</td></tr>`).join('')}
+      ${Object.keys(per).sort((a,b) => b - a).map(k => `<tr class="sub"><td></td><td colspan="6">Sum ${k} % mva (eks. mva ${kr(per[k].eks)} · kost ${kr(per[k].kost)})</td><td class="n">${kr(per[k].inkl)}</td><td></td></tr>`).join('')}
+      <tr class="sum"><td></td><td colspan="6">Sum ${s.id} – ${rows.length} linjer (eks. mva ${kr(p.eks)} · kostverdi ${kr(p.kost)})</td><td class="n">${kr(p.inkl)}</td><td></td></tr>
+      </tbody></table>
+      <div class="sig" style="grid-template-columns:1fr 1fr 1fr"><div>Signatur tellar</div><div>Kontrollert av</div><div>Dato</div></div>
+    </section>`;
+  });
+  return docStyleTag() + p1 + p2 + lists;
+}
+async function rapportPrint(){
+  showPreview(`${T.meta.namn} – Krambua – rapport`, '<section class="page">Lagar rapport…</section>');
+  const html = await buildRapport();
+  $('#print-root .doc').innerHTML = html;
+}
+
+/* ----- tellelister (utskrift før teljing) ----- */
+let listerSel = null;
+function viewLister(){
+  const sek = allSek();
+  if (!listerSel) listerSel = {sek:new Set(sek.map(s => s.id)), type:'tom', rader:22, ekstra:8};
+  const st = sekStats();
+  let h = `<h1>Tellelister til utskrift</h1>
+  <div class="card"><p class="small muted" style="margin-top:0">Éi nummerert liste per reol/seksjon med strekkode øvst. Skann reol-koden med appen for å opne rett seksjon. Listene kan òg fyllast ut for hand og leggjast inn etterpå.</p>
+    <div class="lbl">Innhald</div>
+    <div class="seg"><button data-act="ls-type" data-v="tom" class="${listerSel.type === 'tom' ? 'on' : ''}">Tomme lister</button><button data-act="ls-type" data-v="varer" class="${listerSel.type === 'varer' ? 'on' : ''}">Med varer og strekkodar</button></div>
+    <p class="tiny muted">${listerSel.type === 'varer' ? 'Varer som alt er talde i kvar seksjon (i denne eller ei tidlegare telling på eininga) vert førehandsutfylte med namn, varenr. og strekkode. Mengda står tom.' : 'Liner med kolonnar for strekkode, varenr., varetekst, eining, mengd og merknad.'}</p>
+    <div class="row2"><label>${listerSel.type === 'varer' ? 'Ekstra tomme liner' : 'Liner per liste'}<input type="number" min="0" max="60" id="ls-rader" value="${listerSel.type === 'varer' ? listerSel.ekstra : listerSel.rader}"></label>
+    <label>Ta med varer frå<select id="ls-kjelde" ${listerSel.type === 'varer' ? '' : 'disabled'}>${lsGet(LS.list, []).map(id => `<option value="${esc(id)}" ${id === T.id ? 'selected' : ''}>${esc(id === T.id ? T.meta.namn + ' (denne)' : 'Telling ' + id)}</option>`).join('')}</select></label></div>
+  </div>
+  <div class="card"><div style="display:flex;justify-content:space-between;align-items:center"><h2 style="margin:0">Seksjonar (${listerSel.sek.size} valde)</h2><span><button class="btn ghost" data-act="ls-alle">Alle</button><button class="btn ghost" data-act="ls-ingen">Ingen</button></span></div>`;
+  OMR_ORDER.forEach(o => {
+    const ss = sek.filter(s => s.omr === o); if (!ss.length) return;
+    h += `<div class="grp-h">${OMRADE[o]} <button class="btn ghost tiny" data-act="ls-omr" data-o="${o}" style="min-height:26px;padding:0 6px">vel</button></div>`;
+    ss.forEach(s => h += `<label class="check" style="margin:4px 0"><input type="checkbox" data-act="ls-sek" data-id="${s.id}" ${listerSel.sek.has(s.id) ? 'checked' : ''}> <b>${s.id}</b> ${esc(s.namn)} <span class="tiny muted">${st[s.id] && st[s.id].n ? st[s.id].n + ' varer' : ''}</span></label>`);
+  });
+  h += `</div><div class="btnrow"><button class="btn primary big wide" data-act="ls-print">🖨 Vis og skriv ut ${listerSel.sek.size} tellelister</button></div>`;
+  return h;
+}
+function listerItems(sekId, kjeldeId){
+  const map = new Map();
+  const add = l => { const k = l.key || l.ean || l.varenr || l.namn.toLowerCase(); if (!map.has(k)){ const it = l.key && CAT.items[l.key] ? CAT.items[l.key] : null; map.set(k, {namn:it ? it.namn : l.namn, varenr:it ? it.varenr : l.varenr, ean:it ? (it.ean || [])[0] || '' : l.ean, eining:l.eining}); } };
+  const src = kjeldeId === T.id ? T : normTelling(lsGet(LS.data(kjeldeId), null) || nyTelling(kjeldeId));
+  Object.values(src.linjer).filter(l => !l.deleted && l.sek === sekId).forEach(add);
+  Object.values(CAT.items).filter(it => !it.deleted && it.sek === sekId).forEach(it => add({key:it.k, namn:it.namn, varenr:it.varenr, ean:(it.ean || [])[0], eining:it.eining}));
+  return [...map.values()].sort((a,b) => a.namn.localeCompare(b.namn, 'nb'));
+}
+function printLister(){
+  const M = T.meta; const ids = allSek().filter(s => listerSel.sek.has(s.id));
+  if (!ids.length) return toast('Vel minst éin seksjon', 'err');
+  const kj = ($('#ls-kjelde') && $('#ls-kjelde').value) || T.id;
+  let html = docStyleTag(`.doc td{height:8.6mm;vertical-align:middle}`);
+  ids.forEach(s => {
+    const items = listerSel.type === 'varer' ? listerItems(s.id, kj) : [];
+    const blanks = listerSel.type === 'varer' ? Math.max(listerSel.ekstra, listerSel.rader - items.length) : listerSel.rader;
+    let n = 0;
+    html += `<section class="page">
+      <div class="lh"><div><div class="firm">${esc(M.firma)} · Telleliste</div><div class="lnum">${s.id}</div><div style="font-size:13pt;font-weight:700">${esc(s.namn)}</div><div class="sub">${esc(OMRADE[s.omr] || '')} · ${esc(s.stad || '')} · ${esc(M.namn)}, varebeholdning per ${esc(fmtDato(M.perDato))}</div></div>
+      <div class="bc">${barcodeSVG('KRB-' + s.id, {h:11, mw:.3, fs:2.6})}<div>Skann for å opne i appen</div></div></div>
+      <div class="fld"><div>Talt av:</div><div>Dato:</div><div>Kl.:</div></div>
+      <table><thead><tr><th class="c" style="width:7mm">Nr</th><th style="width:40mm">Strekkode</th><th style="width:20mm">Varenr.</th><th>Varetekst</th><th style="width:13mm">Eining</th><th class="n" style="width:20mm">Mengd</th><th style="width:30mm">Merknad / vekt</th></tr></thead><tbody>
+      ${items.map(it => `<tr><td class="c">${++n}</td><td>${it.ean ? barcodeSVG(it.ean, {h:6.2, mw:.22, fs:2}) : (it.varenr ? barcodeSVG(it.varenr, {h:6.2, mw:.22, fs:2}) : '')}</td><td>${esc(it.varenr || '')}</td><td>${esc(it.namn)}</td><td>${esc(it.eining || 'stk')}</td><td></td><td></td></tr>`).join('')}
+      ${Array.from({length:blanks}, () => `<tr class="blankrow"><td class="c">${++n}</td><td></td><td></td><td></td><td></td><td></td><td></td></tr>`).join('')}
+      </tbody></table>
+      <div class="sig" style="grid-template-columns:1fr 1fr 1fr"><div>Signatur tellar</div><div>Lagt inn i appen av / dato</div><div>Kontrollert av</div></div>
+      <div class="foot">Liste ${s.id} av ${ids.length} valde · Skruar o.l.: skriv prøvevekt (t.d. 10 stk = 42 g) og totalvekt i merknad.</div>
+    </section>`;
+  });
+  showPreview(`Tellelister ${M.namn} – Krambua`, html);
+}
+
+/* ------------------------------ EXCEL ------------------------------ */
+async function exportExcel(){
+  try{ toast('Lagar Excel…'); await loadScript(XLSX_URLS); }catch(e){ return toast(e.message, 'err'); }
+  const S = summary(), t = S.tot, M = T.meta, sum = await kontrollsum(S);
+  const wb = XLSX.utils.book_new();
+  const money = (ws, cols, from) => { const r = XLSX.utils.decode_range(ws['!ref']); for (let R = from; R <= r.e.r; R++) cols.forEach(C => { const a = XLSX.utils.encode_cell({r:R, c:C}); if (ws[a] && typeof ws[a].v === 'number') ws[a].z = '#,##0.00'; }); };
+  const a1 = [
+    [M.firma + (M.orgnr ? ' – org.nr. ' + M.orgnr : '')], ['Varetelling per ' + fmtDato(M.perDato) + ' – ' + M.namn], [],
+    ['Varebeholdning per', fmtDato(M.perDato)], ['Talt i perioden', t.tid0 ? fmtDT(t.tid0) + ' – ' + fmtDT(t.tid1) : ''],
+    ['Status', locked() ? 'Avslutta ' + fmtDT(T.avslutta.tid) + ' av ' + T.avslutta.av : 'UTKAST – ikkje avslutta'],
+    ['Tal varelinjer', t.n], ['Talt av', Object.keys(S.perTellar).sort().map(n => n + ' (' + S.perTellar[n] + ')').join(', ')], ['Kontrollsum', sum], [],
+    ['Mva-sats', 'Linjer', 'Utsalsverdi inkl. mva', 'Mva', 'Utsalsverdi eks. mva', 'Kostverdi'],
+    ...Object.keys(S.perMva).sort((a,b) => b - a).map(k => { const m = S.perMva[k]; return [k + ' %', m.n, m.inkl, m.mva, m.eks, m.kost]; }),
+    ['Sum', t.n, t.inkl, t.mva, t.eks, t.kost], [],
+    ['Kostverdi med innkjøpspris', '', '', '', '', t.kostI], ['Kostverdi rekna frå utsalspris (avanse ' + M.avanse + ' %)', '', '', '', '', t.kostA],
+    ['Sum kostverdi', '', '', '', '', t.kost], ['Nedskriving ukurans' + (M.ukuransTekst ? ' – ' + M.ukuransTekst : ''), '', '', '', '', -t.ukurans],
+    ['Varebeholdning til balansen', '', '', '', '', t.balanse]
+  ];
+  const ws1 = XLSX.utils.aoa_to_sheet(a1); ws1['!cols'] = [{wch:44},{wch:12},{wch:20},{wch:14},{wch:20},{wch:16}]; money(ws1, [2,3,4,5], 11);
+  XLSX.utils.book_append_sheet(wb, ws1, 'Samandrag');
+  const a2 = [['Liste', 'Seksjon', 'Område', 'Plassering', 'Linjer', 'Inkl. mva', 'Eks. mva', 'Kostverdi', 'Talt av', 'Ferdig']];
+  S.sek.forEach(s => { const p = S.perSek[s.id], st = T.status[s.id]; a2.push([s.id, s.namn, OMRADE[s.omr] || '', s.stad || '', p.n, round2(p.inkl), round2(p.eks), round2(p.kost), Object.keys(p.tellarar).join(', '), st && st.ferdig ? fmtDT(st.tid) + ' ' + st.av : '']); });
+  a2.push(['', 'Sum', '', '', t.n, t.inkl, t.eks, t.kost]);
+  const ws2 = XLSX.utils.aoa_to_sheet(a2); ws2['!cols'] = [{wch:6},{wch:30},{wch:13},{wch:30},{wch:7},{wch:14},{wch:14},{wch:14},{wch:30},{wch:26}]; money(ws2, [5,6,7], 1);
+  XLSX.utils.book_append_sheet(wb, ws2, 'Per telleliste');
+  const a3 = [['Liste', 'Linje', 'Seksjon', 'Varenr', 'EAN', 'Varetekst', 'Mengd', 'Eining', 'Pris inkl. mva', 'Mva %', 'Sum inkl. mva', 'Mva kr', 'Sum eks. mva', 'Kostmetode', 'Avanse %', 'Innkjøpspris', 'Kostverdi', 'Talt av', 'Tidspunkt', 'Teljemåte', 'Merknad']];
+  S.sek.forEach(s => { S.rows.filter(r => r.l.sek === s.id).forEach(({l, c}, i) => a3.push([s.id, i + 1, s.namn, l.varenr || '', l.ean || '', l.namn, parseNum(l.antal), l.eining, l.pris, l.mva, c.inkl, c.mva, c.eks, c.metode === 'I' ? 'Innkjøpspris' : 'Utsalspris − avanse', c.metode === 'I' ? '' : c.avanse, l.innpris || '', c.kost, l.tellar || '', fmtDT(l.tid), l.vekt ? vektTekst(l) : 'Talt', l.merknad || ''])); });
+  const ws3 = XLSX.utils.aoa_to_sheet(a3); ws3['!cols'] = [{wch:6},{wch:6},{wch:24},{wch:10},{wch:15},{wch:36},{wch:9},{wch:7},{wch:13},{wch:7},{wch:13},{wch:11},{wch:13},{wch:18},{wch:9},{wch:12},{wch:13},{wch:24},{wch:18},{wch:40},{wch:24}]; money(ws3, [8,10,11,12,15,16], 1);
+  ws3['!autofilter'] = {ref:ws3['!ref']};
+  XLSX.utils.book_append_sheet(wb, ws3, 'Alle varelinjer');
+  const agg = new Map();
+  S.rows.forEach(({l, c}) => { const k = (l.key || l.varenr || l.ean || l.namn) + '|' + l.pris + '|' + l.mva + '|' + l.eining; const a = agg.get(k) || {varenr:l.varenr, ean:l.ean, namn:l.namn, eining:l.eining, pris:l.pris, mva:l.mva, antal:0, inkl:0, eks:0, kost:0, sek:new Set()}; a.antal += parseNum(l.antal); a.inkl += c.inkl; a.eks += c.eks; a.kost += c.kost; a.sek.add(l.sek); agg.set(k, a); });
+  const a4 = [['Varenr', 'EAN', 'Varetekst', 'Mengd', 'Eining', 'Pris inkl. mva', 'Mva %', 'Sum inkl. mva', 'Sum eks. mva', 'Kostverdi', 'Lister']];
+  [...agg.values()].sort((a,b) => a.namn.localeCompare(b.namn, 'nb')).forEach(a => a4.push([a.varenr || '', a.ean || '', a.namn, round2(a.antal * 1000) / 1000, a.eining, a.pris, a.mva, round2(a.inkl), round2(a.eks), round2(a.kost), [...a.sek].join(', ')]));
+  const ws4 = XLSX.utils.aoa_to_sheet(a4); ws4['!cols'] = [{wch:10},{wch:15},{wch:38},{wch:9},{wch:7},{wch:13},{wch:7},{wch:13},{wch:13},{wch:13},{wch:16}]; money(ws4, [5,7,8,9], 1);
+  XLSX.utils.book_append_sheet(wb, ws4, 'Per vare');
+  XLSX.writeFile(wb, `Varetelling_${T.id}_Krambua${locked() ? '' : '_UTKAST'}.xlsx`);
+}
+
+/* ------------------------------ VARELISTA ------------------------------ */
+function catStatsHTML(){
+  const n = IDX.list.length, ean = IDX.list.filter(i => (i.ean || []).length).length, man = IDX.list.filter(i => i.manuell).length, pris = IDX.list.filter(i => parseNum(i.pris) > 0).length;
+  return `<div class="stats"><div class="stat"><b>${n}</b><span>varer i lista</span></div><div class="stat"><b>${ean}</b><span>med strekkode</span></div><div class="stat"><b>${man}</b><span>lagt inn manuelt</span></div></div>
+    <div class="small muted">${CAT.meta.importert ? `Sist importert ${esc(fmtDT(CAT.meta.importert))} frå «${esc(CAT.meta.kjelde)}» (${CAT.meta.tal} varer).` : 'Ingen vareliste importert enno.'} ${n - pris ? `${n - pris} varer manglar pris.` : ''}</div>`;
+}
+function viewVarer(){
+  return `<h1>Varelista frå kassa</h1>
+  <div id="cat-stats">${catStatsHTML()}</div>
+  <div class="card" style="margin-top:12px"><h2>Importer vareliste</h2>
+    <p class="small muted" style="margin-top:0">Eksporter varene frå PCK (varenummer, varenamn, strekkode, utsalspris inkl. mva og mva/hovudgruppe) til Excel eller CSV, og vel fila her. Appen finn kolonnane sjølv, og du kan rette dei før import. Prisane vert så henta automatisk når ein skannar.</p>
+    <button class="btn primary big wide" data-act="imp-velg">📥 Vel fil (Excel eller CSV)</button></div>
+  <div class="card"><h2>Søk og rediger</h2>
+    <div class="search"><input id="cat-q" type="text" placeholder="Namn, varenr. eller strekkode" autocomplete="off"><button class="btn" data-act="cat-ny">+ Ny</button></div>
+    <div id="cat-list" style="margin-top:8px"></div></div>
+  <div class="btnrow"><button class="btn" data-act="cat-excel">⬇ Eksporter varelista (Excel)</button></div>`;
+}
+function afterVarer(){ renderCatList(''); }
+function renderCatList(q){
+  const box = $('#cat-list'); if (!box) return;
+  const list = q && q.trim() ? (lookupCode(q) ? [lookupCode(q)] : searchCat(q, 60)) : IDX.list.slice(0, 40);
+  box.innerHTML = list.length ? list.map(it => `<div class="itemrow" data-act="cat-edit" data-k="${esc(it.k)}"><div class="mid"><b>${esc(it.namn)}</b><span>${esc(it.varenr ? 'Varenr. ' + it.varenr : '')} ${esc((it.ean || []).join(', '))} · ${esc(it.mva)} % · ${esc(it.eining || 'stk')}${it.manuell ? ' · manuell' : ''}</span></div><b style="white-space:nowrap">${parseNum(it.pris) >= 0 ? kr(it.pris) : '–'}</b></div>`).join('') + (!q && IDX.list.length > 40 ? `<div class="tiny muted" style="padding:8px 2px">Viser 40 av ${IDX.list.length}. Søk for å finne fleire.</div>` : '')
+    : `<div class="muted small">${q ? 'Ingen treff.' : 'Lista er tom.'}</div>`;
+}
+function catEdit(k){
+  const it = k ? CAT.items[k] : {k:'', varenr:'', ean:[], namn:'', pris:'', innpris:null, mva:25, eining:'stk', manuell:true, sek:''};
+  if (!it) return;
+  openModal(`<h2>${k ? 'Rediger vare' : 'Ny vare'}</h2>
+    <label>Varenamn<input id="ce-namn" type="text" value="${esc(it.namn)}"></label>
+    <div class="row2"><label>Varenr. (PCK)<input id="ce-varenr" type="text" value="${esc(it.varenr || '')}"></label><label>Strekkode(r), komma mellom<input id="ce-ean" type="text" inputmode="numeric" value="${esc((it.ean || []).join(', '))}"></label></div>
+    <div class="row2"><label>Utsalspris inkl. mva<input id="ce-pris" type="text" inputmode="decimal" value="${esc(fmtIn(it.pris))}"></label><label>Innkjøpspris eks. mva (valfritt)<input id="ce-inn" type="text" inputmode="decimal" value="${esc(fmtIn(it.innpris))}"></label></div>
+    <div class="row2"><label>Mva-sats<select id="ce-mva">${MVA_SATSAR.map(m => `<option value="${m}" ${+it.mva === m ? 'selected' : ''}>${m} %</option>`).join('')}</select></label><label>Eining<select id="ce-ein">${EININGAR.map(e => `<option ${e === (it.eining || 'stk') ? 'selected' : ''}>${e}</option>`).join('')}</select></label></div>
+    <label>Fast plass (seksjon)<select id="ce-sek"><option value="">–</option>${allSek().map(s => `<option value="${s.id}" ${it.sek === s.id ? 'selected' : ''}>${s.id} ${esc(s.namn)}</option>`).join('')}</select></label>
+    <div class="btnrow"><button class="btn primary" id="ce-save">Lagre</button><button class="btn" data-act="modal-close">Avbryt</button>${k ? '<button class="btn danger" id="ce-del">Slett</button>' : ''}</div>`, m => {
+    m.querySelector('#ce-save').onclick = () => {
+      const namn = $('#ce-namn').value.trim(); if (!namn) return toast('Skriv inn namn', 'err');
+      const pris = parseNum($('#ce-pris').value), inn = parseNum($('#ce-inn').value);
+      const nyIt = {...it, namn, varenr:$('#ce-varenr').value.trim(), ean:$('#ce-ean').value.split(/[,;\s]+/).map(s => s.trim()).filter(Boolean), pris:isNaN(pris) ? null : pris, innpris:isNaN(inn) ? null : inn, mva:+$('#ce-mva').value, eining:$('#ce-ein').value, sek:$('#ce-sek').value, updatedAt:nowISO(), deleted:false};
+      delete nyIt._s;
+      if (!k){ nyIt.k = catKey(nyIt); if (CAT.items[nyIt.k] && !CAT.items[nyIt.k].deleted) return toast('Det finst alt ei vare med same varenr./strekkode', 'err'); }
+      CAT.items[nyIt.k] = nyIt; saveCat(); closeModal(); renderCatList($('#cat-q') ? $('#cat-q').value : ''); $('#cat-stats').innerHTML = catStatsHTML(); toast('Lagra', 'ok');
+    };
+    const del = m.querySelector('#ce-del'); if (del) del.onclick = () => { CAT.items[k] = {...it, deleted:true, updatedAt:nowISO()}; delete CAT.items[k]._s; saveCat(); closeModal(); renderCatList($('#cat-q').value); $('#cat-stats').innerHTML = catStatsHTML(); toast('Sletta'); };
+  });
+}
+async function catExcel(){
+  try{ await loadScript(XLSX_URLS); }catch(e){ return toast(e.message, 'err'); }
+  const a = [['Varenr', 'EAN', 'Varenamn', 'Utsalspris inkl. mva', 'Innkjøpspris eks. mva', 'Mva %', 'Eining', 'Seksjon', 'Manuell']];
+  IDX.list.forEach(it => a.push([it.varenr || '', (it.ean || []).join(', '), it.namn, it.pris ?? '', it.innpris ?? '', it.mva, it.eining || 'stk', it.sek || '', it.manuell ? 'ja' : '']));
+  const wb = XLSX.utils.book_new(); const ws = XLSX.utils.aoa_to_sheet(a); ws['!cols'] = [{wch:10},{wch:16},{wch:40},{wch:12},{wch:12},{wch:7},{wch:7},{wch:8},{wch:8}];
+  XLSX.utils.book_append_sheet(wb, ws, 'Varer'); XLSX.writeFile(wb, 'Krambua_vareliste.xlsx');
+}
+/* ----- import ----- */
+const FIELDS = [
+  {k:'varenr', t:'Varenummer', re:/^(vare\s*-?\s*n(umme)?r\.?|varenr\.?|art(ikkel)?\s*-?\s*n(umme)?r\.?|plu|nr\.?|id)$/i},
+  {k:'ean', t:'Strekkode / EAN', re:/(ean|strekkode|strek\s*kode|barcode|gtin)/i},
+  {k:'namn', t:'Varenamn', re:/^(namn|navn|vare\s*-?\s*namn|vare\s*-?\s*navn|varenamn|varenavn|beskrivelse|beskriving|varetekst|tekst|produkt(namn|navn)?|vare)$/i},
+  {k:'innpris', t:'Innkjøpspris eks. mva', re:/(innpris|inn\s*pris|kjøpspris|kjopspris|innkjøpspris|innkjopspris|kostpris|^kost$)/i},
+  {k:'prisEks', t:'Utsalspris EKS. mva', re:/((ut)?(salgs|sals)?pris).*(eks|ekskl|u\/|uten|utan)|(eks|ekskl).*(mva).*(pris)/i},
+  {k:'pris', t:'Utsalspris INKL. mva', re:/(utpris|ut\s*pris|utsalgspris|utsalspris|salgspris|salspris|pris\s*ink|^pris$|^utsalg)/i},
+  {k:'mva', t:'Mva-sats', re:/^(mva|moms|vat|avgift)(\s*-?\s*(sats|%|prosent|kode))?\s*%?$/i},
+  {k:'eining', t:'Eining', re:/^(eining|enhet|eininga|unit|enh\.?)$/i},
+  {k:'grp', t:'Varegruppe / hovudgruppe', re:/(hovedgruppe|hovudgruppe|varegruppe|gruppe|kategori)/i},
+  {k:'lok', t:'Plassering (seksjonskode)', re:/(lokasjon|plassering|hylle|seksjon|reol)/i}
+];
+let IMP = null;
+function parseCSV(text){
+  const first = text.split(/\r?\n/).slice(0, 5).join('\n');
+  const cands = [';', '\t', ',', '|']; let sep = ';', best = -1;
+  cands.forEach(c => { const n = first.split(c).length; if (n > best){ best = n; sep = c; } });
+  const rows = []; let row = [], cell = '', q = false;
+  for (let i = 0; i < text.length; i++){
+    const ch = text[i];
+    if (q){ if (ch === '"'){ if (text[i + 1] === '"'){ cell += '"'; i++; } else q = false; } else cell += ch; }
+    else if (ch === '"') q = true;
+    else if (ch === sep){ row.push(cell); cell = ''; }
+    else if (ch === '\n' || ch === '\r'){ if (ch === '\r' && text[i + 1] === '\n') i++; row.push(cell); rows.push(row); row = []; cell = ''; }
+    else cell += ch;
+  }
+  if (cell || row.length){ row.push(cell); rows.push(row); }
+  return rows;
+}
+async function readSheets(file){
+  const name = file.name.toLowerCase();
+  if (/\.(csv|txt)$/.test(name)){
+    const buf = await file.arrayBuffer(); let text;
+    try{ text = new TextDecoder('utf-8', {fatal:true}).decode(buf); }catch(e){ text = new TextDecoder('windows-1252').decode(buf); }
+    return [{name:file.name, rows:parseCSV(text.replace(/^\uFEFF/, ''))}];
+  }
+  await loadScript(XLSX_URLS);
+  const wb = XLSX.read(await file.arrayBuffer(), {type:'array'});
+  return wb.SheetNames.map(n => ({name:n, rows:XLSX.utils.sheet_to_json(wb.Sheets[n], {header:1, raw:true, defval:''})}));
+}
+async function readFile(file){
+  let best = [];
+  (await readSheets(file)).forEach(sh => { if (sh.rows.length > best.length) best = sh.rows; });
+  return best;
+}
+function guessMap(header){
+  const map = {}; const used = new Set();
+  FIELDS.forEach(f => { header.forEach((hd, i) => { if (map[f.k] != null || used.has(i)) return; const s = String(hd || '').trim(); if (s && f.re.test(s)){ if (f.k === 'mva' && /pris|beløp|belop|sum/i.test(s)) return; map[f.k] = i; used.add(i); } }); });
+  return map;
+}
+function findHeader(rows){
+  let bi = 0, bs = -1;
+  rows.slice(0, 25).forEach((r, i) => { const s = Object.keys(guessMap(r)).length; if (s > bs){ bs = s; bi = i; } });
+  return bi;
+}
+function mvaVal(v, grp){
+  const okS = [0, 12, 15, 25];
+  if (v !== '' && v != null){
+    if (typeof v === 'number'){ const n = v > 0 && v < 1 ? round2(v * 100) : v; if (okS.includes(Math.round(n))) return Math.round(n); }
+    const s = String(v).toLowerCase();
+    const m = /(\d+(?:[.,]\d+)?)/.exec(s); if (m){ let n = parseNum(m[1]); if (n > 0 && n < 1) n *= 100; if (okS.includes(Math.round(n))) return Math.round(n); }
+    if (/høy|hoy|standard|full/.test(s)) return 25; if (/middels|mat|nærings|naerings/.test(s)) return 15; if (/lav|transport/.test(s)) return 12; if (/fritak|frita|null|ingen|0/.test(s)) return 0;
+  }
+  if (grp){ const m = /(\d{1,2})\s*%/.exec(String(grp)); if (m && okS.includes(+m[1])) return +m[1]; }
+  return null;
+}
+function eanList(v){
+  if (v === '' || v == null) return [];
+  if (typeof v === 'number') return [String(Math.round(v))];
+  const s = String(v);
+  if (/e\+/i.test(s)) return [];
+  return s.split(/[,;|\/\s]+/).map(x => x.trim()).filter(x => x.length >= 4);
+}
+function rowToItem(r, map){
+  const g = k => map[k] != null ? r[map[k]] : '';
+  const namn = String(g('namn') || '').trim(); if (!namn) return null;
+  const grp = String(g('grp') || '').trim();
+  let mva = mvaVal(g('mva'), grp); const mvaGuess = mva == null; if (mva == null) mva = 25;
+  let pris = parseNum(g('pris'));
+  const pe = parseNum(g('prisEks'));
+  if (isNaN(pris) && !isNaN(pe)) pris = round2(pe * (1 + mva / 100));
+  const inn = parseNum(g('innpris'));
+  const varenr = String(g('varenr') ?? '').trim().replace(/\.0$/, '');
+  const lok = String(g('lok') || '').trim().toUpperCase();
+  const ein = String(g('eining') || '').trim().toLowerCase();
+  const it = {k:'', varenr, ean:eanList(g('ean')), namn, pris:isNaN(pris) ? null : round2(pris), innpris:isNaN(inn) || inn <= 0 ? null : inn, mva, mvaGuess, eining:EININGAR.includes(ein) ? ein : (/^stk|stykk/.test(ein) ? 'stk' : (/^kg|kilo/.test(ein) ? 'kg' : (/^m(eter)?$/.test(ein) ? 'm' : (/^l(iter)?$/.test(ein) ? 'l' : 'stk')))), grp, sek:sekById(lok) ? lok : '', manuell:false};
+  it.k = catKey(it);
+  return it;
+}
+async function startImport(file){
+  let rows;
+  try{ toast('Les fila…'); rows = await readFile(file); }catch(e){ return toast('Klarte ikkje lese fila: ' + e.message, 'err'); }
+  rows = rows.filter(r => r && r.some(c => String(c).trim() !== ''));
+  if (rows.length < 2) return toast('Fann ingen rader i fila', 'err');
+  const hi = findHeader(rows);
+  IMP = {file:file.name, rows, hi, header:rows[hi].map(x => String(x || '').trim()), map:guessMap(rows[hi]), mode:'oppdater'};
+  if (IMP.map.innpris != null) IMP.brukInn = false; else IMP.brukInn = false;
+  impModal();
+}
+function impModal(){
+  const I = IMP, data = I.rows.slice(I.hi + 1);
+  const opts = (k) => `<select data-imp="${k}"><option value="">– ikkje i fila –</option>${I.header.map((h, i) => `<option value="${i}" ${I.map[k] === i ? 'selected' : ''}>${esc(h || 'Kolonne ' + (i + 1))}</option>`).join('')}</select>`;
+  const prev = data.slice(0, 4).map(r => rowToItem(r, I.map)).filter(Boolean);
+  const all = data.map(r => rowToItem(r, I.map)).filter(Boolean);
+  const nyN = all.filter(it => !CAT.items[it.k] || CAT.items[it.k].deleted).length;
+  const ok = I.map.namn != null && (I.map.pris != null || I.map.prisEks != null);
+  openModal(`<h2>Importer «${esc(I.file)}»</h2>
+    <p class="small muted" style="margin-top:0">${data.length} rader. Sjekk at kolonnane er rett kopla.</p>
+    ${FIELDS.map(f => `<label>${esc(f.t)}${(f.k === 'namn' || f.k === 'pris') ? ' *' : ''}${opts(f.k)}</label>`).join('')}
+    ${I.map.innpris != null ? `<label class="check" style="margin-top:12px"><input type="checkbox" id="imp-inn" ${I.brukInn ? 'checked' : ''}> Bruk innkjøpspris til kostverdi</label><div class="tiny muted">Varelista vert delt via GitHub-repoet. Er repoet offentleg, kan andre sjå innkjøpsprisane.</div>` : ''}
+    <div class="lbl">Førehandsvising</div>
+    <div class="tablewrap"><table class="t"><thead><tr><th>Varenr</th><th>EAN</th><th>Namn</th><th class="n">Pris</th><th>Mva</th></tr></thead><tbody>${prev.map(it => `<tr><td>${esc(it.varenr)}</td><td class="tiny">${esc(it.ean.join(', '))}</td><td>${esc(it.namn)}</td><td class="n">${it.pris != null ? kr(it.pris) : '–'}</td><td>${it.mva} %${it.mvaGuess ? '?' : ''}</td></tr>`).join('')}</tbody></table></div>
+    ${all.some(it => it.mvaGuess) ? `<div class="banner warn small" style="margin-top:8px">${all.filter(it => it.mvaGuess).length} varer manglar mva-sats i fila og får 25 %. Mva-satsen kan endrast på kvar linje under teljinga.</div>` : ''}
+    <div class="lbl">Korleis</div>
+    <div class="seg"><button data-act="imp-mode" data-v="oppdater" class="${I.mode === 'oppdater' ? 'on' : ''}">Oppdater og legg til</button><button data-act="imp-mode" data-v="erstatt" class="${I.mode === 'erstatt' ? 'on' : ''}">Erstatt lista</button></div>
+    <p class="tiny muted">${I.mode === 'erstatt' ? 'Varer frå tidlegare import som ikkje er med i fila, vert fjerna. Manuelt lagde varer vert behaldne.' : 'Eksisterande varer får ny pris og nytt namn. Nye varer vert lagde til.'} ${all.length} varer i fila, ${nyN} nye.</p>
+    <div class="btnrow"><button class="btn primary big" id="imp-go" ${ok ? '' : 'disabled'}>Importer ${all.length} varer</button><button class="btn" data-act="modal-close">Avbryt</button></div>`, m => {
+    m.querySelectorAll('[data-imp]').forEach(s => s.onchange = () => { const v = s.value; if (v === '') delete I.map[s.dataset.imp]; else { Object.keys(I.map).forEach(k => { if (I.map[k] === +v) delete I.map[k]; }); I.map[s.dataset.imp] = +v; } impModal(); });
+    const ib = m.querySelector('#imp-inn'); if (ib) ib.onchange = () => I.brukInn = ib.checked;
+    m.querySelector('#imp-go').onclick = () => doImport(all);
+  });
+}
+function doImport(all){
+  const now = nowISO(), I = IMP; let ny = 0, opp = 0;
+  const seen = new Set();
+  all.forEach(it => {
+    if (seen.has(it.k)){ const ex = CAT.items[it.k]; if (ex) it.ean.forEach(e => { if (!ex.ean.includes(e)) ex.ean.push(e); }); return; }
+    seen.add(it.k);
+    if (!I.brukInn) it.innpris = null;
+    delete it.mvaGuess;
+    const ex = CAT.items[it.k];
+    if (ex && !ex.deleted){ Object.assign(ex, {namn:it.namn, varenr:it.varenr || ex.varenr, ean:[...new Set([...(it.ean || []), ...(ex.ean || [])])], pris:it.pris ?? ex.pris, innpris:I.brukInn ? it.innpris : (ex.innpris ?? null), mva:I.map.mva != null || I.map.grp != null ? it.mva : ex.mva, eining:I.map.eining != null ? it.eining : ex.eining, grp:it.grp || ex.grp || '', sek:it.sek || ex.sek || '', manuell:false, updatedAt:now, deleted:false}); opp++; }
+    else { CAT.items[it.k] = {...it, updatedAt:now, deleted:false}; ny++; }
+  });
+  let fjerna = 0;
+  if (I.mode === 'erstatt') Object.values(CAT.items).forEach(it => { if (!it.deleted && !it.manuell && !seen.has(it.k)){ it.deleted = true; it.updatedAt = now; fjerna++; } });
+  CAT.meta = {kjelde:I.file, importert:now, tal:seen.size, updatedAt:now};
+  saveCat(); closeModal(); IMP = null;
+  if (route.v === 'varer') render();
+  toast(`Importert: ${ny} nye, ${opp} oppdaterte${fjerna ? ', ' + fjerna + ' fjerna' : ''}`, 'ok');
+}
+
+
+/* ------------------------------ ANALYSE: lagerverdi mot sal per reol ------------------------------ */
+let SAL = lsGet(LS.sal, null) || {meta:null, items:{}, generisk:{}};
+if (!SAL.generisk) SAL.generisk = {};
+const SAL_FIELDS = [
+  {k:'varenr', re:/^(vare\s*-?\s*n(umme)?r\.?|varenr\.?|art(ikkel)?\s*-?\s*n(umme)?r\.?|plu)$/i},
+  {k:'namn', re:/^(namn|navn|vare\s*-?\s*namn|vare\s*-?\s*navn|varenamn|varenavn|beskrivelse|varetekst|tekst)\b/i},
+  {k:'sum', re:/(sum\s*beløp|sum\s*belop|^beløp|^belop|omsetning|sum\s*inkl|sal(g)?\s*inkl|^sal(g)?$|^sum$)/i},
+  {k:'antal', re:/(antall\s*solgt|^antall$|^antal$|^solgt|mengd|kvantum)/i}
+];
+function guessSalMap(row){
+  const map = {}, used = new Set();
+  SAL_FIELDS.forEach(f => row.forEach((hd, i) => { if (map[f.k] != null || used.has(i)) return; const t = String(hd || '').trim(); if (t && f.re.test(t)){ map[f.k] = i; used.add(i); } }));
+  return map;
+}
+async function startSalImport(file){
+  let sheets;
+  try{ toast('Les fila…'); sheets = await readSheets(file); }catch(e){ return toast('Klarte ikkje lese fila: ' + e.message, 'err'); }
+  const items = {}; let n = 0, gen = 0, period = null;
+  sheets.forEach(sh => {
+    const rows = sh.rows.filter(r => r && r.some(c => String(c).trim() !== ''));
+    if (period == null){
+      const txt = rows.slice(0, 8).map(r => r.join(' ')).join(' ');
+      const m = /(\d+)\s*(månader|måneder|mnd|mån)/i.exec(txt), y = /(\d+)\s*år\b/i.exec(txt);
+      if (m) period = +m[1]; else if (y) period = +y[1] * 12;
+    }
+    let hi = -1, map = null;
+    rows.slice(0, 25).forEach((r, i) => { if (hi > -1) return; const mp = guessSalMap(r); if (mp.varenr != null && mp.sum != null){ hi = i; map = mp; } });
+    if (hi < 0) return;
+    const isGen = /generisk|knapp/i.test(sh.name);
+    rows.slice(hi + 1).forEach(r => {
+      let v = r[map.varenr]; if (v === '' || v == null) return;
+      v = typeof v === 'number' ? String(Math.round(v)) : String(v).trim().replace(/\.0$/, '');
+      if (!v || items[v] || /\s/.test(v) || v.length > 20) return;
+      const sum = parseNum(r[map.sum]); if (isNaN(sum)) return;
+      const namn = map.namn != null ? String(r[map.namn] || '').trim() : '';
+      const g = isGen || !!DEFAULT_GENERISK[v] || GEN_RE.test(namn);
+      items[v] = {varenr:v, namn, sum:round2(sum), antal:map.antal != null ? (parseNum(r[map.antal]) || 0) : null, generisk:g};
+      n++; if (g) gen++;
+    });
+  });
+  if (!n) return toast('Fann ingen salstal (treng kolonnar for varenummer og beløp)', 'err');
+  openModal(`<h2>Salstal frå «${esc(file.name)}»</h2>
+    <p class="small">${n} varenummer, av dei ${gen} generelle kasseknappar (t.d. «Jernvarer», «Maling»).</p>
+    <label>Kor mange månader dekkjer fila?<input id="sal-per" type="text" inputmode="numeric" value="${period || 12}"></label>
+    <label class="check" style="margin-top:12px"><input type="checkbox" id="sal-komp"> Fila har <b>alle</b> varer som har selt i perioden</label>
+    <div class="tiny muted">La ruta stå tom om fila berre er ei toppliste. Då vert varer som manglar i fila rekna som «ukjent sal», ikkje som «ingen sal».</div>
+    <div class="btnrow"><button class="btn primary big" id="sal-go">Importer</button><button class="btn" data-act="modal-close">Avbryt</button></div>`, m => {
+    m.querySelector('#sal-go').onclick = () => {
+      const per = parseNum($('#sal-per').value);
+      if (!(per > 0)) return toast('Skriv inn tal månader', 'err');
+      SAL = {meta:{kjelde:file.name, importert:nowISO(), periodeMnd:per, komplett:$('#sal-komp').checked, n}, items, generisk:SAL.generisk || {}};
+      lsSet(LS.sal, SAL); closeModal(); render(); toast(`Importert salstal for ${n} varenummer`, 'ok');
+    };
+  });
+}
+function salGeneriskCfg(){
+  const out = {};
+  Object.keys(SAL.items).forEach(v => {
+    const it = SAL.items[v]; if (!it.generisk) return;
+    const d = DEFAULT_GENERISK[v], saved = SAL.generisk[v];
+    out[v] = {varenr:v, namn:it.namn || (d && d.namn) || v, sum:it.sum || 0, mva:d ? d.mva : (/15\s*%/.test(it.namn) ? 15 : 25), sek:saved || (d ? d.sek : []), standard:!saved};
+  });
+  return out;
+}
+const vnrOf = l => l.varenr || (l.key && CAT.items[l.key] && CAT.items[l.key].varenr) || '';
+function analyse(){
+  if (!SAL.meta) return null;
+  const fak = 12 / (parseNum(SAL.meta.periodeMnd) || 12);
+  const lines = activeLines();
+  const per = {};
+  const mk = () => ({uts:0, kost:0, salDir:0, salGen:0, kjentUts:0, n:0, utanSal:0, utanSalKost:0});
+  allSek().forEach(s => per[s.id] = mk());
+  const qtyV = {};
+  lines.forEach(l => { const v = vnrOf(l); if (v) qtyV[v] = (qtyV[v] || 0) + (parseNum(l.antal) || 0); });
+  const gen = salGeneriskCfg();
+  const genSek = new Set(); Object.values(gen).forEach(g => { if (g.sum > 0) g.sek.forEach(id => genSek.add(id)); });
+  const varer = new Map();
+  lines.forEach(l => {
+    const c = lineCalc(l); const p = per[l.sek] || (per[l.sek] = mk());
+    p.uts += c.eks; p.kost += c.kost; p.n++;
+    const v = vnrOf(l), si = v ? SAL.items[v] : null;
+    let salEks = null;
+    if (si && !si.generisk) salEks = Math.max(0, si.sum) * ((parseNum(l.antal) || 0) / (qtyV[v] || 1)) * fak / (1 + (+l.mva || 0) / 100);
+    else if (v && SAL.meta.komplett && !si) salEks = 0;
+    if (salEks !== null){ p.salDir += salEks; p.kjentUts += c.eks; if (salEks <= 0){ p.utanSal++; p.utanSalKost += c.kost; } }
+    else if (genSek.has(l.sek)) p.kjentUts += c.eks;
+    const k = grpKey(l);
+    const a = varer.get(k) || {namn:l.namn, varenr:v, kost:0, uts:0, salEks:0, kjent:true, sek:new Set(), antal:0, eining:l.eining};
+    a.kost += c.kost; a.uts += c.eks; a.antal += parseNum(l.antal) || 0; a.sek.add(l.sek);
+    if (salEks === null) a.kjent = false; else a.salEks += salEks;
+    varer.set(k, a);
+  });
+  Object.values(gen).forEach(g => {
+    if (!g.sek.length || !(g.sum > 0)) return;
+    const salEks = g.sum * fak / (1 + g.mva / 100);
+    const tot = g.sek.reduce((s, id) => s + (per[id] ? per[id].uts : 0), 0);
+    g.sek.forEach(id => { if (!per[id]) return; per[id].salGen += salEks * (tot > 0 ? per[id].uts / tot : 1 / g.sek.length); });
+    g.salEksAr = salEks;
+  });
+  const tot = mk();
+  Object.values(per).forEach(p => {
+    p.sal = p.salDir + p.salGen;
+    p.dekning = p.uts > 0 ? Math.min(1, p.kjentUts / p.uts) : 0;
+    p.omlop = p.uts > 0 ? p.sal / p.uts : null;
+    p.dagar = p.uts > 0 ? (p.omlop > 0 ? 365 / p.omlop : Infinity) : null;
+    ['uts','kost','salDir','salGen','kjentUts','n','utanSal','utanSalKost'].forEach(k => tot[k] += p[k]);
+  });
+  tot.sal = tot.salDir + tot.salGen; tot.dekning = tot.uts > 0 ? tot.kjentUts / tot.uts : 0; tot.dagar = tot.sal > 0 ? 365 * tot.uts / tot.sal : null;
+  const vl = [...varer.values()].map(a => ({...a, dagar:a.kjent ? (a.salEks > 0 ? 365 * a.uts / a.salEks : Infinity) : null}));
+  return {per, tot, gen, fak, varer:vl};
+}
+function heatCls(p){
+  if (!p || !(p.uts > 0)) return 'h-';
+  if (p.dekning < 0.6 || p.dagar == null) return 'h0';
+  const d = p.dagar; return d <= 60 ? 'h1' : d <= 180 ? 'h2' : d <= 365 ? 'h3' : 'h4';
+}
+const fmtDagar = d => d == null ? '–' : (d === Infinity ? 'Ingen sal' : (d > 3650 ? '> 10 år' : Math.round(d) + ' d'));
+function sekStatsFerdigN(){ return allSek().filter(s => T.status[s.id] && T.status[s.id].ferdig).length; }
+function viewAnalyse(){
+  let h = `<h1>Lagerverdi mot sal per reol</h1>`;
+  if (!SAL.meta){
+    return h + `<div class="card"><p style="margin-top:0">Her ser du kor mykje pengar som står på kvar reol, og kor fort varene der sel. Då ser du kva reolar som bind mest kapital og plass i høve til salet.</p>
+      <p class="small muted">Appen treng salstal per vare frå PCK, helst siste 12 månader: rapporten «Varer» på min.pckasse.no eksportert til Excel eller CSV med varenummer, namn og sum beløp. Fila «PCK_enkeltvarer_siste_12mnd.xlsx» frå prosjektet fungerer òg, men ho har berre dei mest selde varene og dei generelle knappane.</p>
+      <button class="btn primary big wide" data-act="sal-velg">📥 Importer salstal</button></div>`;
+  }
+  const A = analyse(), P = A.per, M = SAL.meta;
+  const sek = allSek().filter(s => P[s.id] && P[s.id].uts > 0);
+  if (!sek.length) h += `<div class="banner info">Ingen varer er talde enno. Analysen fyller seg når teljinga er i gang.</div>`;
+  else if (sekStatsFerdigN() < allSek().length) h += `<div class="banner warn small">Teljinga er ikkje ferdig. Sal på generelle knappar som «Jernvarer» vert fordelt berre på reolane som er talde, så dagane ser betre ut enn dei er. Tala er rette når alle reolane er talde.</div>`;
+  h += `<div class="small muted" style="margin-bottom:10px">Salstal frå «${esc(M.kjelde)}» (${M.n} varenr., ${qty(M.periodeMnd)} mnd, rekna om til per år)${M.komplett ? '' : ' – toppliste: varer som ikkje er i fila, vert rekna som ukjent sal'}. <button class="btn ghost" data-act="sal-velg" style="min-height:30px;padding:2px 8px">Byt fil</button></div>`;
+  h += `<div class="stats"><div class="stat"><b>${kr(A.tot.kost)}</b><span>kr lagerverdi (kost)</span></div><div class="stat"><b>${kr(A.tot.sal)}</b><span>kr sal per år eks. mva</span></div><div class="stat"><b>${fmtDagar(A.tot.dagar)}</b><span>snitt dagar på lager</span></div></div>`;
+  h += `<div class="mapwrap ${mapZoom ? 'zoom' : ''}">${mapSVG(sekStats(), {cls:id => heatCls(P[id]), badge:id => (P[id] && P[id].uts > 0 && heatCls(P[id]) !== 'h0') ? (P[id].dagar === Infinity ? '∞' : (P[id].dagar > 999 ? '999+' : String(Math.round(P[id].dagar)))) : null})}</div>
+    <div class="legend heat-leg"><span>Dagar på lager:</span><span><i style="background:rgba(46,139,71,.55)"></i>≤ 60</span><span><i style="background:rgba(235,195,30,.7)"></i>61–180</span><span><i style="background:rgba(240,135,25,.7)"></i>181–365</span><span><i style="background:rgba(200,30,40,.6)"></i>over eitt år</span><span><i style="background:repeating-linear-gradient(45deg,#8A9599 0 2px,#E4E7E8 2px 5px)"></i>for lite salsdata</span></div>`;
+  const key = p => p.dekning < 0.6 ? -1 : (p.dagar === Infinity ? 1e9 : p.dagar);
+  const order = sek.slice().sort((a, b) => key(P[b.id]) - key(P[a.id]));
+  const tagSt = c => c === 'h4' ? 'background:var(--errbg);color:var(--err)' : c === 'h3' ? 'background:var(--warnbg);color:var(--warn)' : c === 'h2' ? 'background:#FFF6CC;color:#7A6200' : c === 'h1' ? 'background:var(--okbg);color:var(--ok)' : '';
+  h += `<div class="card"><h2>Per reol – tregast først</h2><div class="seklist">
+    ${order.map(s => { const p = P[s.id]; const c = heatCls(p); return `<button class="sekrow" data-act="sek" data-id="${s.id}"><span class="code">${s.id}</span><span class="nm"><b>${esc(s.namn)}</b><span>Lager ${kr(p.kost)} kr · sal ${kr(p.sal)} kr/år${p.salGen > 0 ? ` (${Math.round(p.salGen / p.sal * 100)} % frå knappar)` : ''} · dekning ${Math.round(p.dekning * 100)} %${p.utanSal ? ` · ${p.utanSal} utan sal` : ''}</span></span><span class="rt"><span class="tag" style="${tagSt(c)}">${c === 'h0' ? 'usikker' : fmtDagar(p.dagar)}</span></span></button>`; }).join('')}</div>
+    <div class="small" style="margin-top:10px;font-weight:700">Totalt: lager ${kr(A.tot.kost)} kr (kost) · sal ${kr(A.tot.sal)} kr/år eks. mva · ${fmtDagar(A.tot.dagar)} på lager</div>
+    <p class="tiny muted" style="margin-bottom:0">Dagar på lager = kor lenge varene på reolen rekk med dagens salstakt (lagerverdi ÷ sal per år × 365, begge til utsalspris eks. mva). Dekning = kor stor del av lagerverdien som har salstal. Under 60 % vert reolen vist som «usikker».</p></div>`;
+  const slow = A.varer.filter(a => a.kjent && a.dagar > 365).sort((a, b) => b.kost - a.kost).slice(0, 15);
+  h += `<div class="card"><h2>Mest pengar i varer som sel lite</h2>${slow.length ? `<div class="tablewrap"><table class="t"><thead><tr><th>Vare</th><th class="n">Mengd</th><th class="n">Lager (kost)</th><th class="n">Sal/år</th><th class="n">Dagar</th></tr></thead><tbody>
+    ${slow.map(a => `<tr><td>${esc(a.namn)}<div class="tiny muted">${[...a.sek].join(', ')}${a.varenr ? ' · ' + esc(a.varenr) : ''}</div></td><td class="n">${qty(a.antal)} ${esc(a.eining)}</td><td class="n">${kr(a.kost)}</td><td class="n">${kr(a.salEks)}</td><td class="n">${fmtDagar(a.dagar)}</td></tr>`).join('')}</tbody></table></div>
+    <p class="tiny muted" style="margin-bottom:0">Varer med meir enn eitt års lager. Kandidatar for nedsal, retur eller nedskriving for ukurans – og for å frigjere reolplass.</p>` : `<p class="small muted" style="margin:0">Ingen talde varer med kjent sal har meir enn eitt års lager${M.komplett ? '' : ' (varer utanfor topplista har ukjent sal)'}.</p>`}</div>`;
+  const G = Object.values(A.gen).filter(g => g.sum > 0).sort((a, b) => (b.sek.length > 0) - (a.sek.length > 0) || b.sum - a.sum);
+  if (G.length) h += `<div class="card"><h2>Sal på generelle kasseknappar</h2><p class="small muted" style="margin-top:0">Mykje vert slege inn på knappar som «Jernvarer» og «Maling» i staden for å skanne vara. Dette salet vert fordelt på reolane du vel, etter lagerverdien deira. Knappar utan reol er ikkje med.</p>
+    ${G.map(g => `<div class="itemrow" data-act="gen-edit" data-v="${esc(g.varenr)}"><div class="mid"><b>${esc(g.namn)}</b><span>${kr(g.sum * A.fak)} kr per år inkl. mva · ${g.sek.length ? g.sek.join(', ') : '<i>ikkje fordelt</i>'}${g.standard && g.sek.length ? ' (standard)' : ''}</span></div><span class="btn ghost" style="min-height:34px">Endre</span></div>`).join('')}</div>`;
+  h += `<div class="btnrow"><button class="btn" data-act="an-excel">⬇ Analysen til Excel</button></div>`;
+  return h;
+}
+function genEdit(v){
+  const g = salGeneriskCfg()[v]; if (!g) return;
+  const sel = new Set(g.sek);
+  openModal(`<h2>Fordel «${esc(g.namn)}»</h2><p class="small muted" style="margin-top:0">Vel reolane der varene som vert slegne inn på denne knappen står.</p>
+    ${OMR_ORDER.map(o => { const ss = allSek().filter(s => s.omr === o); return ss.length ? `<div class="grp-h">${OMRADE[o]}</div>` + ss.map(s => `<label class="check" style="margin:4px 0"><input type="checkbox" class="ge" value="${s.id}" ${sel.has(s.id) ? 'checked' : ''}> <b>${s.id}</b> ${esc(s.namn)}</label>`).join('') : ''; }).join('')}
+    <div class="btnrow"><button class="btn primary" id="ge-save">Lagre</button>${DEFAULT_GENERISK[v] ? '<button class="btn" id="ge-std">Standard</button>' : ''}<button class="btn" data-act="modal-close">Avbryt</button></div>`, m => {
+    m.querySelector('#ge-save').onclick = () => { SAL.generisk[v] = [...m.querySelectorAll('.ge:checked')].map(i => i.value); lsSet(LS.sal, SAL); closeModal(); render(); };
+    const st = m.querySelector('#ge-std'); if (st) st.onclick = () => { delete SAL.generisk[v]; lsSet(LS.sal, SAL); closeModal(); render(); };
+  });
+}
+async function analyseExcel(){
+  try{ await loadScript(XLSX_URLS); }catch(e){ return toast(e.message, 'err'); }
+  const A = analyse(); if (!A) return;
+  const a1 = [['Reol', 'Seksjon', 'Lagerverdi kost', 'Lagerverdi utsal eks. mva', 'Sal/år eks. mva (varer)', 'Sal/år eks. mva (generelle knappar)', 'Sal/år eks. mva totalt', 'Dagar på lager', 'Dekning %', 'Linjer utan sal', 'Kost utan sal']];
+  allSek().forEach(s => { const p = A.per[s.id]; if (!p || !(p.uts > 0)) return; a1.push([s.id, s.namn, round2(p.kost), round2(p.uts), round2(p.salDir), round2(p.salGen), round2(p.sal), p.dagar === Infinity ? 'Ingen sal' : Math.round(p.dagar), Math.round(p.dekning * 100), p.utanSal, round2(p.utanSalKost)]); });
+  const a2 = [['Vare', 'Varenr', 'Reolar', 'Mengd', 'Eining', 'Lagerverdi kost', 'Sal/år eks. mva', 'Dagar på lager']];
+  A.varer.sort((x, y) => y.kost - x.kost).forEach(v => a2.push([v.namn, v.varenr || '', [...v.sek].join(', '), round2(v.antal * 1000) / 1000, v.eining, round2(v.kost), v.kjent ? round2(v.salEks) : 'ukjent', v.dagar == null ? 'ukjent' : (v.dagar === Infinity ? 'Ingen sal' : Math.round(v.dagar))]));
+  const wb = XLSX.utils.book_new();
+  const w1 = XLSX.utils.aoa_to_sheet(a1); w1['!cols'] = [{wch:6},{wch:30},{wch:14},{wch:14},{wch:14},{wch:16},{wch:14},{wch:12},{wch:10},{wch:10},{wch:12}];
+  const w2 = XLSX.utils.aoa_to_sheet(a2); w2['!cols'] = [{wch:40},{wch:10},{wch:14},{wch:9},{wch:7},{wch:14},{wch:14},{wch:12}];
+  XLSX.utils.book_append_sheet(wb, w1, 'Per reol'); XLSX.utils.book_append_sheet(wb, w2, 'Per vare');
+  XLSX.writeFile(wb, `Reolanalyse_${T.id}_Krambua.xlsx`);
+}
+
+/* ------------------------------ tilsett-versjonen og kopling ------------------------------ */
+function appBase(){ return location.href.split('#')[0].split('?')[0].replace(/[^/]*$/, ''); }
+function staffUrl(){ return STAFF ? appBase() : appBase() + 'tilsett/'; }
+function kopleLenke(){
+  const g = ghCfg();
+  const b64 = utf8ToB64(JSON.stringify({t:getToken(), o:g.owner, r:g.repo, b:g.branch, d:g.dir, id:T.id})).replace(/=+$/, '').replace(/\+/g, '-').replace(/\//g, '_');
+  return staffUrl() + '#kople=' + b64;
+}
+function handleKople(){
+  const m = /^#kople=([A-Za-z0-9_\-+/=]+)/.exec(location.hash || '');
+  if (!m) return null;
+  try{
+    const p = JSON.parse(b64ToUtf8(m[1].replace(/-/g, '+').replace(/_/g, '/')));
+    if (p.t) setToken(p.t);
+    lsSet(LS.gh, {owner:p.o || GH_DEF.owner, repo:p.r || GH_DEF.repo, branch:p.b || 'main', dir:p.d || 'data'});
+    if (p.id) lsSet(LS.active, String(p.id));
+    history.replaceState(null, '', location.pathname + location.search);
+    return 'ok';
+  }catch(e){ history.replaceState(null, '', location.pathname + location.search); return 'feil'; }
+}
+async function kopleQR(){
+  if (!getToken()) return toast('Slå på deling først', 'err');
+  try{ await loadScript(QR_URLS); }catch(e){ return toast(e.message, 'err'); }
+  const qr = qrcode(0, 'L'); qr.addData(kopleLenke()); qr.make();
+  openModal(`<h2>Kople til telefon</h2><p class="small muted" style="margin-top:0">Opne kameraet på telefonen til den tilsette og skann koden. Tilsett-versjonen opnar seg og vert kopla til «${esc(T.meta.namn)}». Legg han gjerne til på heimeskjermen etterpå.</p>
+    <div class="qr" style="background:#fff;padding:8px">${qr.createSvgTag({cellSize:4, margin:4, scalable:true})}</div>
+    <p class="tiny muted">Koden inneheld tilgangsnøkkelen. Vis han berre til tilsette.</p>
+    <div class="btnrow"><button class="btn" data-act="modal-close">Lukk</button></div>`);
+}
+async function kopleKopier(plain){
+  const url = plain ? staffUrl() : kopleLenke();
+  try{ await navigator.clipboard.writeText(url); toast(plain ? 'Adressa er kopiert' : 'Lenka er kopiert – send ho til den tilsette', 'ok'); }
+  catch(e){ openModal(`<h2>Kopier lenka</h2><textarea style="width:100%;height:130px" readonly onclick="this.select()">${esc(url)}</textarea><div class="btnrow"><button class="btn" data-act="modal-close">Lukk</button></div>`); }
+}
+function viewOppsettStaff(){
+  const tok = getToken();
+  return `<h1>Oppsett</h1>
+  <div class="card"><h2>Tellar</h2><p style="margin:0 0 8px;font-size:17px"><b>${esc(curTellar() || 'Ikkje valt')}</b></p><button class="btn" data-act="vel-tellar">Byt tellar</button></div>
+  <div class="card"><h2>Teljing</h2><p class="small" style="margin:0">${esc(T.meta.namn)} · kode ${esc(T.id)}</p>${locked() ? '<p class="small"><span class="tag ok">Avslutta</span></p>' : ''}</div>
+  <div class="card"><h2>Kopling</h2>${ghOn()
+    ? `<p class="small" style="margin-top:0">${SYNC.status === 'feil' ? '<span class="tag warn">Feil</span> ' + esc(SYNC.err) : '<span class="tag ok">Kopla til</span> ' + (SYNC.last ? 'Sist delt ' + esc(fmtDT(SYNC.last)) : '')}</p><div class="btnrow"><button class="btn" data-act="g-sync">Synk no</button></div>`
+    : `<p class="small" style="margin-top:0"><span class="tag warn">Ikkje kopla til</span> Teljinga vert berre lagra på denne telefonen.</p><p class="small muted">Be den som styrer teljinga om å vise QR-koden «Kople til telefon», og skann han med kameraet.</p>`}
+    <details style="margin-top:10px"><summary class="small">Legg inn nøkkel manuelt</summary><label>Tilgangsnøkkel<input id="g-token" type="password" value="${esc(tok)}" autocomplete="off"></label><div class="btnrow"><button class="btn" data-act="s-token">Lagre</button></div></details></div>
+  <div class="card"><h2>Sikkerheitskopi</h2><p class="small muted" style="margin-top:0">Er telefonen ikkje kopla til, kan du laste ned linjene og sende fila til den som styrer teljinga.</p><button class="btn" data-act="json-ut">⬇ Last ned linjene (JSON)</button></div>
+  <p class="tiny muted" style="text-align:center">Krambua Varetelling v${APP_VER} · versjon for tilsette</p>`;
+}
+
+/* ------------------------------ OPPSETT ------------------------------ */
+function viewOppsett(){
+  const M = T.meta, g = ghCfg(), tok = getToken();
+  const extra = Object.values(T.seksjonar).filter(s => !s.deleted).sort((a,b) => a.id.localeCompare(b.id));
+  return `<h1>Oppsett</h1>
+  <div class="card"><h2>Teljinga</h2>
+    <label>Namn<input id="o-namn" type="text" value="${esc(M.namn)}" ${locked() ? 'disabled' : ''}></label>
+    <label>Varebeholdning per dato<input id="o-per" type="date" value="${esc(M.perDato)}" ${locked() ? 'disabled' : ''}></label>
+    <div class="tiny muted">Vert sett til dagens dato når teljinga vert oppretta. Kvar linje får eige tidspunkt automatisk.</div>
+    <div class="row2"><label>Firma<input id="o-firma" type="text" value="${esc(M.firma)}"></label><label>Org.nr.<input id="o-orgnr" type="text" inputmode="numeric" value="${esc(M.orgnr)}"></label></div>
+    <label>Stad<input id="o-stad" type="text" value="${esc(M.stad)}"></label>
+    <h3>Verdsetjing</h3>
+    <label>Bruttoavanse for kostverdi (%)<input id="o-avanse" type="text" inputmode="decimal" value="${esc(fmtIn(M.avanse))}" ${locked() ? 'disabled' : ''}></label>
+    <div class="tiny muted">Kostverdi = utsalsverdi eks. mva × (1 − avanse). Tom rute under = same avanse som over.</div>
+    <div class="row2">${OMR_ORDER.map(o => `<label>${OMRADE[o]}<input data-avo="${o}" type="text" inputmode="decimal" value="${esc(fmtIn(M.avanseOmr[o]))}" placeholder="${esc(fmtIn(M.avanse))}" ${locked() ? 'disabled' : ''}></label>`).join('')}</div>
+    <div class="row2"><label>Nedskriving for ukurans (kr)<input id="o-ukurans" type="text" inputmode="decimal" value="${esc(fmtIn(M.ukurans))}" ${locked() ? 'disabled' : ''}></label><label>Grunngjeving<input id="o-ukt" type="text" value="${esc(M.ukuransTekst)}" ${locked() ? 'disabled' : ''}></label></div>
+    <div class="btnrow"><button class="btn primary" data-act="o-lagre" ${locked() ? 'disabled' : ''}>Lagre</button></div></div>
+  <div class="card"><h2>Tellarar</h2>
+    ${tellarList().map(t => `<div class="itemrow" style="cursor:default"><div class="mid"><b>${esc(t.namn)}</b></div>${t.namn === curTellar() ? '<span class="tag ok">Denne eininga</span>' : ''}<button class="btn ghost" data-act="t-del" data-id="${esc(t.id)}" aria-label="Fjern">✕</button></div>`).join('')}
+    <div class="search" style="margin-top:8px"><input id="o-tellar" type="text" placeholder="Nytt namn" autocomplete="off"><button class="btn" data-act="o-add-tellar">Legg til</button></div></div>
+  <div class="card"><h2>Ekstra seksjonar</h2>
+    <p class="small muted" style="margin-top:0">For plassar som ikkje er på kartet (t.d. eit nytt lager eller ein container). Dei får kode X01, X02 …</p>
+    ${extra.map(s => `<div class="itemrow" style="cursor:default"><span class="tag">${s.id}</span><div class="mid"><b>${esc(s.namn)}</b><span>${esc(s.stad || '')} · ${s.mva} %</span></div><button class="btn ghost" data-act="x-del" data-id="${s.id}">✕</button></div>`).join('')}
+    <div class="row2"><label>Namn<input id="x-namn" type="text"></label><label>Plassering<input id="x-stad" type="text"></label></div>
+    <label>Standard mva-sats<select id="x-mva">${MVA_SATSAR.map(m => `<option value="${m}">${m} %</option>`).join('')}</select></label>
+    <div class="btnrow"><button class="btn" data-act="x-add">+ Legg til seksjon</button></div></div>
+  <div class="card"><h2>Deling mellom telefonar (GitHub)</h2>
+    <p class="small muted" style="margin-top:0">Med deling på kan fleire telje samstundes på kvar sin telefon. Alt vert slått saman i <code>${esc(g.dir)}/telling-${esc(T.id)}.json</code> og <code>${esc(g.dir)}/vareliste.json</code> i repoet. Utan deling vert alt berre lagra på denne eininga.</p>
+    <div class="row2"><label>Eigar<input id="g-owner" type="text" value="${esc(g.owner)}" autocapitalize="off"></label><label>Repo<input id="g-repo" type="text" value="${esc(g.repo)}" autocapitalize="off"></label></div>
+    <div class="row2"><label>Grein<input id="g-branch" type="text" value="${esc(g.branch)}" autocapitalize="off"></label><label>Mappe<input id="g-dir" type="text" value="${esc(g.dir)}" autocapitalize="off"></label></div>
+    <label>Tilgangsnøkkel (fine-grained token, Contents: Read and write)<input id="g-token" type="password" value="${esc(tok)}" autocomplete="off" placeholder="github_pat_…"></label>
+    <div class="tiny muted">Nøkkelen vert lagra berre i nettlesaren på denne eininga. Er han alt lagt inn i den gamle varetellingsappen, vert han brukt her òg.</div>
+    <div class="btnrow"><button class="btn primary" data-act="g-lagre">Lagre og test</button>${tok ? '<button class="btn" data-act="g-sync">Synk no</button><button class="btn danger" data-act="g-av">Slå av deling</button>' : ''}</div>
+    <div id="g-status" class="small" style="margin-top:8px">${ghOn() ? (SYNC.status === 'feil' ? '<span class="tag warn">Feil</span> ' + esc(SYNC.err) : (SYNC.last ? '<span class="tag ok">OK</span> Sist delt ' + esc(fmtDT(SYNC.last)) : '')) : '<span class="tag">Av</span>'}</div></div>
+  <div class="card"><h2>Versjon for tilsette</h2>
+    <p class="small muted" style="margin-top:0">Tilsett-versjonen har berre kart og teljing. Han viser ingen kronebeløp, rapportar eller oppsett. Nye varer kan leggjast inn med namn og strekkode.</p>
+    <div class="small" style="word-break:break-all"><b>Adresse:</b> ${esc(staffUrl())}</div>
+    <div class="btnrow"><button class="btn primary" data-act="kople-qr" ${tok ? '' : 'disabled'}>Vis QR-kode «Kople til telefon»</button><button class="btn" data-act="kople-kopier" ${tok ? '' : 'disabled'}>Kopier lenke med tilgang</button><button class="btn" data-act="kople-adr">Kopier adresse</button></div>
+    <p class="tiny muted">${tok ? 'QR-koden og lenka inneheld tilgangsnøkkelen, så telefonen vert kopla til delinga med éin gong. Vis eller send dei berre til tilsette.' : 'Slå på deling over først. Då kan telefonane koplast til med ein QR-kode.'}</p></div>
+  <div class="card"><h2>Byt telling</h2>
+    <p class="small muted" style="margin-top:0">Kvar telling har sin eigen kode, t.d. årstalet. Opnar du ein kode som finst i repoet, vert han henta.</p>
+    <div class="chips">${lsGet(LS.list, []).map(id => `<button class="chip ${id === T.id ? 'on' : ''}" data-act="t-opne" data-id="${esc(id)}">${esc(id)}</button>`).join('')}</div>
+    <div class="search" style="margin-top:10px"><input id="t-ny" type="text" placeholder="Ny kode, t.d. ${new Date().getFullYear() + 1}" autocomplete="off"><button class="btn" data-act="t-ny">Opne / lag</button></div></div>
+  <div class="card"><h2>Sikkerheitskopi</h2>
+    <div class="btnrow"><button class="btn" data-act="json-ut">⬇ Last ned (JSON)</button><button class="btn" data-act="json-inn">⬆ Slå saman frå fil</button></div>
+    <p class="tiny muted">«Slå saman» legg linjer frå ein annan telefon inn i denne teljinga utan å slette noko. Nyttig om deling ikkje er slått på.</p></div>
+  <p class="tiny muted" style="text-align:center">Krambua Varetelling v${APP_VER}</p>`;
+}
+function saveOppsett(){
+  const M = T.meta;
+  const av = parseNum($('#o-avanse').value); if (isNaN(av) || av < 0 || av >= 100) return toast('Avansen må vere mellom 0 og 99 %', 'err');
+  const avo = {}; document.querySelectorAll('[data-avo]').forEach(i => { const v = parseNum(i.value); if (!isNaN(v)) avo[i.dataset.avo] = v; });
+  Object.assign(M, {namn:$('#o-namn').value.trim() || M.namn, perDato:$('#o-per').value || M.perDato, firma:$('#o-firma').value.trim(), orgnr:$('#o-orgnr').value.trim(), stad:$('#o-stad').value.trim(), avanse:av, avanseOmr:avo, ukurans:parseNum($('#o-ukurans').value) || 0, ukuransTekst:$('#o-ukt').value.trim(), updatedAt:nowISO()});
+  saveLocal(); renderTop(); toast('Lagra', 'ok');
+}
+
+/* ------------------------------ JSON ------------------------------ */
+function jsonUt(){
+  const data = {app:'krambua-varetelling', ver:APP_VER, eksportert:nowISO(), telling:T, vareliste:CAT};
+  download(`Varetelling_${T.id}_${todayISO()}.json`, new Blob([JSON.stringify(data)], {type:'application/json'}));
+}
+async function jsonInn(file){
+  try{
+    const d = JSON.parse(await file.text());
+    const t = d.telling || d;
+    if (!t.linjer) throw new Error('Fila er ikkje ein varetellings-kopi');
+    if (String(t.id) !== T.id) return confirmBox('Anna telling', `Fila gjeld telling «${esc(t.id)}», men du har opna «${esc(T.id)}». Slå saman likevel?`, 'Slå saman', () => doMerge(t, d.vareliste));
+    doMerge(t, d.vareliste);
+  }catch(e){ toast('Klarte ikkje lese fila: ' + e.message, 'err'); }
+}
+function doMerge(t, cat){
+  const before = activeLines().length;
+  t = {...t, id:T.id};
+  T = mergeTelling(T, t); saveLocal();
+  if (cat && cat.items){ CAT = mergeCat(CAT, cat); saveCat(); }
+  render(); toast(`Slått saman: ${activeLines().length - before} nye linjer`, 'ok');
+}
+
+/* ------------------------------ hendingar ------------------------------ */
+const ACT = {
+  'modal-close':() => closeModal(),
+  'vel-tellar':() => velTellar(),
+  'set-tellar':el => setTellar(el.dataset.n),
+  'add-tellar':() => { const n = $('#ny-tellar').value.trim(); if (!n) return; const id = 't-' + slug(n); T.tellarar[id] = {id, namn:n, updatedAt:nowISO(), deleted:false}; saveLocal(); setTellar(n); },
+  'sync-info':() => { if (!ghOn()) return go('oppsett'); if (SYNC.status === 'feil') openModal(`<h2>Deling feila</h2><p>${esc(SYNC.err)}</p><p class="small muted">Alt er lagra på eininga. Appen prøver igjen automatisk.</p><div class="btnrow"><button class="btn primary" data-act="g-sync">Prøv no</button><button class="btn" data-act="modal-close">Lukk</button></div>`); else { syncNow(true); toast('Synkar…'); } },
+  'hint-off':el => { const h = lsGet(LS.hints, {}); h[el.dataset.k] = 1; lsSet(LS.hints, h); render(); },
+  'sek':el => go('sek-' + el.dataset.id),
+  'map-zoom':() => { mapZoom = !mapZoom; render(); },
+  'scan-reol':() => Scanner.open(code => handleCode(code)),
+  'scan-vare':() => Scanner.open(code => handleCode(code)),
+  'scan-close':() => Scanner.close(),
+  'scan-torch':() => Scanner.torch(),
+  'kode-ok':() => handleCode($('#kode').value),
+  'velg-vare':el => { const it = CAT.items[el.dataset.k]; if (it) showForm(newDraft(route.id, {item:it})); $('#kode').value = ''; },
+  'ny-vare':() => { const q = $('#kode').value; $('#kode').value = ''; showForm(newDraft(route.id, {text:q})); },
+  'f-mva':el => { draft.mva = +el.dataset.v; document.querySelectorAll('[data-act=f-mva]').forEach(b => b.classList.toggle('on', b === el)); updateCalc(); },
+  'f-modus':el => { draft.modus = el.dataset.v; if (draft.modus === 'stk' && draft.vekt && vektAntal(draft.vekt) > 0 && !(parseNum(draft.antal) > 0)) draft.antal = vektAntal(draft.vekt); showForm(draft, draft.modus === 'vekt' ? (parseNum(draft.vekt.proveVekt) > 0 ? '#f-total' : '#f-prove') : '#f-antal'); },
+  'f-vunit':el => { draft.vekt.unit = el.dataset.v; showForm(draft, '#f-total'); },
+  'f-plus':() => { const n = parseNum(draft.antal) || 0; draft.antal = round2(n + 1); $('#f-antal').value = fmtIn(draft.antal); updateCalc(); },
+  'f-minus':() => { const n = parseNum(draft.antal) || 0; draft.antal = Math.max(0, round2(n - 1)); $('#f-antal').value = fmtIn(draft.antal); updateCalc(); },
+  'f-save':() => saveDraft(),
+  'f-scan-ean':() => Scanner.open(code => {
+    const it = lookupCode(code);
+    if (it && draft && !draft.id){ toast('Vara finst alt i varelista: ' + it.namn); showForm(newDraft(draft.sek, {item:it, code})); return; }
+    if (draft){ draft.ean = code; const e = $('#f-ean'); if (e) e.value = code; const p = $('#f-pris'); if (p) p.focus(); }
+  }),
+  'dup-ok':el => { T.dobbel[el.dataset.k] = {ok:true, sig:el.dataset.sig, av:curTellar(), tid:nowISO(), updatedAt:nowISO()}; saveLocal(); render(); },
+  'dup-angre':el => { T.dobbel[el.dataset.k] = {ok:false, sig:'', av:curTellar(), tid:nowISO(), updatedAt:nowISO()}; saveLocal(); render(); },
+  'pris-set':el => {
+    const id = el.dataset.id, l = T.linjer[id]; if (!l || locked()) return;
+    const inp = document.querySelector(`[data-pris="${id}"]`); const v = parseNum(inp && inp.value);
+    if (!(v > 0)) return toast('Skriv inn ein pris', 'err');
+    T.linjer[id] = {...l, pris:round2(v), updatedAt:nowISO(), endraAv:curTellar()};
+    if (l.key && CAT.items[l.key] && !(parseNum(CAT.items[l.key].pris) > 0)){ CAT.items[l.key].pris = round2(v); CAT.items[l.key].updatedAt = nowISO(); saveCat(); }
+    saveLocal(); render(); toast('Pris lagra: ' + l.namn, 'ok');
+  },
+  'sal-velg':() => $('#file-sal').click(),
+  'gen-edit':el => genEdit(el.dataset.v),
+  'an-excel':() => analyseExcel(),
+  'kople-qr':() => kopleQR(),
+  'kople-kopier':() => kopleKopier(false),
+  'kople-adr':() => kopleKopier(true),
+  's-token':() => { setToken($('#g-token').value.trim()); repoOkCache = null; SYNC.tCommit = {}; SYNC.cCommit = null; if (!ghOn()){ render(); return; } tDirty = true; syncNow(true).then(() => { render(); toast(SYNC.status === 'ok' ? 'Kopla til' : 'Feil: ' + SYNC.err, SYNC.status === 'ok' ? 'ok' : 'err'); }); },
+  'f-cancel':() => { draft = null; $('#formwrap').innerHTML = ''; const k = $('#kode'); if (k) k.focus(); },
+  'f-delete':() => { const id = draft.id; confirmBox('Slette linja?', `${esc(draft.namn)} – ${qty(draftAntal(draft))} ${esc(draft.eining)}`, 'Slett', () => deleteLine(id), true); },
+  'line-edit':el => { const l = T.linjer[el.dataset.id]; if (l) showForm(draftFromLine(l), '#f-antal'); },
+  'sek-ferdig':() => {
+    const id = route.id; if (!curTellar()) return velTellar(() => ACT['sek-ferdig']());
+    const n = activeLines(id).length;
+    const ok = () => { T.status[id] = {ferdig:true, av:curTellar(), tid:nowISO(), updatedAt:nowISO()}; saveLocal(); draft = null; toast(id + ' er ferdig', 'ok'); go('kart'); };
+    if (!n) confirmBox('Ingen varer her', 'Seksjonen har ingen talde varer. Merke han ferdig likevel (tom)?', 'Merk ferdig', ok); else ok();
+  },
+  'sek-opne':() => { const id = route.id; T.status[id] = {ferdig:false, av:curTellar(), tid:nowISO(), updatedAt:nowISO()}; saveLocal(); render(); },
+  'rapport-print':() => rapportPrint(),
+  'pv-close':() => closePreview(),
+  'pv-print':() => { try{ window.print(); }catch(e){ toast('Utskrift er ikkje tilgjengeleg her', 'err'); } },
+  'excel':() => exportExcel(),
+  'json-ut':() => jsonUt(),
+  'json-inn':() => $('#file-json').click(),
+  'avslutt':() => avslutt(),
+  'opne-telling':() => confirmBox('Opne teljinga att?', 'Linjene kan endrast att, og rapporten vert eit utkast til du avsluttar på nytt.', 'Opne att', () => { T.avslutta = {status:false, av:curTellar(), tid:nowISO(), updatedAt:nowISO()}; saveLocal(); render(); }, true),
+  'ls-type':el => { listerSel.type = el.dataset.v; render(); },
+  'ls-alle':() => { listerSel.sek = new Set(allSek().map(s => s.id)); render(); },
+  'ls-ingen':() => { listerSel.sek = new Set(); render(); },
+  'ls-omr':el => { allSek().filter(s => s.omr === el.dataset.o).forEach(s => listerSel.sek.add(s.id)); render(); },
+  'ls-sek':el => { if (el.checked) listerSel.sek.add(el.dataset.id); else listerSel.sek.delete(el.dataset.id); const b = $('[data-act=ls-print]'); if (b) b.textContent = `🖨 Vis og skriv ut ${listerSel.sek.size} tellelister`; },
+  'ls-print':() => { const v = parseInt($('#ls-rader').value, 10); if (!isNaN(v)){ if (listerSel.type === 'varer') listerSel.ekstra = v; else listerSel.rader = v; } printLister(); },
+  'imp-velg':() => $('#file-vareliste').click(),
+  'imp-mode':el => { IMP.mode = el.dataset.v; impModal(); },
+  'cat-edit':el => catEdit(el.dataset.k),
+  'cat-ny':() => catEdit(null),
+  'cat-excel':() => catExcel(),
+  'o-lagre':() => saveOppsett(),
+  'o-add-tellar':() => { const n = $('#o-tellar').value.trim(); if (!n) return; const id = 't-' + slug(n); T.tellarar[id] = {id, namn:n, updatedAt:nowISO(), deleted:false}; saveLocal(); render(); },
+  't-del':el => { const t = T.tellarar[el.dataset.id]; if (!t) return; confirmBox('Fjerne tellar?', `${esc(t.namn)} vert fjerna frå lista. Linjer som alt er talde, beheld namnet.`, 'Fjern', () => { T.tellarar[t.id] = {...t, deleted:true, updatedAt:nowISO()}; saveLocal(); render(); }, true); },
+  'x-add':() => { const namn = $('#x-namn').value.trim(); if (!namn) return toast('Skriv inn namn', 'err'); let i = 1; while (T.seksjonar['X' + pad(i)]) i++; const id = 'X' + pad(i); T.seksjonar[id] = {id, namn, stad:$('#x-stad').value.trim(), mva:+$('#x-mva').value, omr:'X', updatedAt:nowISO(), deleted:false}; saveLocal(); render(); toast('Seksjon ' + id + ' lagt til', 'ok'); },
+  'x-del':el => { const s = T.seksjonar[el.dataset.id]; if (!s) return; if (activeLines(s.id).length) return toast('Seksjonen har talde varer og kan ikkje fjernast', 'err'); T.seksjonar[s.id] = {...s, deleted:true, updatedAt:nowISO()}; saveLocal(); render(); },
+  'g-lagre':async () => {
+    lsSet(LS.gh, {owner:$('#g-owner').value.trim() || GH_DEF.owner, repo:$('#g-repo').value.trim() || GH_DEF.repo, branch:$('#g-branch').value.trim() || 'main', dir:($('#g-dir').value.trim() || 'data').replace(/^\/|\/$/g, '')});
+    setToken($('#g-token').value.trim()); repoOkCache = null; SYNC.tCommit = {}; SYNC.cCommit = null;
+    const st = $('#g-status'); if (st) st.innerHTML = 'Testar…';
+    if (!ghOn()){ render(); return; }
+    try{ const r = await ghFetch(ghBase()); if (!r.ok) throw await ghErr(r); const j = await r.json(); if (j.permissions && !j.permissions.push) throw new Error('Nøkkelen har ikkje skrivetilgang til repoet');
+      tDirty = true; catDirty = Object.keys(CAT.items).length > 0; await syncNow(true); render(); toast(SYNC.status === 'ok' ? 'Deling er på' : 'Feil: ' + SYNC.err, SYNC.status === 'ok' ? 'ok' : 'err');
+    }catch(e){ if (st) st.innerHTML = '<span class="tag err">Feil</span> ' + esc(e.message); SYNC.status = 'feil'; SYNC.err = e.message; updateSyncUI(); }
+  },
+  'g-sync':() => { closeModal(); syncNow(true).then(() => { if (route.v === 'oppsett') render(); toast(SYNC.status === 'ok' ? 'Synka' : 'Feil: ' + SYNC.err, SYNC.status === 'ok' ? 'ok' : 'err'); }); },
+  'g-av':() => confirmBox('Slå av deling?', 'Nøkkelen vert fjerna frå denne eininga. Data i repoet vert ikkje sletta.', 'Slå av', () => { setToken(''); SYNC.status = 'av'; render(); }, true),
+  't-opne':el => openTelling(el.dataset.id),
+  't-ny':() => { const v = $('#t-ny').value.trim().replace(/[^A-Za-z0-9_-]/g, ''); if (!v) return toast('Skriv ein kode, t.d. eit årstal', 'err'); openTelling(v); }
+};
+function openTelling(id){
+  if (id === T.id) return;
+  loadTelling(id); draft = null; listerSel = null; SYNC.tCommit[id] = null;
+  toast('Opna telling ' + id, 'ok'); if (ghOn()) syncNow(true); go('kart');
+}
+document.addEventListener('click', e => {
+  const n = e.target.closest('[data-nav]'); if (n){ go(n.dataset.nav); return; }
+  const a = e.target.closest('[data-act]'); if (!a) return;
+  const fn = ACT[a.dataset.act]; if (!fn) return;
+  if (a.dataset.act === 'modal-bg'){ if (e.target === a) closeModal(); return; }
+  if (a.tagName === 'BUTTON' || a.tagName === 'A') e.preventDefault();
+  fn(a, e);
+});
+let suggTimer = null;
+document.addEventListener('input', e => {
+  const t = e.target;
+  if (t.id === 'kode'){ clearTimeout(suggTimer); suggTimer = setTimeout(() => { const v = t.value.trim(); if (/^\d{6,}$/.test(v)) { $('#forslag').innerHTML = ''; return; } renderSugg(v); }, 140); return; }
+  if (t.id === 'cat-q'){ clearTimeout(suggTimer); suggTimer = setTimeout(() => renderCatList(t.value), 150); return; }
+  const f = t.dataset.f; if (!f || !draft) return;
+  const v = t.type === 'checkbox' ? t.checked : t.value;
+  if (f.startsWith('v.')) draft.vekt[f.slice(2)] = v; else draft[f] = v;
+  if (f === 'eining' && draft.modus === 'vekt') { showForm(draft, '#f-total'); return; }
+  updateCalc();
+});
+document.addEventListener('change', e => { const t = e.target; if (t.dataset && t.dataset.f === 'eining' && draft){ draft.eining = t.value; if (draft.modus === 'vekt') showForm(draft, '#f-total'); else updateCalc(); } });
+document.addEventListener('keydown', e => {
+  if (e.key === 'Escape'){ if ($('#modal-root').innerHTML) closeModal(); else if (!$('#scanner').hidden) Scanner.close(); else if (document.body.classList.contains('preview')) closePreview(); return; }
+  if (e.key !== 'Enter') return;
+  const t = e.target;
+  if (t.id === 'kode'){ e.preventDefault(); handleCode(t.value); return; }
+  if (t.id === 'ny-tellar'){ e.preventDefault(); ACT['add-tellar'](); return; }
+  if (t.id === 'cat-q'){ e.preventDefault(); const it = lookupCode(t.value); if (it) catEdit(it.k); return; }
+  if (draft && t.closest && t.closest('#vareform') && t.tagName === 'INPUT'){
+    e.preventDefault();
+    if (t.id === 'f-antal' || t.id === 'f-total') return saveDraft();
+    const ins = [...document.querySelectorAll('#vareform input[type=text]')]; const i = ins.indexOf(t);
+    if (i > -1 && i < ins.length - 1) ins[i + 1].focus(); else saveDraft();
+  }
+});
+$('#file-vareliste').addEventListener('change', e => { const f = e.target.files[0]; e.target.value = ''; if (f) startImport(f); });
+$('#file-json').addEventListener('change', e => { const f = e.target.files[0]; e.target.value = ''; if (f) jsonInn(f); });
+$('#file-sal').addEventListener('change', e => { const f = e.target.files[0]; e.target.value = ''; if (f) startSalImport(f); });
+window.addEventListener('afterprint', () => {});
+document.addEventListener('visibilitychange', () => { if (document.visibilityState === 'visible' && ghOn()) syncNow(); });
+window.addEventListener('online', () => { if (ghOn()) syncNow(); });
+setInterval(() => { if (document.visibilityState === 'visible' && ghOn() && !SYNC.busy) syncNow(); }, 30000);
+
+/* ------------------------------ start ------------------------------ */
+const kopla = handleKople();
+buildIdx();
+loadTelling(lsGet(LS.active, null) || String(new Date().getFullYear()));
+document.querySelectorAll('#nav [data-nav]').forEach(b => { if (!NAV_ITEMS.includes(b.dataset.nav)) b.hidden = true; });
+if (STAFF) document.title = 'Krambua Varetelling – tilsette';
+route = parseHash();
+render();
+if (kopla === 'ok') setTimeout(() => toast('Telefonen er kopla til teljinga', 'ok'), 300);
+if (kopla === 'feil') setTimeout(() => toast('Lenka for kopling var ugyldig', 'err'), 300);
+if (ghOn()) syncNow(true);
+if (!curTellar()) setTimeout(() => velTellar(), 400);
+</script>
+</body>
+</html>
