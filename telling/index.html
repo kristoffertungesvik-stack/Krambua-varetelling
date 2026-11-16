@@ -277,7 +277,7 @@ body.preview #app,body.preview #nav{display:none}
    Krambua Varetelling – éi fil, køyrer på GitHub Pages.
    Data: lokalt i nettlesaren + (valfritt) delt via GitHub-repoet.
    ===================================================================== */
-const APP_VER = '1.2';
+const APP_VER = '2.0';
 const MODUS = 'admin';
 const STAFF = MODUS === 'tilsett';
 const NAV_ITEMS = STAFF ? ['kart','oppsett'] : ['kart','rapport','analyse','lister','varer','oppsett'];
@@ -287,7 +287,7 @@ const XLSX_URLS = ['https://cdn.jsdelivr.net/npm/xlsx@0.18.5/dist/xlsx.full.min.
 const LS = {
   active:'krb-telling-aktiv', list:'krb-telling-liste', data:id=>'krb-telling-data-'+id, dirty:id=>'krb-telling-dirty-'+id,
   cat:'krb-telling-vareliste', catDirty:'krb-telling-vareliste-dirty', tellar:'krb-telling-tellar', gh:'krb-telling-github',
-  token:'krambua-varetelling-gh-token', hints:'krb-telling-hint', sal:'krb-telling-salsdata'
+  token:'krambua-varetelling-gh-token', hints:'krb-telling-hint', sal:'krb-telling-salsdata', eining:'krb-telling-eining'
 };
 const GH_DEF = {owner:'kristoffertungesvik-stack', repo:'Krambua-varetelling', branch:'main', dir:'data'};
 const OLD = '2000-01-01T00:00:00.000Z';
@@ -495,25 +495,213 @@ function normTelling(t){
   if (!t.meta.avanseOmr) t.meta.avanseOmr = {};
   return t;
 }
+/* ------------------------------ lagring på eininga (IndexedDB, med localStorage som naudløysing) ------------------------------ */
+function cleanItem(it){ if (!it) return it; const {_s, ...r} = it; return r; }
+const STORE = {
+  kind:'ls', db:null, persisted:null, chain:Promise.resolve(), err:'', fail:'', migratedIds:[],
+  async init(){
+    if (window.KRB_FORCE_LS || !('indexedDB' in window)){ this.err = 'IndexedDB manglar'; return; }
+    try{
+      this.db = await new Promise((res, rej) => {
+        const r = indexedDB.open('krambua-telling', 1);
+        r.onupgradeneeded = () => {
+          const d = r.result;
+          if (!d.objectStoreNames.contains('linjer')){ const s = d.createObjectStore('linjer', {keyPath:'pk'}); s.createIndex('t', 't'); }
+          if (!d.objectStoreNames.contains('varer')) d.createObjectStore('varer', {keyPath:'k'});
+          if (!d.objectStoreNames.contains('kv')) d.createObjectStore('kv');
+          if (!d.objectStoreNames.contains('kopi')){ const s = d.createObjectStore('kopi', {keyPath:'id'}); s.createIndex('t', 't'); }
+        };
+        r.onsuccess = () => res(r.result);
+        r.onerror = () => rej(r.error || new Error('Kunne ikkje opne databasen'));
+        r.onblocked = () => rej(new Error('Databasen er låst av ei anna fane'));
+        setTimeout(() => rej(new Error('Databasen svarte ikkje')), 8000);
+      });
+      this.db.onversionchange = () => { try{ this.db.close(); }catch(e){} };
+      this.kind = 'idb';
+      await this.kvSet('_test', nowISO());
+    }catch(e){ this.kind = 'ls'; this.db = null; this.err = (e && e.message) || String(e); }
+    try{ if (navigator.storage && navigator.storage.persisted){ this.persisted = await navigator.storage.persisted(); if (!this.persisted && navigator.storage.persist) this.persisted = await navigator.storage.persist(); } }catch(e){}
+  },
+  req(r){ return new Promise((res, rej) => { r.onsuccess = () => res(r.result); r.onerror = () => rej(r.error); }); },
+  done(tx){ return new Promise((res, rej) => { tx.oncomplete = () => res(); tx.onerror = () => rej(tx.error || new Error('Lagringsfeil')); tx.onabort = () => rej(tx.error || new Error('Lagringa vart avbroten (full eining?)')); }); },
+  okSave(){ if (this.fail){ this.fail = ''; renderTop(); } },
+  async kvGet(k, def){
+    if (this.kind !== 'idb') return lsGet('krb-kv-' + k, def);
+    const v = await this.req(this.db.transaction('kv').objectStore('kv').get(k));
+    return v === undefined ? def : v;
+  },
+  async kvSet(k, v){
+    if (this.kind !== 'idb'){ if (!lsSet('krb-kv-' + k, v)) throw new Error('Lagringsplassen er full'); return; }
+    const tx = this.db.transaction('kv', 'readwrite'); tx.objectStore('kv').put(v, k); await this.done(tx);
+  },
+  async loadTelling(id){
+    if (this.kind !== 'idb') return normTelling(lsGet(LS.data(id), null) || nyTelling(id));
+    const head = await this.kvGet('T:' + id, null);
+    const rows = await this.req(this.db.transaction('linjer').objectStore('linjer').index('t').getAll(id));
+    const t = normTelling(head ? {...head, id:String(id), linjer:{}} : nyTelling(id));
+    rows.forEach(r => { if (r && r.l && r.l.id) t.linjer[r.l.id] = r.l; });
+    return t;
+  },
+  async saveTelling(t, changedIds, st){
+    if (this.kind !== 'idb'){
+      if (!lsSet(LS.data(t.id), t)) throw new Error('Lagringsplassen i nettlesaren er full');
+      if (st) lsSet('krb-kv-S:' + t.id, st);
+      return;
+    }
+    const tx = this.db.transaction(['linjer', 'kv'], 'readwrite');
+    const os = tx.objectStore('linjer');
+    changedIds.forEach(lid => { const l = t.linjer[lid]; if (l) os.put({pk:t.id + '|' + lid, t:t.id, l}); });
+    const {linjer, ...head} = t;
+    tx.objectStore('kv').put(head, 'T:' + t.id);
+    if (st) tx.objectStore('kv').put(st, 'S:' + t.id);
+    await this.done(tx);
+  },
+  async loadCat(){
+    const empty = {v:1, items:{}, meta:{kjelde:'', importert:'', tal:0, updatedAt:OLD}};
+    if (this.kind !== 'idb') return {cat:lsGet(LS.cat, null) || empty, syc:lsGet('krb-kv-SC', null) || {sha:null, dirty:!!lsGet(LS.catDirty, false)}};
+    const items = await this.req(this.db.transaction('varer').objectStore('varer').getAll());
+    const cat = {v:1, items:{}, meta:(await this.kvGet('CATMETA', null)) || empty.meta};
+    items.forEach(it => { if (it && it.k) cat.items[it.k] = it; });
+    return {cat, syc:(await this.kvGet('SC', null)) || {sha:null, dirty:false}};
+  },
+  async saveCat(items, meta, syc){
+    if (this.kind !== 'idb'){
+      const clean = {v:1, items:{}, meta:CAT.meta};
+      for (const k in CAT.items) clean.items[k] = cleanItem(CAT.items[k]);
+      if (!lsSet(LS.cat, clean)) throw new Error('Lagringsplassen i nettlesaren er full');
+      if (syc) lsSet('krb-kv-SC', syc);
+      return;
+    }
+    const tx = this.db.transaction(['varer', 'kv'], 'readwrite');
+    const os = tx.objectStore('varer');
+    items.forEach(it => { if (it && it.k) os.put(cleanItem(it)); });
+    tx.objectStore('kv').put(meta, 'CATMETA');
+    if (syc) tx.objectStore('kv').put(syc, 'SC');
+    await this.done(tx);
+  },
+  async addKopi(t){
+    if (this.kind !== 'idb') return;
+    const tid = nowISO();
+    const tx = this.db.transaction('kopi', 'readwrite');
+    tx.objectStore('kopi').put({id:t.id + '|' + tid, t:t.id, tid, n:Object.values(t.linjer).filter(l => !l.deleted).length, data:JSON.stringify(t)});
+    await this.done(tx);
+    const keys = await this.req(this.db.transaction('kopi').objectStore('kopi').index('t').getAllKeys(t.id));
+    keys.sort();
+    const old = keys.slice(0, Math.max(0, keys.length - 12));
+    if (old.length){ const tx2 = this.db.transaction('kopi', 'readwrite'); old.forEach(k => tx2.objectStore('kopi').delete(k)); await this.done(tx2); }
+  },
+  async listKopi(id){
+    if (this.kind !== 'idb') return [];
+    const r = await this.req(this.db.transaction('kopi').objectStore('kopi').index('t').getAll(id));
+    return r.map(k => ({id:k.id, tid:k.tid, n:k.n})).sort((a, b) => b.tid.localeCompare(a.tid));
+  },
+  async getKopi(kid){ return this.kind === 'idb' ? this.req(this.db.transaction('kopi').objectStore('kopi').get(kid)) : null; },
+  async migrate(){
+    if (this.kind !== 'idb') return;
+    const ids = new Set(lsGet(LS.list, [])); const act = lsGet(LS.active, null); if (act) ids.add(act);
+    for (const id of ids){
+      const raw = lsGet(LS.data(id), null); if (!raw || !raw.linjer) continue;
+      const ex = await this.loadTelling(id);
+      const m = mergeTelling(ex, normTelling(raw));
+      await this.saveTelling(m, Object.keys(m.linjer), null);
+      const chk = await this.loadTelling(id);
+      if (Object.keys(chk.linjer).length >= Object.keys(raw.linjer).length){
+        try{ localStorage.removeItem(LS.data(id)); localStorage.removeItem(LS.dirty(id)); }catch(e){}
+        this.migratedIds.push(String(id));
+      }
+    }
+    const rc = lsGet(LS.cat, null);
+    if (rc && rc.items){
+      const c = await this.loadCat(); const mc = mergeCat(c.cat, rc);
+      await this.saveCat(Object.values(mc.items), mc.meta, {sha:null, dirty:!!lsGet(LS.catDirty, false)});
+      try{ localStorage.removeItem(LS.cat); localStorage.removeItem(LS.catDirty); }catch(e){}
+    }
+    const rs = lsGet(LS.sal, null);
+    if (rs){ await this.kvSet('SAL', rs); try{ localStorage.removeItem(LS.sal); }catch(e){} }
+  }
+};
+function storageFail(e){
+  STORE.fail = (e && e.message) || String(e);
+  toast('KLARTE IKKJE LAGRE PÅ EININGA: ' + STORE.fail, 'err');
+  renderTop();
+  const v = $('#view'); if (v && !$('#store-fail')) v.insertAdjacentHTML('afterbegin', storeFailHTML());
+}
+function storeFailHTML(){ return STORE.fail ? `<div class="banner err" id="store-fail"><b>Lagringa på eininga feila:</b> ${esc(STORE.fail)}<br>Ikkje lukk appen. Last ned sikkerheitskopi under Oppsett, eller sjå at delinga står «✓ Alt delt».</div>` : ''; }
+let BC = null; const TAB = uid();
+try{ BC = new BroadcastChannel('krb-telling'); BC.onmessage = async ev => {
+  if (!T || !ev.data || ev.data.t !== T.id || ev.data.from === TAB) return;
+  try{ const t2 = await STORE.loadTelling(T.id); T = {...mergeTelling(T, t2)}; saveLocal(false); refreshLive(); }catch(e){}
+}; }catch(e){}
+function bcPost(){ try{ if (BC) BC.postMessage({t:T.id, from:TAB}); }catch(e){} }
+
 let T = null;
-let tDirty = false, tVersion = 0;
-function loadTelling(id){
-  T = normTelling(lsGet(LS.data(id), null) || nyTelling(id));
-  tDirty = !!lsGet(LS.dirty(id), false);
+let tVersion = 0, persistedUA = {}, headStable = '', kopiSig = '';
+const PEND = new Set(), DIRTY = new Set();
+let fileVer = {};
+let SY = {known:{}, dirSha:null, legacySha:null, devs:{}};
+let DEV = '';
+const fileForSek = s => `${s}__${DEV}.json`;
+const metaFile = () => `_meta__${DEV}.json`;
+function markFile(n){ DIRTY.add(n); fileVer[n] = (fileVer[n] || 0) + 1; }
+function syncStateObj(){ return {known:SY.known, dirSha:SY.dirSha, legacySha:SY.legacySha, devs:SY.devs, pend:[...PEND], dirty:[...DIRTY]}; }
+async function loadTelling(id){
+  await STORE.chain;
+  T = await STORE.loadTelling(String(id));
+  const s = (await STORE.kvGet('S:' + T.id, null)) || {};
+  SY = {known:s.known || {}, dirSha:s.dirSha || null, legacySha:s.legacySha || null, devs:s.devs || {}};
+  PEND.clear(); DIRTY.clear(); fileVer = {};
+  (s.pend || []).forEach(x => PEND.add(x));
+  (s.dirty || []).forEach(x => markFile(x));
+  persistedUA = {};
+  for (const lid in T.linjer){ const l = T.linjer[lid]; persistedUA[lid] = (l.updatedAt || '') + '|' + l.sek; }
+  PEND.forEach(lid => { const l = T.linjer[lid]; if (l) markFile(fileForSek(l.sek)); else PEND.delete(lid); });
+  const {linjer, ...head} = T; headStable = stable(head);
   lsSet(LS.active, T.id);
-  const list = lsGet(LS.list, []);
-  if (!list.includes(T.id)){ list.push(T.id); lsSet(LS.list, list); }
-  saveLocal(false);
+  const list = lsGet(LS.list, []); if (!list.includes(T.id)){ list.push(T.id); lsSet(LS.list, list); }
+  kopiSig = '';
 }
 function saveLocal(markDirty=true){
-  lsSet(LS.data(T.id), T);
-  if (markDirty){ tDirty = true; tVersion++; lsSet(LS.dirty(T.id), true); scheduleSync(); }
+  const changed = [];
+  for (const lid in T.linjer){
+    const l = T.linjer[lid], sig = (l.updatedAt || '') + '|' + l.sek, prev = persistedUA[lid];
+    if (prev === sig) continue;
+    changed.push(lid); persistedUA[lid] = sig;
+    if (markDirty){
+      PEND.add(lid); markFile(fileForSek(l.sek));
+      const ps = prev ? prev.slice(prev.lastIndexOf('|') + 1) : null;
+      if (ps && ps !== l.sek) markFile(fileForSek(ps));
+    }
+  }
+  const {linjer, ...head} = T; const hs = stable(head); let headCh = false;
+  if (hs !== headStable){ headCh = true; if (markDirty) markFile(metaFile()); headStable = hs; }
+  if (changed.length || headCh || markDirty){
+    const t = T, st = syncStateObj(), post = changed.length || headCh;
+    STORE.chain = STORE.chain.then(() => STORE.saveTelling(t, changed, st)).then(() => { STORE.okSave(); if (post) bcPost(); }).catch(storageFail);
+  }
+  if (markDirty){ tVersion++; scheduleSync(); }
+  updateSyncUI();
+}
+function saveSyncState(){ const id = T.id, st = syncStateObj(); STORE.chain = STORE.chain.then(() => STORE.kvSet('S:' + id, st)).catch(storageFail); }
+function markAllPending(){
+  Object.values(T.linjer).forEach(l => { PEND.add(l.id); markFile(fileForSek(l.sek)); });
+  markFile(metaFile()); saveSyncState();
+}
+async function lagKopi(force){
+  if (STORE.kind !== 'idb' || !T) return;
+  let mx = ''; for (const lid in T.linjer){ const u = T.linjer[lid].updatedAt || ''; if (u > mx) mx = u; }
+  const sig = T.id + '|' + Object.keys(T.linjer).length + '|' + mx;
+  if (!Object.keys(T.linjer).length || (!force && sig === kopiSig)) return;
+  kopiSig = sig;
+  const t = T;
+  STORE.chain = STORE.chain.then(() => STORE.addKopi(t)).catch(e => console.warn('Kopi feila', e));
 }
 const locked = () => !!(T.avslutta && T.avslutta.status);
 function newer(x, y){
   if (!x) return y; if (!y) return x;
   const a = x.updatedAt || '', b = y.updatedAt || '';
   if (a !== b) return b > a ? y : x;
+  if (x === y) return x;
+  if ('antal' in x && x.antal === y.antal && x.sek === y.sek && !!x.deleted === !!y.deleted && x.pris === y.pris && x.namn === y.namn && x.mva === y.mva) return x;
   return stable(y) > stable(x) ? y : x;
 }
 function mergeMap(a={}, b={}){ const o = {...a}; for (const k in b) o[k] = newer(a[k], b[k]); return o; }
@@ -588,8 +776,8 @@ function sekStats(){
 }
 
 /* ------------------------------ varelista ------------------------------ */
-let CAT = lsGet(LS.cat, null) || {v:1, items:{}, meta:{kjelde:'', importert:'', tal:0, updatedAt:OLD}};
-let catDirty = !!lsGet(LS.catDirty, false);
+let CAT = {v:1, items:{}, meta:{kjelde:'', importert:'', tal:0, updatedAt:OLD}};
+let catDirty = false, catUA = {}, SYC = {sha:null};
 let IDX = null;
 function buildIdx(){
   const ean = new Map(), eanNZ = new Map(), varenr = new Map(), list = [];
@@ -603,11 +791,14 @@ function buildIdx(){
   list.sort((a,b) => a.namn.localeCompare(b.namn, 'nb'));
   IDX = {ean, eanNZ, varenr, list};
 }
-function saveCat(markDirty=true){
-  const clean = {v:1, items:{}, meta:CAT.meta};
-  for (const k in CAT.items){ const {_s, ...rest} = CAT.items[k]; clean.items[k] = rest; }
-  CAT = clean; lsSet(LS.cat, CAT); buildIdx();
-  if (markDirty){ catDirty = true; lsSet(LS.catDirty, true); scheduleSync(); }
+function saveCat(base=false){
+  const changed = [];
+  for (const k in CAT.items){ const sig = CAT.items[k].updatedAt || ''; if (catUA[k] !== sig){ changed.push(CAT.items[k]); catUA[k] = sig; } }
+  buildIdx();
+  if (base && !STAFF) catDirty = true;
+  const meta = CAT.meta, syc = {sha:SYC.sha, dirty:catDirty};
+  STORE.chain = STORE.chain.then(() => STORE.saveCat(changed, meta, syc)).then(() => STORE.okSave()).catch(storageFail);
+  if (base && !STAFF) scheduleSync();
 }
 function catKey(it){ return it.varenr ? 'V'+String(it.varenr).trim() : (it.ean && it.ean[0] ? 'E'+it.ean[0] : 'M'+uid()); }
 function lookupCode(code){
@@ -624,34 +815,52 @@ function searchCat(q, max=8){
 }
 function mergeCat(a, b){ return {v:1, items:mergeMap(a.items, b.items), meta:newer(a.meta, b.meta)}; }
 
-/* ------------------------------ GitHub-deling ------------------------------ */
+/* ------------------------------ GitHub-deling: kvar eining skriv eigne filer per seksjon ------------------------------ */
 function ghCfg(){ return Object.assign({}, GH_DEF, lsGet(LS.gh, {})); }
 const ghOn = () => !!getToken();
-const tellingPath = id => `${ghCfg().dir}/telling-${id}.json`;
+const dirPath = () => `${ghCfg().dir}/telling-${T.id}`;
+const legacyPath = id => `${ghCfg().dir}/telling-${id}.json`;
 const catPath = () => `${ghCfg().dir}/vareliste.json`;
 function utf8ToB64(str){ const bytes = new TextEncoder().encode(str); let bin = ''; for (let i = 0; i < bytes.length; i += 0x8000) bin += String.fromCharCode.apply(null, bytes.subarray(i, i + 0x8000)); return btoa(bin); }
 function b64ToUtf8(b64){ const bin = atob(b64.replace(/\s/g, '')); const bytes = new Uint8Array(bin.length); for (let i = 0; i < bin.length; i++) bytes[i] = bin.charCodeAt(i); return new TextDecoder().decode(bytes); }
 async function ghFetch(url, opt={}){
   /* unik adresse på GET, så ingen mellomlager (t.d. service worker frå den gamle appen) gjev gamle svar */
   if (!opt.method || opt.method === 'GET') url += (url.includes('?') ? '&' : '?') + '_=' + Date.now();
-  const res = await fetch(url, {cache:'no-store', ...opt, headers:{'Authorization':'Bearer '+getToken(), 'Accept':'application/vnd.github+json', ...(opt.headers||{})}});
-  return res;
+  const ctl = new AbortController(); const tm = setTimeout(() => ctl.abort(), 30000);
+  try{ return await fetch(url, {cache:'no-store', signal:ctl.signal, ...opt, headers:{'Authorization':'Bearer ' + getToken(), 'Accept':'application/vnd.github+json', ...(opt.headers || {})}}); }
+  catch(e){ throw new Error(e.name === 'AbortError' ? 'GitHub svarte ikkje (dårleg nett?)' : 'Ikkje kontakt med GitHub (nett?)'); }
+  finally{ clearTimeout(tm); }
 }
 const ghBase = () => { const c = ghCfg(); return `https://api.github.com/repos/${encodeURIComponent(c.owner)}/${encodeURIComponent(c.repo)}`; };
 const encPath = p => p.split('/').map(encodeURIComponent).join('/');
-async function ghErr(res){ let t = ''; try{ const j = await res.json(); t = j.message || ''; }catch(e){} const m = {401:'Ugyldig nøkkel (token)', 403:'Nøkkelen manglar skrivetilgang', 404:'Fann ikkje repoet'}; return new Error((m[res.status] || 'GitHub-feil '+res.status) + (t ? ': '+t : '')); }
+async function ghErr(res){
+  let t = ''; try{ const j = await res.json(); t = j.message || ''; }catch(e){}
+  if (res.status === 429 || (res.status === 403 && /rate limit|abuse|secondary/i.test(t))){
+    const e = new Error('GitHub-grensa for lagringar er nådd');
+    let s = parseInt(res.headers.get('retry-after') || '', 10);
+    if (!(s > 0)){ const rem = res.headers.get('x-ratelimit-remaining'), rs = parseInt(res.headers.get('x-ratelimit-reset') || '', 10); s = rem === '0' && rs ? Math.ceil(rs - Date.now() / 1000) : 90; }
+    e.rate = window.KRB_TEST_FAST ? 3 : Math.max(30, Math.min(s, 3600)); return e;
+  }
+  const m = {401:'Ugyldig nøkkel (token)', 403:'Nøkkelen manglar skrivetilgang', 404:'Fann ikkje repoet eller fila'};
+  return new Error((m[res.status] || 'GitHub-feil ' + res.status) + (t ? ': ' + t : ''));
+}
 async function ghGetJson(path){
   const res = await ghFetch(`${ghBase()}/contents/${encPath(path)}?ref=${encodeURIComponent(ghCfg().branch)}`);
-  if (res.status === 404){ let j = {}; try{ j = await res.json(); }catch(e){} if (/repo|Not Found/i.test(j.message||'') && !(await ghRepoOk())) throw new Error('Fann ikkje repoet '+ghCfg().owner+'/'+ghCfg().repo); return {sha:null, json:null}; }
+  if (res.status === 404) return {sha:null, json:null};
   if (!res.ok) throw await ghErr(res);
   const meta = await res.json();
   let text;
   if (meta.content && meta.encoding === 'base64') text = b64ToUtf8(meta.content);
   else { const r2 = await ghFetch(`${ghBase()}/contents/${encPath(path)}?ref=${encodeURIComponent(ghCfg().branch)}`, {headers:{'Accept':'application/vnd.github.raw+json'}}); if (!r2.ok) throw await ghErr(r2); text = await r2.text(); }
-  return {sha:meta.sha, json:JSON.parse(text)};
+  let json = null; try{ json = JSON.parse(text); }catch(e){ console.warn('Ugyldig JSON i', path); }
+  return {sha:meta.sha, json};
 }
-let repoOkCache = null;
-async function ghRepoOk(){ if (repoOkCache !== null) return repoOkCache; const r = await ghFetch(ghBase()); repoOkCache = r.ok; return r.ok; }
+async function ghList(path){
+  const res = await ghFetch(`${ghBase()}/contents/${encPath(path)}?ref=${encodeURIComponent(ghCfg().branch)}`);
+  if (res.status === 404) return [];
+  if (!res.ok) throw await ghErr(res);
+  const j = await res.json(); return Array.isArray(j) ? j : [];
+}
 async function ghPutJson(path, json, sha, msg){
   const body = {message:msg, content:utf8ToB64(JSON.stringify(json)), branch:ghCfg().branch};
   if (sha) body.sha = sha;
@@ -661,82 +870,174 @@ async function ghPutJson(path, json, sha, msg){
   const j = await res.json();
   return {sha:j.content && j.content.sha, commit:j.commit && j.commit.sha};
 }
-async function ghLatestCommit(path){
-  const res = await ghFetch(`${ghBase()}/commits?path=${encodeURIComponent(path)}&sha=${encodeURIComponent(ghCfg().branch)}&per_page=1`);
-  if (!res.ok) throw await ghErr(res);
-  const j = await res.json(); return j && j[0] ? j[0].sha : null;
-}
-const SYNC = {status:'av', last:null, err:'', busy:false, again:false, timer:null, tCommit:{}, cCommit:null, cCheck:0};
-function scheduleSync(delay=2500){
+const SYNC = {status:'av', last:null, err:'', busy:false, again:false, timer:null, pauseUntil:0, lastPush:0};
+const PUSH_GAP = window.KRB_TEST_FAST ? 1500 : 60000;   /* kvar eining sender høgst éin gong i minuttet */
+const POLL_MS = window.KRB_TEST_FAST ? 2500 : 45000;
+function scheduleSync(){
   updateSyncUI();
-  if (!ghOn()) return;
-  clearTimeout(SYNC.timer);
-  SYNC.timer = setTimeout(() => syncNow(), delay);
+  if (!ghOn() || SYNC.timer) return;
+  const wait = Math.max(1000, SYNC.lastPush + PUSH_GAP - Date.now(), SYNC.pauseUntil - Date.now());
+  SYNC.timer = setTimeout(() => { SYNC.timer = null; syncNow(); }, wait);
 }
 async function syncNow(force=false){
-  if (!ghOn()){ updateSyncUI(); return; }
+  if (!ghOn() || !T){ updateSyncUI(); return; }
   if (SYNC.busy){ SYNC.again = true; return; }
+  if (SYNC.pauseUntil > Date.now()){ scheduleSync(); return; }
   SYNC.busy = true; updateSyncUI();
+  const id = T.id;
   try{
-    await syncTelling(force);
-    await syncCatalog(force);
+    await pull(force);
+    if (T.id !== id) throw new Error('Teljinga vart bytt undervegs');
+    const due = force || Date.now() - SYNC.lastPush >= PUSH_GAP - 300;
+    if ((DIRTY.size || (!STAFF && catDirty)) && due) await pushDirty();
     SYNC.status = 'ok'; SYNC.last = new Date(); SYNC.err = '';
-  }catch(e){ SYNC.status = 'feil'; SYNC.err = e.message || String(e); }
+  }catch(e){
+    if (e.rate){ SYNC.pauseUntil = Date.now() + e.rate * 1000; SYNC.status = 'pause'; SYNC.err = `GitHub ber appen vente ${Math.ceil(e.rate / 60)} min. Alt er trygt lagra på eininga og vert sendt etterpå.`; }
+    else { SYNC.status = 'feil'; SYNC.err = e.message || String(e); }
+  }
   SYNC.busy = false; updateSyncUI();
-  if (SYNC.again){ SYNC.again = false; scheduleSync(400); }
+  if (route.v === 'oppsett' && $('#trygg')) $('#trygg').outerHTML = tryggHTML();
+  if (DIRTY.size || SYNC.again || (!STAFF && catDirty)){ SYNC.again = false; scheduleSync(); }
 }
-async function syncTelling(force){
-  const id = T.id, path = tellingPath(id);
-  if (!force && !tDirty && SYNC.tCommit[id]){
-    const c = await ghLatestCommit(path);
-    if (c === SYNC.tCommit[id]) return;
+function buildFile(name){
+  const base = {v:2, telling:T.id, eining:DEV, av:curTellar(), skrive:nowISO()};
+  if (name.startsWith('_meta__')){ const {linjer, ...head} = T; return {...head, ...base}; }
+  const S = name.slice(0, name.indexOf('__'));
+  const linjer = {}, varer = {}, imp = CAT.meta.importert || '';
+  for (const lid in T.linjer){
+    const l = T.linjer[lid]; if (l.sek !== S) continue;
+    linjer[lid] = l;
+    const it = l.key && CAT.items[l.key];
+    if (it && (it.manuell || (it.updatedAt || '') > imp)) varer[it.k] = cleanItem(it);
   }
-  for (let attempt = 0; attempt < 4; attempt++){
-    const startVer = tVersion;
-    const r = await ghGetJson(path);
-    if (T.id !== id) return;
-    const merged = r.json ? mergeTelling(T, r.json) : T;
-    if (stable(merged) !== stable(T)){ T = mergeTelling(T, merged); lsSet(LS.data(T.id), T); refreshLive(); }
-    if (!r.json || stable(merged) !== stable(r.json)){
-      try{ const p = await ghPutJson(path, merged, r.sha, `Varetelling ${id}: ${curTellar() || 'oppdatering'}`); SYNC.tCommit[id] = p.commit; }
-      catch(e){ if (e.conflict) continue; throw e; }
-    } else {
-      SYNC.tCommit[id] = await ghLatestCommit(path);
+  return {...base, sek:S, linjer, varer};
+}
+function mergeItem(k, b){
+  if (!b || !b.k) return false;
+  const a = CAT.items[k], ac = a ? cleanItem(a) : null, n = newer(ac, b);
+  if (n !== ac){ CAT.items[k] = {...n}; return true; }
+  return false;
+}
+function mergeFile(j){
+  let t = false, c = false;
+  if (!j || typeof j !== 'object') return {t, c};
+  if (j.linjer && typeof j.linjer === 'object'){
+    const L = T.linjer;
+    for (const lid in j.linjer){ const b = j.linjer[lid]; if (!b || !b.id || !b.sek) continue; const a = L[lid], n = newer(a, b); if (n !== a){ L[lid] = n; t = true; } }
+  }
+  if (j.meta || j.status || j.tellarar || j.avslutta || j.dobbel || j.seksjonar){
+    const m = mergeTelling(T, {id:T.id, oppretta:j.oppretta, meta:j.meta, avslutta:j.avslutta, tellarar:j.tellarar, seksjonar:j.seksjonar, status:j.status, dobbel:j.dobbel, linjer:{}});
+    const {linjer:_x, ...h1} = m, {linjer:_y, ...h0} = T;
+    if (stable(h1) !== stable(h0)){ T = {...m, linjer:T.linjer}; t = true; }
+  }
+  if (j.varer && typeof j.varer === 'object') for (const k in j.varer) if (mergeItem(k, j.varer[k])) c = true;
+  if (j.eining){ const d = SY.devs[j.eining] || {}; if (!d.skrive || (j.skrive || '') > d.skrive) SY.devs[j.eining] = {eining:j.eining, av:j.av || d.av || '', skrive:j.skrive || d.skrive || ''}; }
+  return {t, c};
+}
+async function pull(force){
+  const lst = await ghList(ghCfg().dir);
+  const by = {}; lst.forEach(e => by[e.name] = e);
+  let t = false, c = false, legT = false, touched = false;
+  const dirE = by['telling-' + T.id];
+  if (dirE && (force || dirE.sha !== SY.dirSha)){
+    const files = await ghList(dirPath());
+    for (const f of files){
+      if (f.type !== 'file' || !/\.json$/i.test(f.name) || SY.known[f.name] === f.sha) continue;
+      const g = await ghGetJson(`${dirPath()}/${f.name}`);
+      if (g.json){ const r = mergeFile(g.json); t = t || r.t; c = c || r.c; }
+      SY.known[f.name] = g.sha || f.sha;
     }
-    if (tVersion === startVer){ tDirty = false; lsSet(LS.dirty(id), false); } else SYNC.again = true;
-    return;
+    SY.dirSha = dirE.sha; touched = true;
   }
-  throw new Error('Klarte ikkje lagre etter fleire forsøk (konflikt)');
+  const leg = by[`telling-${T.id}.json`];
+  if (leg && leg.sha !== SY.legacySha){ const g = await ghGetJson(legacyPath(T.id)); if (g.json){ const r = mergeFile(g.json); legT = r.t; c = c || r.c; } SY.legacySha = leg.sha; touched = true; }
+  const ce = by['vareliste.json'];
+  if (ce && ce.sha !== SYC.sha){
+    const g = await ghGetJson(catPath());
+    if (g.json && g.json.items){ for (const k in g.json.items) if (mergeItem(k, g.json.items[k])) c = true; if (g.json.meta){ const nm = newer(CAT.meta, g.json.meta); if (nm !== CAT.meta){ CAT.meta = nm; c = true; } } }
+    SYC.sha = g.sha || ce.sha; c = true;
+  }
+  if (t || legT) saveLocal(legT); else if (touched) saveSyncState();
+  if (c){ saveCat(false); refreshLive('cat'); }
+  if (t || legT) refreshLive();
 }
-async function syncCatalog(force){
-  const path = catPath();
-  if (!force && !catDirty){
-    if (Date.now() - SYNC.cCheck < 120000 && SYNC.cCommit) return;
-    SYNC.cCheck = Date.now();
-    const c = await ghLatestCommit(path);
-    if (!c || c === SYNC.cCommit) { if (!c && !Object.keys(CAT.items).length) return; if (c) return; }
+async function pushDirty(){
+  for (const name of [...DIRTY]){
+    if (SYNC.pauseUntil > Date.now()) break;
+    const ver = fileVer[name] || 0, path = `${dirPath()}/${name}`;
+    let content = buildFile(name), sha = SY.known[name] || null;
+    for (let attempt = 0; ; attempt++){
+      try{ const r = await ghPutJson(path, content, sha, `Telling ${T.id}: ${name.startsWith('_meta') ? 'status/oppsett' : content.sek} (${(curTellar() || DEV).split(' ')[0]})`); SY.known[name] = r.sha; break; }
+      catch(e){
+        if (!e.conflict || attempt >= 2) throw e;
+        const g = await ghGetJson(path); sha = g.sha;
+        if (g.json) mergeFile(g.json);
+        content = buildFile(name);
+      }
+    }
+    if ((fileVer[name] || 0) === ver) DIRTY.delete(name);
+    if (content.linjer) for (const lid in content.linjer){ const l = T.linjer[lid]; if (l && l.updatedAt === content.linjer[lid].updatedAt && l.sek === content.sek) PEND.delete(lid); }
+    SY.devs[DEV] = {eining:DEV, av:curTellar(), skrive:content.skrive};
+    SYNC.lastPush = Date.now();
+    saveSyncState(); updateSyncUI();
+    if (route.v === 'sek'){ const a = $('#sek-live'); if (a) a.innerHTML = sekLiveHTML(route.id); const hd = $('#sek-status'); if (hd) hd.innerHTML = sekStatusHTML(route.id); }
   }
-  for (let attempt = 0; attempt < 4; attempt++){
-    const r = await ghGetJson(path);
-    const merged = r.json ? mergeCat(CAT, r.json) : CAT;
-    if (stable(merged) !== stable(CAT)){ CAT = mergeCat(CAT, merged); saveCat(false); refreshLive('cat'); }
-    if (!r.json || stable(merged) !== stable(r.json)){
-      if (!Object.keys(merged.items).length && !r.json){ catDirty = false; lsSet(LS.catDirty, false); return; }
-      try{ const p = await ghPutJson(path, merged, r.sha, 'Varelista: oppdatering'); SYNC.cCommit = p.commit; }
-      catch(e){ if (e.conflict) continue; throw e; }
-    } else SYNC.cCommit = await ghLatestCommit(path);
-    catDirty = false; lsSet(LS.catDirty, false); SYNC.cCheck = Date.now();
-    return;
+  if (!STAFF && catDirty && SYNC.pauseUntil <= Date.now()) await pushCat();
+}
+async function pushCat(){
+  const path = catPath(); let sha = SYC.sha;
+  const body = () => { const items = {}; for (const k in CAT.items) items[k] = cleanItem(CAT.items[k]); return {v:1, items, meta:CAT.meta}; };
+  for (let attempt = 0; ; attempt++){
+    try{ const r = await ghPutJson(path, body(), sha, 'Varelista: oppdatering'); SYC.sha = r.sha; break; }
+    catch(e){
+      if (!e.conflict || attempt >= 2) throw e;
+      const g = await ghGetJson(path); sha = g.sha;
+      if (g.json && g.json.items) for (const k in g.json.items) mergeItem(k, g.json.items[k]);
+    }
   }
-  throw new Error('Varelista: konflikt');
+  catDirty = false; SYNC.lastPush = Date.now(); saveCat(false);
 }
 function updateSyncUI(){
   const b = $('#sync'); if (!b) return;
+  const n = PEND.size;
+  if (STORE.fail){ b.className = 'feil'; b.textContent = '⚠ Lagringsfeil'; return; }
   if (!ghOn()){ b.className = 'av'; b.textContent = '● Lokalt'; return; }
-  if (SYNC.busy){ b.className = 'busy'; b.textContent = '↻ Synkar…'; return; }
-  if (SYNC.status === 'feil'){ b.className = 'feil'; b.textContent = '⚠ Ikkje delt'; return; }
-  if (tDirty || catDirty){ b.className = 'busy'; b.textContent = '↻ Ventar'; return; }
-  b.className = 'ok'; b.textContent = '✓ Delt ' + (SYNC.last ? fmtKl(SYNC.last) : '');
+  if (SYNC.busy){ b.className = 'busy'; b.textContent = n ? `↻ Delar ${n}` : '↻ Synkar'; return; }
+  if (SYNC.pauseUntil > Date.now()){ b.className = 'feil'; b.textContent = `⏸ ${n} ventar`; return; }
+  if (SYNC.status === 'feil'){ b.className = 'feil'; b.textContent = n ? `⚠ ${n} ikkje delt` : '⚠ Ikkje kontakt'; return; }
+  if (n || DIRTY.size){ b.className = 'busy'; b.textContent = n ? `⏳ ${n} ventar` : '⏳ Ventar'; return; }
+  b.className = 'ok'; b.textContent = '✓ Alt delt ' + (SYNC.last ? fmtKl(SYNC.last) : '');
+}
+function tryggHTML(){
+  const n = Object.values(T.linjer).filter(l => !l.deleted).length;
+  return `<div class="card" id="trygg"><h2>Tryggleik</h2><dl class="kv">
+    <dt>Lagring på eininga</dt><dd>${STORE.kind === 'idb' ? 'Database i nettlesaren' : '<span style="color:var(--err)">Avgrensa (localStorage)</span>'}</dd>
+    <dt>Varig lagring</dt><dd>${STORE.persisted === true ? 'Ja' : STORE.persisted === false ? 'Ikkje stadfesta' : 'Ukjent'}</dd>
+    <dt>Linjer på eininga</dt><dd>${n}</dd>
+    <dt>Ventar på deling</dt><dd>${ghOn() ? PEND.size + ' linjer' : 'Deling er av'}</dd>
+    <dt>Sist delt</dt><dd>${SYNC.last ? esc(fmtDT(SYNC.last)) : '–'}</dd>
+    <dt>Eining</dt><dd>${esc(DEV)}</dd></dl>
+    ${SYNC.err ? `<div class="banner ${SYNC.status === 'pause' ? 'info' : 'warn'} small" style="margin:10px 0 0">${esc(SYNC.err)}</div>` : ''}
+    ${STORE.kind !== 'idb' ? `<div class="banner err small" style="margin:10px 0 0">Denne nettlesaren gav ikkje tilgang til databasen (${esc(STORE.err)}). Bruk Chrome eller Safari, utan privat modus.</div>` : ''}
+    ${STORE.persisted !== true ? '<p class="tiny muted">Legg appen til på heimeskjermen. Då er det mindre sjanse for at nettlesaren ryddar vekk data.</p>' : ''}
+    <div class="btnrow">${ghOn() ? '<button class="btn" data-act="g-sync">Del no</button>' : ''}${STORE.kind === 'idb' ? '<button class="btn" data-act="kopi-liste">Lokale kopiar …</button>' : ''}</div></div>`;
+}
+async function kopiListe(){
+  await lagKopi(false); await STORE.chain;
+  const ks = await STORE.listKopi(T.id);
+  openModal(`<h2>Lokale kopiar</h2><p class="small muted" style="margin-top:0">Appen tek ein kopi av teljinga på denne eininga kvart 15. minutt (dei 12 siste vert tekne vare på). Hentar du tilbake frå ein kopi, vert berre linjer som manglar eller er sletta lagde til att. Ingenting vert fjerna.</p>
+    ${ks.length ? ks.map(k => `<div class="itemrow" style="cursor:default"><div class="mid"><b>${esc(fmtDT(k.tid))}</b><span>${k.n} linjer</span></div><button class="btn" data-act="kopi-hent" data-id="${esc(k.id)}">Hent tilbake</button></div>`).join('') : '<p class="small">Ingen kopiar enno.</p>'}
+    <div class="btnrow"><button class="btn" data-act="kopi-no">Ta kopi no</button><button class="btn" data-act="modal-close">Lukk</button></div>`);
+}
+async function kopiHent(kid){
+  const k = await STORE.getKopi(kid); if (!k) return;
+  const s = normTelling(JSON.parse(k.data));
+  const miss = Object.values(s.linjer).filter(l => !l.deleted && (!T.linjer[l.id] || T.linjer[l.id].deleted));
+  if (!miss.length) return toast('Ingen linjer manglar – alt i kopien finst framleis', 'ok');
+  confirmBox('Hente tilbake linjer?', `${miss.length} linjer frå kopien ${esc(fmtDT(k.tid))} manglar eller er sletta no. Dei vert lagde til att. Ingenting vert fjerna.`, 'Hent tilbake', () => {
+    const now = nowISO(); miss.forEach(l => T.linjer[l.id] = {...l, deleted:false, updatedAt:now, gjenoppretta:now});
+    saveLocal(); render(); toast(`${miss.length} linjer er henta tilbake`, 'ok');
+  });
 }
 
 /* ------------------------------ strekkodar (teikning) ------------------------------ */
@@ -870,7 +1171,7 @@ function render(){
   const v = $('#view');
   if (STAFF && !['kart','sek','oppsett'].includes(route.v)) route = {v:'kart', id:null};
   const views = {kart:viewKart, sek:viewSek, rapport:viewRapport, analyse:viewAnalyse, lister:viewLister, varer:viewVarer, oppsett:STAFF ? viewOppsettStaff : viewOppsett};
-  v.innerHTML = (views[route.v] || viewKart)();
+  v.innerHTML = storeFailHTML() + (views[route.v] || viewKart)();
   if (route.v === 'sek') afterSek();
   if (route.v === 'varer') afterVarer();
 }
@@ -949,7 +1250,7 @@ function sekStatusHTML(id){
   const st = T.status[id], ls = activeLines(id); let inkl = 0; ls.forEach(l => inkl += lineCalc(l).inkl);
   const ferdig = st && st.ferdig;
   return `${ferdig ? `<span class="tag st2">Ferdig ${esc(fmtDT(st.tid))} · ${esc(st.av)}</span>` : (ls.length ? '<span class="tag st1">Påbyrja</span>' : '<span class="tag">Ikkje starta</span>')}
-    <span class="small muted"> ${ls.length} linjer${STAFF ? '' : ` · <b style="color:var(--txt)">${kr(inkl)} kr</b> inkl. mva`}</span>`;
+    <span class="small muted"> ${ls.length} linjer${STAFF ? '' : ` · <b style="color:var(--txt)">${kr(inkl)} kr</b> inkl. mva`}</span>${ghOn() && ls.some(l => PEND.has(l.id)) ? ` <span class="tag warn">${ls.filter(l => PEND.has(l.id)).length} ventar på deling</span>` : ''}`;
 }
 function viewSek(){
   const s = sekById(route.id);
@@ -982,7 +1283,7 @@ function sekLiveHTML(id){
     const info = STAFF ? `${l.modus === 'vekt' ? 'vege · ' : ''}${esc((l.tellar || '').split(' ')[0])} ${fmtKl(l.tid)}`
       : `${qty(parseNum(l.antal))} ${esc(l.eining)}${l.modus === 'vekt' ? ' (vege)' : ''} × ${utanPris ? '<b style="color:var(--err)">manglar pris</b>' : kr(l.pris)} · ${esc(l.mva)} % · ${esc((l.tellar || '').split(' ')[0])} ${fmtKl(l.tid)}`;
     const right = STAFF ? `${qty(parseNum(l.antal))}<span>${esc(l.eining)}</span>` : `${kr(c.inkl)}<span>kr</span>`;
-    return `<div class="line"><span class="nr">#${i + 1}</span><div class="mid"><b>${esc(l.namn)}</b><span>${info}</span></div><div class="sum">${right}</div>${locked() ? '' : `<button data-act="line-edit" data-id="${l.id}" aria-label="Endre">✎</button>`}</div>`;
+    return `<div class="line"><span class="nr">#${i + 1}</span><div class="mid"><b>${PEND.has(l.id) && ghOn() ? '<span title="Ventar på deling">⏳ </span>' : ''}${esc(l.namn)}</b><span>${info}</span></div><div class="sum">${right}</div>${locked() ? '' : `<button data-act="line-edit" data-id="${l.id}" aria-label="Endre">✎</button>`}</div>`;
   }).reverse();
   const perTxt = Object.keys(per).sort((a,b) => b - a).map(k => `${k} %: <b>${kr(per[k])}</b>`).join(' · ');
   return `<div class="card"><h2>Talde varer (${ls.length})</h2><div class="lines">${rows.join('')}</div>
@@ -1118,11 +1419,11 @@ function saveDraft(){
     it.k = catKey(it);
     if (CAT.items[it.k] && !CAT.items[it.k].deleted){ const ex = CAT.items[it.k]; Object.assign(ex, {namn, mva:+d.mva, eining:d.eining, updatedAt:now}); if (pris !== null) ex.pris = pris; if (ean && !(ex.ean || []).includes(ean)) ex.ean = [...(ex.ean || []), ean]; }
     else CAT.items[it.k] = it;
-    key = it.k; saveCat();
+    key = it.k; saveCat(false);
   }
   if (d.fromCat && key && CAT.items[key] && d.modus === 'vekt'){
     const it = CAT.items[key]; const pr = {proveAntal:d.vekt.proveAntal, proveVekt:d.vekt.proveVekt, unit:d.vekt.unit};
-    if (stable(it.prove || {}) !== stable(pr)){ it.prove = pr; it.updatedAt = now; saveCat(); }
+    if (stable(it.prove || {}) !== stable(pr)){ it.prove = pr; it.updatedAt = now; saveCat(false); }
   }
   const old = d.id ? T.linjer[d.id] : null;
   const nySek = d.id && d.flyttSek && d.flyttSek !== d.sek && sekById(d.flyttSek) ? d.flyttSek : d.sek;
@@ -1225,6 +1526,12 @@ function viewRapport(){
   h += `<div class="card"><h2>Per seksjon</h2><div class="tablewrap"><table class="t"><thead><tr><th>Liste</th><th>Seksjon</th><th class="n">Linjer</th><th class="n">Inkl. mva</th><th class="n">Kost</th><th>Status</th></tr></thead><tbody>
     ${S.sek.map(s => { const p = S.perSek[s.id], st = T.status[s.id]; return `<tr><td><a href="#sek-${s.id}">${s.id}</a></td><td>${esc(s.namn)}</td><td class="n">${p.n}</td><td class="n">${kr(p.inkl)}</td><td class="n">${kr(p.kost)}</td><td>${st && st.ferdig ? '<span class="tag st2">Ferdig</span>' : (p.n ? '<span class="tag st1">Påbyrja</span>' : '<span class="tag">–</span>')}</td></tr>`; }).join('')}
     </tbody></table></div></div>`;
+  if (ghOn()){
+    const devs = Object.values(SY.devs || {}).sort((a, b) => (b.skrive || '').localeCompare(a.skrive || ''));
+    h += `<div class="card"><h2>Telefonar som har delt (${devs.length})</h2>${devs.map(d => `<div class="itemrow" style="cursor:default"><div class="mid"><b>${esc(d.av || 'Ukjent')}${d.eining === DEV ? ' (denne eininga)' : ''}</b><span>Eining ${esc(d.eining)} · sist delt ${esc(fmtDT(d.skrive))}</span></div></div>`).join('') || '<p class="small muted" style="margin:0">Ingen har delt enno.</p>'}
+      ${PEND.size ? `<div class="banner warn small" style="margin:10px 0 0">${PEND.size} linjer på denne eininga ventar på deling.</div>` : ''}
+      <p class="tiny muted" style="margin-bottom:0">Før du avsluttar: sjå at alle som har tald, har delt etter at dei vart ferdige. Ein telefon som ikkje har vore på nett, har tala sine berre på telefonen.</p></div>`;
+  }
   h += `<div class="card"><h2>Tellarar</h2>${Object.keys(S.perTellar).length ? `<dl class="kv">${Object.keys(S.perTellar).sort().map(n => `<dt>${esc(n)}</dt><dd>${S.perTellar[n]} linjer</dd>`).join('')}</dl>` : '<span class="muted small">Ingen linjer enno.</span>'}</div>`;
   h += `<div class="card"><h2>Dokument</h2>
     <div class="btnrow"><button class="btn primary big" data-act="rapport-print">🖨 Rapport til revisor (PDF/utskrift)</button></div>
@@ -1241,6 +1548,7 @@ function avslutt(){
   const w = [];
   const dOpen = dobbelGroups().filter(g => !g.ok).length;
   if (dOpen) w.push(`<b>${dOpen} varer kan vere talde to gonger</b> og er ikkje kontrollerte.`);
+  if (ghOn() && PEND.size) w.push(`<b>${PEND.size} linjer på denne eininga er ikkje delte enno.</b>`);
   if (S.ikkjeFerdig.length) w.push(`<b>${S.ikkjeFerdig.length} seksjonar er ikkje merka ferdige</b> (${S.ikkjeFerdig.map(s => s.id).join(', ')}).`);
   if (S.tot.utanPris) w.push(`<b>${S.tot.utanPris} linjer manglar pris</b> og vert verdsette til 0 kr.`);
   confirmBox('Avslutte varetellinga?', `${w.join('<br>')}${w.length ? '<br><br>' : ''}Sum: <b>${kr(S.tot.inkl)} kr</b> inkl. mva, kostverdi <b>${kr(S.tot.kost)} kr</b>, ${S.tot.n} linjer.<br>Linjene vert låste. Avslutta av: <b>${esc(curTellar())}</b>.`, 'Avslutt', () => {
@@ -1343,6 +1651,7 @@ async function rapportPrint(){
 
 /* ----- tellelister (utskrift før teljing) ----- */
 let listerSel = null;
+const LISTER_SRC = {};
 function viewLister(){
   const sek = allSek();
   if (!listerSel) listerSel = {sek:new Set(sek.map(s => s.id)), type:'tom', rader:22, ekstra:8};
@@ -1367,7 +1676,7 @@ function viewLister(){
 function listerItems(sekId, kjeldeId){
   const map = new Map();
   const add = l => { const k = l.key || l.ean || l.varenr || l.namn.toLowerCase(); if (!map.has(k)){ const it = l.key && CAT.items[l.key] ? CAT.items[l.key] : null; map.set(k, {namn:it ? it.namn : l.namn, varenr:it ? it.varenr : l.varenr, ean:it ? (it.ean || [])[0] || '' : l.ean, eining:l.eining}); } };
-  const src = kjeldeId === T.id ? T : normTelling(lsGet(LS.data(kjeldeId), null) || nyTelling(kjeldeId));
+  const src = kjeldeId === T.id ? T : (LISTER_SRC[kjeldeId] || T);
   Object.values(src.linjer).filter(l => !l.deleted && l.sek === sekId).forEach(add);
   Object.values(CAT.items).filter(it => !it.deleted && it.sek === sekId).forEach(it => add({key:it.k, namn:it.namn, varenr:it.varenr, ean:(it.ean || [])[0], eining:it.eining}));
   return [...map.values()].sort((a,b) => a.namn.localeCompare(b.namn, 'nb'));
@@ -1475,9 +1784,9 @@ function catEdit(k){
       const nyIt = {...it, namn, varenr:$('#ce-varenr').value.trim(), ean:$('#ce-ean').value.split(/[,;\s]+/).map(s => s.trim()).filter(Boolean), pris:isNaN(pris) ? null : pris, innpris:isNaN(inn) ? null : inn, mva:+$('#ce-mva').value, eining:$('#ce-ein').value, sek:$('#ce-sek').value, updatedAt:nowISO(), deleted:false};
       delete nyIt._s;
       if (!k){ nyIt.k = catKey(nyIt); if (CAT.items[nyIt.k] && !CAT.items[nyIt.k].deleted) return toast('Det finst alt ei vare med same varenr./strekkode', 'err'); }
-      CAT.items[nyIt.k] = nyIt; saveCat(); closeModal(); renderCatList($('#cat-q') ? $('#cat-q').value : ''); $('#cat-stats').innerHTML = catStatsHTML(); toast('Lagra', 'ok');
+      CAT.items[nyIt.k] = nyIt; saveCat(true); closeModal(); renderCatList($('#cat-q') ? $('#cat-q').value : ''); $('#cat-stats').innerHTML = catStatsHTML(); toast('Lagra', 'ok');
     };
-    const del = m.querySelector('#ce-del'); if (del) del.onclick = () => { CAT.items[k] = {...it, deleted:true, updatedAt:nowISO()}; delete CAT.items[k]._s; saveCat(); closeModal(); renderCatList($('#cat-q').value); $('#cat-stats').innerHTML = catStatsHTML(); toast('Sletta'); };
+    const del = m.querySelector('#ce-del'); if (del) del.onclick = () => { CAT.items[k] = {...it, deleted:true, updatedAt:nowISO()}; delete CAT.items[k]._s; saveCat(true); closeModal(); renderCatList($('#cat-q').value); $('#cat-stats').innerHTML = catStatsHTML(); toast('Sletta'); };
   });
 }
 async function catExcel(){
@@ -1625,15 +1934,15 @@ function doImport(all){
   let fjerna = 0;
   if (I.mode === 'erstatt') Object.values(CAT.items).forEach(it => { if (!it.deleted && !it.manuell && !seen.has(it.k)){ it.deleted = true; it.updatedAt = now; fjerna++; } });
   CAT.meta = {kjelde:I.file, importert:now, tal:seen.size, updatedAt:now};
-  saveCat(); closeModal(); IMP = null;
+  saveCat(true); closeModal(); IMP = null;
   if (route.v === 'varer') render();
   toast(`Importert: ${ny} nye, ${opp} oppdaterte${fjerna ? ', ' + fjerna + ' fjerna' : ''}`, 'ok');
 }
 
 
 /* ------------------------------ ANALYSE: lagerverdi mot sal per reol ------------------------------ */
-let SAL = lsGet(LS.sal, null) || {meta:null, items:{}, generisk:{}};
-if (!SAL.generisk) SAL.generisk = {};
+let SAL = {meta:null, items:{}, generisk:{}};
+function saveSal(){ const v = SAL; STORE.chain = STORE.chain.then(() => STORE.kvSet('SAL', v)).catch(storageFail); }
 const SAL_FIELDS = [
   {k:'varenr', re:/^(vare\s*-?\s*n(umme)?r\.?|varenr\.?|art(ikkel)?\s*-?\s*n(umme)?r\.?|plu)$/i},
   {k:'namn', re:/^(namn|navn|vare\s*-?\s*namn|vare\s*-?\s*navn|varenamn|varenavn|beskrivelse|varetekst|tekst)\b/i},
@@ -1682,7 +1991,7 @@ async function startSalImport(file){
       const per = parseNum($('#sal-per').value);
       if (!(per > 0)) return toast('Skriv inn tal månader', 'err');
       SAL = {meta:{kjelde:file.name, importert:nowISO(), periodeMnd:per, komplett:$('#sal-komp').checked, n}, items, generisk:SAL.generisk || {}};
-      lsSet(LS.sal, SAL); closeModal(); render(); toast(`Importert salstal for ${n} varenummer`, 'ok');
+      saveSal(); closeModal(); render(); toast(`Importert salstal for ${n} varenummer`, 'ok');
     };
   });
 }
@@ -1787,8 +2096,8 @@ function genEdit(v){
   openModal(`<h2>Fordel «${esc(g.namn)}»</h2><p class="small muted" style="margin-top:0">Vel reolane der varene som vert slegne inn på denne knappen står.</p>
     ${OMR_ORDER.map(o => { const ss = allSek().filter(s => s.omr === o); return ss.length ? `<div class="grp-h">${OMRADE[o]}</div>` + ss.map(s => `<label class="check" style="margin:4px 0"><input type="checkbox" class="ge" value="${s.id}" ${sel.has(s.id) ? 'checked' : ''}> <b>${s.id}</b> ${esc(s.namn)}</label>`).join('') : ''; }).join('')}
     <div class="btnrow"><button class="btn primary" id="ge-save">Lagre</button>${DEFAULT_GENERISK[v] ? '<button class="btn" id="ge-std">Standard</button>' : ''}<button class="btn" data-act="modal-close">Avbryt</button></div>`, m => {
-    m.querySelector('#ge-save').onclick = () => { SAL.generisk[v] = [...m.querySelectorAll('.ge:checked')].map(i => i.value); lsSet(LS.sal, SAL); closeModal(); render(); };
-    const st = m.querySelector('#ge-std'); if (st) st.onclick = () => { delete SAL.generisk[v]; lsSet(LS.sal, SAL); closeModal(); render(); };
+    m.querySelector('#ge-save').onclick = () => { SAL.generisk[v] = [...m.querySelectorAll('.ge:checked')].map(i => i.value); saveSal(); closeModal(); render(); };
+    const st = m.querySelector('#ge-std'); if (st) st.onclick = () => { delete SAL.generisk[v]; saveSal(); closeModal(); render(); };
   });
 }
 async function analyseExcel(){
@@ -1848,6 +2157,7 @@ function viewOppsettStaff(){
     ? `<p class="small" style="margin-top:0">${SYNC.status === 'feil' ? '<span class="tag warn">Feil</span> ' + esc(SYNC.err) : '<span class="tag ok">Kopla til</span> ' + (SYNC.last ? 'Sist delt ' + esc(fmtDT(SYNC.last)) : '')}</p><div class="btnrow"><button class="btn" data-act="g-sync">Synk no</button></div>`
     : `<p class="small" style="margin-top:0"><span class="tag warn">Ikkje kopla til</span> Teljinga vert berre lagra på denne telefonen.</p><p class="small muted">Be den som styrer teljinga om å vise QR-koden «Kople til telefon», og skann han med kameraet.</p>`}
     <details style="margin-top:10px"><summary class="small">Legg inn nøkkel manuelt</summary><label>Tilgangsnøkkel<input id="g-token" type="password" value="${esc(tok)}" autocomplete="off"></label><div class="btnrow"><button class="btn" data-act="s-token">Lagre</button></div></details></div>
+  ${tryggHTML()}
   <div class="card"><h2>Sikkerheitskopi</h2><p class="small muted" style="margin-top:0">Er telefonen ikkje kopla til, kan du laste ned linjene og sende fila til den som styrer teljinga.</p><button class="btn" data-act="json-ut">⬇ Last ned linjene (JSON)</button></div>
   <p class="tiny muted" style="text-align:center">Krambua Varetelling v${APP_VER} · versjon for tilsette</p>`;
 }
@@ -1879,7 +2189,7 @@ function viewOppsett(){
     <label>Standard mva-sats<select id="x-mva">${MVA_SATSAR.map(m => `<option value="${m}">${m} %</option>`).join('')}</select></label>
     <div class="btnrow"><button class="btn" data-act="x-add">+ Legg til seksjon</button></div></div>
   <div class="card"><h2>Deling mellom telefonar (GitHub)</h2>
-    <p class="small muted" style="margin-top:0">Med deling på kan fleire telje samstundes på kvar sin telefon. Alt vert slått saman i <code>${esc(g.dir)}/telling-${esc(T.id)}.json</code> og <code>${esc(g.dir)}/vareliste.json</code> i repoet. Utan deling vert alt berre lagra på denne eininga.</p>
+    <p class="small muted" style="margin-top:0">Med deling på kan fleire telje samstundes på kvar sin telefon. Kvar eining lagrar eigne filer per seksjon i <code>${esc(g.dir)}/telling-${esc(T.id)}/</code>, og alt vert slått saman. Varelista ligg i <code>${esc(g.dir)}/vareliste.json</code>. Utan deling vert alt berre lagra på denne eininga.</p>
     <div class="row2"><label>Eigar<input id="g-owner" type="text" value="${esc(g.owner)}" autocapitalize="off"></label><label>Repo<input id="g-repo" type="text" value="${esc(g.repo)}" autocapitalize="off"></label></div>
     <div class="row2"><label>Grein<input id="g-branch" type="text" value="${esc(g.branch)}" autocapitalize="off"></label><label>Mappe<input id="g-dir" type="text" value="${esc(g.dir)}" autocapitalize="off"></label></div>
     <label>Tilgangsnøkkel (fine-grained token, Contents: Read and write)<input id="g-token" type="password" value="${esc(tok)}" autocomplete="off" placeholder="github_pat_…"></label>
@@ -1895,6 +2205,7 @@ function viewOppsett(){
     <p class="small muted" style="margin-top:0">Kvar telling har sin eigen kode, t.d. årstalet. Opnar du ein kode som finst i repoet, vert han henta.</p>
     <div class="chips">${lsGet(LS.list, []).map(id => `<button class="chip ${id === T.id ? 'on' : ''}" data-act="t-opne" data-id="${esc(id)}">${esc(id)}</button>`).join('')}</div>
     <div class="search" style="margin-top:10px"><input id="t-ny" type="text" placeholder="Ny kode, t.d. ${new Date().getFullYear() + 1}" autocomplete="off"><button class="btn" data-act="t-ny">Opne / lag</button></div></div>
+  ${tryggHTML()}
   <div class="card"><h2>Sikkerheitskopi</h2>
     <div class="btnrow"><button class="btn" data-act="json-ut">⬇ Last ned (JSON)</button><button class="btn" data-act="json-inn">⬆ Slå saman frå fil</button></div>
     <p class="tiny muted">«Slå saman» legg linjer frå ein annan telefon inn i denne teljinga utan å slette noko. Nyttig om deling ikkje er slått på.</p></div>
@@ -1926,7 +2237,7 @@ function doMerge(t, cat){
   const before = activeLines().length;
   t = {...t, id:T.id};
   T = mergeTelling(T, t); saveLocal();
-  if (cat && cat.items){ CAT = mergeCat(CAT, cat); saveCat(); }
+  if (cat && cat.items){ CAT = mergeCat(CAT, cat); saveCat(true); }
   render(); toast(`Slått saman: ${activeLines().length - before} nye linjer`, 'ok');
 }
 
@@ -1936,7 +2247,13 @@ const ACT = {
   'vel-tellar':() => velTellar(),
   'set-tellar':el => setTellar(el.dataset.n),
   'add-tellar':() => { const n = $('#ny-tellar').value.trim(); if (!n) return; const id = 't-' + slug(n); T.tellarar[id] = {id, namn:n, updatedAt:nowISO(), deleted:false}; saveLocal(); setTellar(n); },
-  'sync-info':() => { if (!ghOn()) return go('oppsett'); if (SYNC.status === 'feil') openModal(`<h2>Deling feila</h2><p>${esc(SYNC.err)}</p><p class="small muted">Alt er lagra på eininga. Appen prøver igjen automatisk.</p><div class="btnrow"><button class="btn primary" data-act="g-sync">Prøv no</button><button class="btn" data-act="modal-close">Lukk</button></div>`); else { syncNow(true); toast('Synkar…'); } },
+  'sync-info':() => {
+    if (!ghOn()) return go('oppsett');
+    openModal(`<h2>Deling</h2><dl class="kv"><dt>Ventar på deling</dt><dd>${PEND.size} linjer</dd><dt>Sist delt</dt><dd>${SYNC.last ? esc(fmtDT(SYNC.last)) : '–'}</dd><dt>Lagring på eininga</dt><dd>${STORE.kind === 'idb' ? 'OK' : 'Avgrensa'}</dd></dl>
+      ${SYNC.err ? `<div class="banner ${SYNC.status === 'pause' ? 'info' : 'warn'} small" style="margin-top:10px">${esc(SYNC.err)}</div>` : ''}
+      <p class="small muted">Alt du tel vert lagra på eininga med ein gong, og sendt til GitHub innan eit minutt når det er nett. Ventande linjer går ikkje tapt om appen vert lukka – dei vert sende neste gong.</p>
+      <div class="btnrow"><button class="btn primary" data-act="g-sync">Del no</button><button class="btn" data-act="modal-close">Lukk</button></div>`);
+  },
   'hint-off':el => { const h = lsGet(LS.hints, {}); h[el.dataset.k] = 1; lsSet(LS.hints, h); render(); },
   'sek':el => go('sek-' + el.dataset.id),
   'map-zoom':() => { mapZoom = !mapZoom; render(); },
@@ -1965,7 +2282,7 @@ const ACT = {
     const inp = document.querySelector(`[data-pris="${id}"]`); const v = parseNum(inp && inp.value);
     if (!(v > 0)) return toast('Skriv inn ein pris', 'err');
     T.linjer[id] = {...l, pris:round2(v), updatedAt:nowISO(), endraAv:curTellar()};
-    if (l.key && CAT.items[l.key] && !(parseNum(CAT.items[l.key].pris) > 0)){ CAT.items[l.key].pris = round2(v); CAT.items[l.key].updatedAt = nowISO(); saveCat(); }
+    if (l.key && CAT.items[l.key] && !(parseNum(CAT.items[l.key].pris) > 0)){ CAT.items[l.key].pris = round2(v); CAT.items[l.key].updatedAt = nowISO(); saveCat(true); }
     saveLocal(); render(); toast('Pris lagra: ' + l.namn, 'ok');
   },
   'sal-velg':() => $('#file-sal').click(),
@@ -1974,14 +2291,19 @@ const ACT = {
   'kople-qr':() => kopleQR(),
   'kople-kopier':() => kopleKopier(false),
   'kople-adr':() => kopleKopier(true),
-  's-token':() => { setToken($('#g-token').value.trim()); repoOkCache = null; SYNC.tCommit = {}; SYNC.cCommit = null; if (!ghOn()){ render(); return; } tDirty = true; syncNow(true).then(() => { render(); toast(SYNC.status === 'ok' ? 'Kopla til' : 'Feil: ' + SYNC.err, SYNC.status === 'ok' ? 'ok' : 'err'); }); },
+  's-token':() => { setToken($('#g-token').value.trim()); SY.known = {}; SY.dirSha = null; SY.legacySha = null; SYC.sha = null; if (!ghOn()){ render(); return; } markAllPending(); syncNow(true).then(() => { render(); toast(SYNC.status === 'ok' ? 'Kopla til' : 'Feil: ' + SYNC.err, SYNC.status === 'ok' ? 'ok' : 'err'); }); },
   'f-cancel':() => { draft = null; $('#formwrap').innerHTML = ''; const k = $('#kode'); if (k) k.focus(); },
   'f-delete':() => { const id = draft.id; confirmBox('Slette linja?', `${esc(draft.namn)} – ${qty(draftAntal(draft))} ${esc(draft.eining)}`, 'Slett', () => deleteLine(id), true); },
   'line-edit':el => { const l = T.linjer[el.dataset.id]; if (l) showForm(draftFromLine(l), '#f-antal'); },
   'sek-ferdig':() => {
     const id = route.id; if (!curTellar()) return velTellar(() => ACT['sek-ferdig']());
     const n = activeLines(id).length;
-    const ok = () => { T.status[id] = {ferdig:true, av:curTellar(), tid:nowISO(), updatedAt:nowISO()}; saveLocal(); draft = null; toast(id + ' er ferdig', 'ok'); go('kart'); };
+    const ok = () => {
+      T.status[id] = {ferdig:true, av:curTellar(), tid:nowISO(), updatedAt:nowISO()}; saveLocal(); draft = null; go('kart');
+      if (!ghOn()) return toast(id + ' er ferdig', 'ok');
+      toast(id + ' er ferdig – deler…');
+      syncNow(true).then(() => { const p = activeLines(id).filter(l => PEND.has(l.id)).length; toast(p ? `${id} er ferdig og lagra på eininga. ${p} linjer ventar på nett.` : `${id} er ferdig og delt ✓`, p ? '' : 'ok'); });
+    };
     if (!n) confirmBox('Ingen varer her', 'Seksjonen har ingen talde varer. Merke han ferdig likevel (tom)?', 'Merk ferdig', ok); else ok();
   },
   'sek-opne':() => { const id = route.id; T.status[id] = {ferdig:false, av:curTellar(), tid:nowISO(), updatedAt:nowISO()}; saveLocal(); render(); },
@@ -1998,7 +2320,7 @@ const ACT = {
   'ls-ingen':() => { listerSel.sek = new Set(); render(); },
   'ls-omr':el => { allSek().filter(s => s.omr === el.dataset.o).forEach(s => listerSel.sek.add(s.id)); render(); },
   'ls-sek':el => { if (el.checked) listerSel.sek.add(el.dataset.id); else listerSel.sek.delete(el.dataset.id); const b = $('[data-act=ls-print]'); if (b) b.textContent = `🖨 Vis og skriv ut ${listerSel.sek.size} tellelister`; },
-  'ls-print':() => { const v = parseInt($('#ls-rader').value, 10); if (!isNaN(v)){ if (listerSel.type === 'varer') listerSel.ekstra = v; else listerSel.rader = v; } printLister(); },
+  'ls-print':async () => { const v = parseInt($('#ls-rader').value, 10); if (!isNaN(v)){ if (listerSel.type === 'varer') listerSel.ekstra = v; else listerSel.rader = v; } const kj = ($('#ls-kjelde') && $('#ls-kjelde').value) || T.id; if (kj !== T.id && !LISTER_SRC[kj]) LISTER_SRC[kj] = await STORE.loadTelling(kj); printLister(); },
   'imp-velg':() => $('#file-vareliste').click(),
   'imp-mode':el => { IMP.mode = el.dataset.v; impModal(); },
   'cat-edit':el => catEdit(el.dataset.k),
@@ -2011,21 +2333,26 @@ const ACT = {
   'x-del':el => { const s = T.seksjonar[el.dataset.id]; if (!s) return; if (activeLines(s.id).length) return toast('Seksjonen har talde varer og kan ikkje fjernast', 'err'); T.seksjonar[s.id] = {...s, deleted:true, updatedAt:nowISO()}; saveLocal(); render(); },
   'g-lagre':async () => {
     lsSet(LS.gh, {owner:$('#g-owner').value.trim() || GH_DEF.owner, repo:$('#g-repo').value.trim() || GH_DEF.repo, branch:$('#g-branch').value.trim() || 'main', dir:($('#g-dir').value.trim() || 'data').replace(/^\/|\/$/g, '')});
-    setToken($('#g-token').value.trim()); repoOkCache = null; SYNC.tCommit = {}; SYNC.cCommit = null;
+    setToken($('#g-token').value.trim()); SY.known = {}; SY.dirSha = null; SY.legacySha = null; SYC.sha = null;
     const st = $('#g-status'); if (st) st.innerHTML = 'Testar…';
     if (!ghOn()){ render(); return; }
     try{ const r = await ghFetch(ghBase()); if (!r.ok) throw await ghErr(r); const j = await r.json(); if (j.permissions && !j.permissions.push) throw new Error('Nøkkelen har ikkje skrivetilgang til repoet');
-      tDirty = true; catDirty = Object.keys(CAT.items).length > 0; await syncNow(true); render(); toast(SYNC.status === 'ok' ? 'Deling er på' : 'Feil: ' + SYNC.err, SYNC.status === 'ok' ? 'ok' : 'err');
+      markAllPending(); if (Object.keys(CAT.items).length) catDirty = true; await syncNow(true); render(); toast(SYNC.status === 'ok' ? 'Deling er på' : 'Feil: ' + SYNC.err, SYNC.status === 'ok' ? 'ok' : 'err');
     }catch(e){ if (st) st.innerHTML = '<span class="tag err">Feil</span> ' + esc(e.message); SYNC.status = 'feil'; SYNC.err = e.message; updateSyncUI(); }
   },
   'g-sync':() => { closeModal(); syncNow(true).then(() => { if (route.v === 'oppsett') render(); toast(SYNC.status === 'ok' ? 'Synka' : 'Feil: ' + SYNC.err, SYNC.status === 'ok' ? 'ok' : 'err'); }); },
   'g-av':() => confirmBox('Slå av deling?', 'Nøkkelen vert fjerna frå denne eininga. Data i repoet vert ikkje sletta.', 'Slå av', () => { setToken(''); SYNC.status = 'av'; render(); }, true),
   't-opne':el => openTelling(el.dataset.id),
+  'kopi-liste':() => kopiListe(),
+  'kopi-hent':el => kopiHent(el.dataset.id),
+  'kopi-no':async () => { await lagKopi(true); await STORE.chain; kopiListe(); },
   't-ny':() => { const v = $('#t-ny').value.trim().replace(/[^A-Za-z0-9_-]/g, ''); if (!v) return toast('Skriv ein kode, t.d. eit årstal', 'err'); openTelling(v); }
 };
-function openTelling(id){
+async function openTelling(id){
   if (id === T.id) return;
-  loadTelling(id); draft = null; listerSel = null; SYNC.tCommit[id] = null;
+  if (ghOn() && DIRTY.size && !SYNC.busy) await syncNow(true);
+  saveSyncState(); await lagKopi(false); await STORE.chain;
+  await loadTelling(id); draft = null; listerSel = null;
   toast('Opna telling ' + id, 'ok'); if (ghOn()) syncNow(true); go('kart');
 }
 document.addEventListener('click', e => {
@@ -2066,22 +2393,38 @@ $('#file-vareliste').addEventListener('change', e => { const f = e.target.files[
 $('#file-json').addEventListener('change', e => { const f = e.target.files[0]; e.target.value = ''; if (f) jsonInn(f); });
 $('#file-sal').addEventListener('change', e => { const f = e.target.files[0]; e.target.value = ''; if (f) startSalImport(f); });
 window.addEventListener('afterprint', () => {});
-document.addEventListener('visibilitychange', () => { if (document.visibilityState === 'visible' && ghOn()) syncNow(); });
-window.addEventListener('online', () => { if (ghOn()) syncNow(); });
-setInterval(() => { if (document.visibilityState === 'visible' && ghOn() && !SYNC.busy) syncNow(); }, 30000);
+function flushSoon(){ if (T && ghOn() && DIRTY.size && Date.now() - SYNC.lastPush > 15000) syncNow(true); }
+document.addEventListener('visibilitychange', () => { if (!T) return; if (document.visibilityState === 'visible'){ if (ghOn()) syncNow(); } else { flushSoon(); lagKopi(false); } });
+window.addEventListener('pagehide', () => { if (T){ flushSoon(); lagKopi(false); } });
+window.addEventListener('online', () => { if (T && ghOn()) syncNow(); });
 
 /* ------------------------------ start ------------------------------ */
-const kopla = handleKople();
-buildIdx();
-loadTelling(lsGet(LS.active, null) || String(new Date().getFullYear()));
 document.querySelectorAll('#nav [data-nav]').forEach(b => { if (!NAV_ITEMS.includes(b.dataset.nav)) b.hidden = true; });
 if (STAFF) document.title = 'Krambua Varetelling – tilsette';
-route = parseHash();
-render();
-if (kopla === 'ok') setTimeout(() => toast('Telefonen er kopla til teljinga', 'ok'), 300);
-if (kopla === 'feil') setTimeout(() => toast('Lenka for kopling var ugyldig', 'err'), 300);
-if (ghOn()) syncNow(true);
-if (!curTellar()) setTimeout(() => velTellar(), 400);
+$('#view').innerHTML = '<div class="card muted">Opnar teljinga…</div>';
+(async function boot(){
+  const kopla = handleKople();
+  await STORE.init();
+  DEV = lsGet(LS.eining, null) || (await STORE.kvGet('DEV', null)) || ('e' + Math.random().toString(36).slice(2, 7));
+  lsSet(LS.eining, DEV); try{ await STORE.kvSet('DEV', DEV); }catch(e){}
+  try{ await STORE.migrate(); }catch(e){ console.warn('Migrering feila', e); }
+  const c = await STORE.loadCat();
+  CAT = c.cat; SYC = {sha:c.syc.sha || null}; catDirty = !STAFF && !!c.syc.dirty;
+  catUA = {}; for (const k in CAT.items) catUA[k] = CAT.items[k].updatedAt || '';
+  buildIdx();
+  SAL = (await STORE.kvGet('SAL', null)) || {meta:null, items:{}, generisk:{}}; if (!SAL.generisk) SAL.generisk = {};
+  await loadTelling(lsGet(LS.active, null) || String(new Date().getFullYear()));
+  if (STORE.migratedIds.includes(T.id)){ persistedUA = {}; saveLocal(true); }
+  route = parseHash();
+  render();
+  if (kopla === 'ok') setTimeout(() => toast('Telefonen er kopla til teljinga', 'ok'), 300);
+  if (kopla === 'feil') setTimeout(() => toast('Lenka for kopling var ugyldig', 'err'), 300);
+  if (ghOn()) syncNow(true);
+  if (!curTellar()) setTimeout(() => velTellar(), 400);
+  setInterval(() => { if (document.visibilityState === 'visible' && ghOn() && !SYNC.busy) syncNow(); }, POLL_MS);
+  setInterval(() => lagKopi(false), window.KRB_TEST_FAST ? 4000 : 15 * 60000);
+  setTimeout(() => lagKopi(false), window.KRB_TEST_FAST ? 2000 : 60000);
+})().catch(e => { $('#view').innerHTML = `<div class="banner err"><b>Appen klarte ikkje starte:</b> ${esc(e.message || e)}</div>`; console.error(e); });
 </script>
 </body>
 </html>
