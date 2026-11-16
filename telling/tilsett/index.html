@@ -5,6 +5,8 @@
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
 <meta name="theme-color" content="#263238">
 <meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-title" content="Telling">
+<link rel="apple-touch-icon" href="../../apple-touch-icon.png">
 <title>Krambua Varetelling – tilsette</title>
 <style>
 :root{--slate:#263238;--reol:#37525A;--ochre:#C98A1A;--kjol:#7FB3C8;--red:#C8102E;--cream:#F6EFE0;--jv:#E6ECEF;--bg:#F2F0EB;--card:#fff;--line:#DCD8CE;--muted:#5D6B70;--ok:#2E8B47;--okbg:#E3F2E7;--warn:#C27700;--warnbg:#FFF2D9;--err:#B3261E;--errbg:#FCE8E6;--txt:#1E2A30;--focus:#2B6CB0}
@@ -319,7 +321,7 @@ body.preview #app,body.preview #nav{display:none}
    Krambua Varetelling – éi fil, køyrer på GitHub Pages.
    Data: lokalt i nettlesaren + (valfritt) delt via GitHub-repoet.
    ===================================================================== */
-const APP_VER = '2.7';
+const APP_VER = '2.8';
 const MODUS = 'tilsett';
 const STAFF = MODUS === 'tilsett';
 const NAV_ITEMS = STAFF ? ['kart','oppsett'] : ['kart','rapport','analyse','lister','varer','oppsett'];
@@ -1385,7 +1387,8 @@ function viewKart(){
     if (!ghOn()) h += `<div class="banner warn">Telefonen er <b>ikkje kopla til</b> – teljinga vert berre lagra her. Trykk «📷 Skann kople-koden» og skann QR-koden på kople-plakaten eller skjermen til den som styrer teljinga.${IOS && STANDALONE ? '<br><span class="small">På iPhone må appen på heimeskjermen koplast til for seg, sjølv om Safari alt er kopla.</span>' : ''}${KOPLE_KNAPPAR}</div>`;
     else if (!IDX.list.length) h += `<div class="banner info">Varelista er ikkje komen til telefonen enno. Du kan likevel telje – skriv inn namn på vara.</div>`;
   } else {
-    if (!ghOn() && !lsGet(LS.hints, {}).lokal) h += `<div class="banner info">Teljinga vert lagra <b>berre på denne eininga</b>. Skal fleire telje samstundes på kvar sin telefon, slå på deling under <a href="#oppsett">Oppsett</a>. <button class="btn ghost small" data-act="hint-off" data-k="lokal" style="min-height:30px;padding:2px 8px">Skjul</button></div>`;
+    if (!ghOn() && (STANDALONE || IOS)) h += `<div class="banner warn">Denne eininga er <b>ikkje kopla til deling</b> – teljinga vert berre lagra her.${STANDALONE ? ' Appen på heimeskjermen har eige lager, skilt frå nettlesaren, og må koplast til for seg.' : ''} Skann kople-koden (frå «Kople til telefon» på ei anna eining eller kople-plakaten), eller lim inn tilgangsnøkkelen under <a href="#oppsett">Oppsett</a>.${KOPLE_KNAPPAR}</div>`;
+    else if (!ghOn() && !lsGet(LS.hints, {}).lokal) h += `<div class="banner info">Teljinga vert lagra <b>berre på denne eininga</b>. Skal fleire telje samstundes på kvar sin telefon, slå på deling under <a href="#oppsett">Oppsett</a>. <button class="btn ghost small" data-act="hint-off" data-k="lokal" style="min-height:30px;padding:2px 8px">Skjul</button></div>`;
     if (!IDX.list.length) h += `<div class="banner warn">Varelista frå kassa er ikkje lasta inn enno, så prisane kjem ikkje automatisk. Last ho inn under <a href="#varer">Varer</a>. Du kan likevel telje med manuell pris.</div>`;
   }
   const mine = lines.filter(l => l.tellar === curTellar()).length;
@@ -2324,6 +2327,7 @@ async function koplFraKode(code){
   if (p.id && String(p.id) !== T.id) await openTelling(String(p.id));
   markAllPending(); toast('Koplar til …');
   await syncNow(true); closeModal(); render();
+  if (!curTellar()) setTimeout(() => velTellar(), 300);
   toast(SYNC.status === 'ok' ? 'Telefonen er kopla til teljinga ✓' : 'Kopla til – ' + (SYNC.err || 'deler når nettet er tilbake'), SYNC.status === 'ok' ? 'ok' : '');
 }
 function kopleInnModal(){
@@ -2331,6 +2335,14 @@ function kopleInnModal(){
     <textarea id="kl-inn" style="width:100%;height:110px" autocomplete="off"></textarea>
     <div class="btnrow"><button class="btn" data-act="modal-close">Avbryt</button><button class="btn primary" data-act="kople-inn-ok">Kople til</button></div>`);
   setTimeout(() => { const e = $('#kl-inn'); if (e) e.focus(); }, 50);
+}
+function kopleHjelp(auto){
+  openModal(`<h2>${auto ? 'Appen er ikkje kopla til' : 'Ikkje kopla til deling'}</h2>
+    <p>Det du tel her, vert berre lagra på denne eininga og vert ikkje delt med dei andre.</p>
+    ${STANDALONE ? '<p class="small">Appen på heimeskjermen har <b>eige lager, skilt frå nettlesaren</b>. Sjølv om han er kopla til i Safari eller Chrome, må han koplast til her òg – éin gong.</p>' : ''}
+    <p class="small muted">Skann kople-koden frå «Kople til telefon» på skjermen til den som styrer teljinga, eller kople-plakaten på bakrommet.${STAFF ? '' : ' Du kan òg lime inn tilgangsnøkkelen under Oppsett.'}</p>
+    ${KOPLE_KNAPPAR}
+    <div class="btnrow">${STAFF ? '' : '<button class="btn" data-act="kople-oppsett">Opne Oppsett</button>'}<button class="btn" data-act="modal-close">${auto ? 'Seinare' : 'Lukk'}</button></div>`);
 }
 const KOPLE_KNAPPAR = `<div class="btnrow"><button class="btn primary" data-act="kople-skann">📷 Skann kople-koden</button><button class="btn" data-act="kople-inn">Lim inn lenke</button></div>`;
 const IOS_HEIM_TXT = 'På iPhone har appen på heimeskjermen eige lager, skilt frå Safari. Har du lagt appen på heimeskjermen, må du kople han til éin gong der: trykk «📷 Skann kople-koden» og skann QR-koden på kople-plakaten eller skjermen til den som styrer teljinga.';
@@ -3089,7 +3101,7 @@ const ACT = {
   'set-tellar':el => setTellar(el.dataset.n),
   'add-tellar':() => { const n = $('#ny-tellar').value.trim(); if (!n) return; const id = 't-' + slug(n); T.tellarar[id] = {id, namn:n, updatedAt:nowISO(), deleted:false}; saveLocal(); setTellar(n); },
   'sync-info':() => {
-    if (!ghOn()) return go('oppsett');
+    if (!ghOn()) return kopleHjelp();
     openModal(`<h2>Deling</h2><dl class="kv"><dt>Ventar på deling</dt><dd>${PEND.size} linjer</dd><dt>Sist delt</dt><dd>${SYNC.last ? esc(fmtDT(SYNC.last)) : '–'}</dd><dt>Lagring på eininga</dt><dd>${STORE.kind === 'idb' ? 'OK' : 'Avgrensa'}</dd></dl>
       ${SYNC.err ? `<div class="banner ${SYNC.status === 'pause' ? 'info' : 'warn'} small" style="margin-top:10px">${esc(SYNC.err)}</div>` : ''}
       <p class="small muted">Alt du tel vert lagra på eininga med ein gong, og sendt til GitHub innan eit minutt når det er nett. Ventande linjer går ikkje tapt om appen vert lukka – dei vert sende neste gong.</p>
@@ -3135,6 +3147,7 @@ const ACT = {
   'kople-plakat':() => koplePlakat(),
   'kople-skann':() => Scanner.open(code => koplFraKode(code)),
   'kople-inn':() => kopleInnModal(),
+  'kople-oppsett':() => { closeModal(); go('oppsett'); },
   'kople-hint-ok':() => { closeModal(); if (!curTellar()) velTellar(); },
   'kople-inn-ok':() => koplFraKode($('#kl-inn').value),
   'rom-ny':() => romNyModal(),
@@ -3291,7 +3304,8 @@ $('#view').innerHTML = '<div class="card muted">Opnar teljinga…</div>';
   }, 300);
   if (kopla === 'feil') setTimeout(() => toast('Lenka for kopling var ugyldig', 'err'), 300);
   if (ghOn()) syncNow(true);
-  if (!curTellar() && !(kopla === 'ok' && IOS && !STANDALONE)) setTimeout(() => velTellar(), 400);
+  if (STANDALONE && !ghOn() && kopla !== 'ok') setTimeout(() => kopleHjelp(true), 400);
+  else if (!curTellar() && !(kopla === 'ok' && IOS && !STANDALONE)) setTimeout(() => velTellar(), 400);
   setInterval(() => { if (document.visibilityState === 'visible' && ghOn() && !SYNC.busy) syncNow(); }, POLL_MS);
   setInterval(() => lagKopi(false), window.KRB_TEST_FAST ? 4000 : 15 * 60000);
   setTimeout(() => Scanner.preload(), window.KRB_TEST_FAST ? 300 : 3000);
