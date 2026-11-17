@@ -184,6 +184,40 @@ table.t tr.sum td{font-weight:800;border-top:2px solid var(--slate);border-botto
 #scanner .bot{flex-wrap:wrap;padding:0 12px}
 #scanner .bot .btn{min-width:0;flex:1 1 40%;max-width:200px}
 #scanner [hidden]{display:none!important}
+#scanner.hurtig .frame{top:11%;height:22%}
+#scanner.hurtig .top{top:calc(env(safe-area-inset-top) + 6px);font-size:14px}
+#hurtig-panel{position:absolute;left:0;right:0;bottom:calc(env(safe-area-inset-bottom) + 84px);padding:0 10px}
+#scanner:not(.hurtig) #hurtig-panel{display:none}
+#scanner.hurtig.vare #hurtig-panel{bottom:calc(env(safe-area-inset-bottom) + 10px)}
+#scanner.hurtig.vare .bot{display:none}
+.hp-kort{background:rgba(255,255,255,.97);border-radius:16px;padding:12px 14px;max-width:520px;margin:0 auto;box-shadow:0 6px 24px rgba(0,0,0,.35);color:#1E2A30}
+.hp-sek{display:flex;align-items:center;gap:8px;font-size:14px;margin-bottom:8px}
+.hp-sek .code{background:#263238;color:#fff;border-radius:6px;padding:2px 7px;font-weight:800;font-size:13px}
+.hp-who{margin-left:auto;border:1.5px solid #C9C4B8;background:#fff;border-radius:999px;padding:4px 10px;font-size:13px;font-weight:600;cursor:pointer;min-height:32px}
+.hp-x{border:0;background:#EEF2F4;border-radius:999px;width:32px;height:32px;font-size:16px;font-weight:700;cursor:pointer;color:#1E2A30;flex:0 0 auto}
+.hp-seg{margin-bottom:8px}
+.hp-hint{font-size:14px;color:#47555c}
+.hp-sist{display:flex;align-items:center;gap:10px;background:#E7F4EA;border-radius:10px;padding:8px 10px;font-size:15px}
+.hp-sist span{flex:1}
+.hp-sist .btn{min-height:38px;padding:4px 14px;flex:0 0 auto}
+.hp-msg{margin-top:8px;font-size:14px;font-weight:600;padding:6px 10px;border-radius:8px;background:#EEF2F4}
+.hp-msg.err{background:#FDECEA;color:#B3261E}
+.hp-msg.ok{background:#E7F4EA;color:#1E6B34}
+.hp-namn{font-size:19px;font-weight:800;line-height:1.2}
+.hp-meta{font-size:14px;color:#47555c;margin-top:2px}
+.hp-dup{margin-top:8px;font-size:13px;background:#FFF4E0;border-radius:8px;padding:6px 9px}
+.hp-lbl{font-size:13px;margin:8px 0 4px}
+.hp-chips .chip{min-height:38px;padding:6px 13px}
+.hp-tal{display:flex;align-items:baseline;gap:6px;margin:10px 0 6px}
+.hp-tal #hp-antal{font-size:40px;font-weight:800;min-width:60px;text-align:right;font-variant-numeric:tabular-nums}
+.hp-sum{margin-left:auto;font-weight:700;color:#47555c}
+.hp-pad{display:grid;grid-template-columns:repeat(3,1fr);gap:6px}
+.hp-pad button{min-height:50px;font-size:22px;font-weight:700;border:1.5px solid #C9C4B8;background:#fff;border-radius:10px;cursor:pointer;color:#1E2A30}
+.hp-pad button:active{background:#EEE}
+.hp-btns{margin-top:8px}
+.hm{display:flex;align-items:center;gap:8px;margin-top:10px}
+.hm .seg{flex:1}
+.hm .seg button{min-height:38px;padding:6px;font-size:13.5px}
 #scan-msg{padding:0 18px;line-height:1.35}
 #scan-info{font-size:11px;font-weight:400;opacity:.7;margin-top:6px;padding:0 18px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
 .kv{display:grid;grid-template-columns:auto 1fr;gap:4px 14px;font-size:14.5px}
@@ -309,6 +343,7 @@ body.preview #app,body.preview #nav{display:none}
   <video id="scan-video" playsinline muted autoplay></video>
   <div class="frame"></div>
   <div class="top"><div id="scan-msg">Rett kameraet mot strekkoden</div><div id="scan-info"></div></div>
+  <div id="hurtig-panel"></div>
   <div class="bot"><button class="btn" id="scan-torch" data-act="scan-torch">Lys</button><button class="btn" id="scan-cam" data-act="scan-cam">Byt kamera</button><button class="btn" data-act="scan-manual">Skriv inn</button><button class="btn primary" data-act="scan-close">Lukk</button></div>
 </div>
 <div id="print-root"></div>
@@ -321,7 +356,7 @@ body.preview #app,body.preview #nav{display:none}
    Krambua Varetelling – éi fil, køyrer på GitHub Pages.
    Data: lokalt i nettlesaren + (valfritt) delt via GitHub-repoet.
    ===================================================================== */
-const APP_VER = '2.9';
+const APP_VER = '3.0';
 const MODUS = 'tilsett';
 const STAFF = MODUS === 'tilsett';
 const NAV_ITEMS = STAFF ? ['kart','oppsett'] : ['kart','rapport','analyse','lister','varer','oppsett'];
@@ -1192,8 +1227,8 @@ const Scanner = {
     }};
   },
   preload(){ try{ this.getDetector().catch(() => {}); }catch(e){} },
-  async open(cb, manualSel){
-    this.cb = cb; this.manual = manualSel || null; this.active = true; const my = ++this.seq;
+  async open(cb, manualSel, hurtig){
+    this.cb = cb; this.manual = manualSel || null; this.hurtig = !!hurtig; this.active = true; const my = ++this.seq;
     $('#scanner').hidden = false; $('#scan-cam').hidden = true; $('#scan-torch').hidden = true;
     this.setTop('Startar kameraet …'); this.setInfo('');
     if (!window.isSecureContext || !navigator.mediaDevices || !navigator.mediaDevices.getUserMedia){
@@ -1265,7 +1300,7 @@ const Scanner = {
     const video = $('#scan-video');
     const step = async () => {
       if (!this.active || my !== this.seq) return;
-      if (!this.busy && video.readyState >= 2 && video.videoWidth){
+      if (!this.busy && !(this.hurtig && Hurtig.pause) && video.readyState >= 2 && video.videoWidth){
         this.busy = true;
         try{
           let src = video;
@@ -1278,8 +1313,9 @@ const Scanner = {
             src = c;
           }
           const r = await this.det.detect(src);
-          const hit = r && r.find(x => x && x.rawValue && String(x.rawValue).trim());
-          if (hit && this.active && my === this.seq){ this.busy = false; return this.found(hit.rawValue); }
+          const hits = (r || []).map(x => x && x.rawValue ? String(x.rawValue).trim() : '').filter(Boolean);
+          if (this.hurtig){ if (this.active && my === this.seq) Hurtig.frame(hits); }
+          else if (hits.length && this.active && my === this.seq){ this.busy = false; return this.found(hits[0]); }
         }catch(e){}
         this.busy = false;
         this.setInfo('Lesar: ' + this.engine + (this.camInfo ? ' · ' + this.camInfo : ''));
@@ -1293,6 +1329,7 @@ const Scanner = {
   stopStream(){ const v = $('#scan-video'); const s = this.stream || (v && v.srcObject); if (s && s.getTracks) s.getTracks().forEach(t => t.stop()); this.stream = null; try{ if (v) v.srcObject = null; }catch(e){} },
   close(){
     this.active = false; this.seq++; clearTimeout(this.timer); clearTimeout(this.hintTimer); this.busy = false;
+    if (this.hurtig){ this.hurtig = false; Hurtig.stopp(); }
     this.stopStream();
     $('#scanner').hidden = true; this.torchOn = false;
   },
@@ -1306,6 +1343,194 @@ const Scanner = {
       const cap = tr.getCapabilities ? tr.getCapabilities() : {}; if (!cap.torch){ toast('Lyset kan ikkje styrast på denne eininga'); return; }
       this.torchOn = !this.torchOn; await tr.applyConstraints({advanced:[{torch:this.torchOn}]});
     }catch(e){ toast('Lyset kan ikkje styrast på denne eininga'); }
+  }
+};
+
+/* ------------------------------ HURTIGTELJING ------------------------------
+   Kameraet står på. «Skriv tal»: skann → tal på talknappane → Lagre → neste vare.
+   «+1 per skanning»: kvar skanning legg 1 til på linja for vara (same tellar, same seksjon).
+   Same strekkode blir ikkje lesen på nytt før han har vore ute av biletet ei lita stund. */
+const LS_HURTIG = 'krb-telling-hurtig';
+function hurtigModus(){ return lsGet(LS_HURTIG, 'tal') === 'pluss' ? 'pluss' : 'tal'; }
+function hurtigModusHTML(){
+  const m = hurtigModus();
+  return `<div id="hurtig-modus" class="hm"><span class="tiny muted">Ved skanning:</span><div class="seg small"><button type="button" data-act="hurtig-modus" data-v="tal" class="${m === 'tal' ? 'on' : ''}">Skriv tal</button><button type="button" data-act="hurtig-modus" data-v="pluss" class="${m === 'pluss' ? 'on' : ''}">+1 per skanning</button></div></div>
+    <div class="tiny muted" style="margin-top:4px">${m === 'pluss' ? '+1: kvar skanning legg til 1 stk på vara – òg med handskannar. Skann kvar eining for seg.' : 'Hurtigteljing: kameraet står på – skann, skriv talet, lagre, neste vare.'}</div>`;
+}
+function hurtigReol(code){
+  const m = /^KRB-([A-Z0-9]+)$/i.exec(code) || (/^[A-Z]\d{2}$/i.test(code) && sekById(code.toUpperCase()) ? [0, code] : null);
+  return m ? m[1].toUpperCase() : null;
+}
+const Hurtig = {
+  on:false, item:null, antal:'', mva:null, vent:'', ventT:0, pause:false, sist:null, melding:'', meldingT:null, mvaMem:{},
+  start(){
+    if (route.v !== 'sek') return;
+    if (locked()) return toast('Teljinga er avslutta', 'err');
+    const st = T.status[route.id]; if (st && st.ferdig) return toast('Seksjonen er merka ferdig – opne han att først', 'err');
+    if (!curTellar()) return velTellar(() => Hurtig.start());
+    draft = null; const fw = $('#formwrap'); if (fw) fw.innerHTML = '';
+    this.on = true; this.item = null; this.vent = ''; this.pause = false; this.sist = null; this.melding = '';
+    $('#scanner').classList.add('hurtig');
+    Scanner.open(null, '#kode', true);
+    this.panel();
+  },
+  stopp(){
+    if (!this.on) return;
+    this.on = false; this.item = null; this.pause = false;
+    const sc = $('#scanner'); sc.classList.remove('hurtig', 'vare');
+    const p = $('#hurtig-panel'); if (p) p.innerHTML = '';
+    this.oppdater();
+  },
+  setModus(m){
+    lsSet(LS_HURTIG, m === 'pluss' ? 'pluss' : 'tal');
+    const hm = $('#hurtig-modus'); if (hm){ const w = document.createElement('div'); w.innerHTML = hurtigModusHTML(); hm.nextElementSibling && hm.nextElementSibling.classList.contains('tiny') && hm.nextElementSibling.remove(); hm.replaceWith(...w.childNodes); }
+    if (this.on){ if (this.item && hurtigModus() === 'pluss' && this.mva != null) this.pluss(); else this.panel(); }
+  },
+  /* kallast for kvart bilete kameraet har lese */
+  frame(codes){
+    const now = Date.now();
+    if (this.vent){
+      if (codes.includes(this.vent)){ this.ventT = now; return; }
+      if (now - this.ventT < 450) return;
+      this.vent = '';
+    }
+    if (this.pause || !codes.length) return;
+    this.vent = codes[0]; this.ventT = now;
+    beep(); try{ navigator.vibrate && navigator.vibrate(60); }catch(e){}
+    this.kode(codes[0]);
+  },
+  kode(raw){
+    const code = String(raw || '').trim(); if (!code) return;
+    const id = hurtigReol(code);
+    if (id){
+      const s = sekById(id); if (!s) return this.msg('Ukjend reol-kode: ' + code, 'err');
+      const st = T.status[id];
+      if (st && st.ferdig){ Scanner.close(); go('sek-' + id); toast(id + ' er merka ferdig – trykk «Opne att» for å legge til', 'err'); return; }
+      if (id !== route.id){ route = {v:'sek', id}; go('sek-' + id); }
+      this.item = null; this.sist = null; this.panel(); this.msg('Tel no i ' + id + ' ' + s.namn, 'ok'); return;
+    }
+    if (/#kople=/.test(code)) return this.msg('Dette er ein kople-kode, ikkje ei vare', 'err');
+    const it = lookupCode(code);
+    if (!it){ Scanner.close(); showForm(newDraft(route.id, {text:code})); toast('Strekkoden finst ikkje i varelista – fyll inn vara', 'err'); return; }
+    const d = newDraft(route.id, {item:it, code});
+    if (d.modus === 'vekt'){ Scanner.close(); showForm(d); toast('Denne vara blir talt med vekt – fyll inn skjemaet'); return; }
+    this.item = d; this.antal = '';
+    this.mva = d.mva == null || d.mva === '' ? null : +d.mva;
+    if (this.mva == null){
+      const tidl = this.plussLinje(d) || activeLines(route.id).find(l => l.key && l.key === d.key && l.tellar === curTellar());
+      if (tidl) this.mva = +tidl.mva; else if (d.key && this.mvaMem[d.key] != null) this.mva = this.mvaMem[d.key];
+    }
+    if (hurtigModus() === 'pluss' && this.mva != null) return this.pluss();
+    this.pause = true; this.panel();
+  },
+  plussLinje(d){
+    const gk = d.key ? 'K:' + d.key : (d.ean ? 'E:' + String(d.ean).replace(/\s+/g, '') : null); if (!gk) return null;
+    const t = curTellar();
+    return activeLines(route.id).find(l => l.pluss && l.tellar === t && l.modus === 'stk' && grpKey(l) === gk) || null;
+  },
+  nyLinje(d, antal, pluss){
+    const now = nowISO();
+    const pr = String(d.pris ?? '').trim() === '' ? NaN : parseNum(d.pris);
+    const l = {id:uid(), sek:route.id, key:d.key || null, ean:String(d.ean || '').replace(/\s+/g, ''), varenr:String(d.varenr || '').trim(), namn:d.namn, eining:d.eining || 'stk', mva:+this.mva,
+      pris:isNaN(pr) || pr < 0 ? null : round2(pr), innpris:(parseNum(d.innpris) > 0 ? parseNum(d.innpris) : null), modus:'stk', antal, vekt:null, merknad:'', tellar:curTellar(), tid:now, updatedAt:now, deleted:false};
+    if (pluss) l.pluss = true;
+    T.linjer[l.id] = l; saveLocal(); return l;
+  },
+  lagre(){
+    const d = this.item; if (!d) return;
+    if (locked()) return this.msg('Teljinga er avslutta', 'err');
+    const antal = parseNum(this.antal);
+    if (!(antal > 0)) return this.msg('Skriv kor mange', 'err');
+    if (this.mva == null) return this.msg('Vel mva-sats først', 'err');
+    if (d.key) this.mvaMem[d.key] = this.mva;
+    const l = this.nyLinje(d, antal, false);
+    this.sist = {id:l.id, pluss:false};
+    this.item = null; this.pause = false; this.panel(); this.oppdater();
+  },
+  pluss(){
+    const d = this.item; if (!d) return;
+    if (locked()) return this.msg('Teljinga er avslutta', 'err');
+    if (d.key) this.mvaMem[d.key] = this.mva;
+    let l = this.plussLinje(d);
+    if (l){ l.antal = round2((parseNum(l.antal) || 0) + 1); l.updatedAt = nowISO(); saveLocal(); }
+    else l = this.nyLinje(d, 1, true);
+    this.sist = {id:l.id, pluss:true};
+    this.item = null; this.pause = false; this.panel(); this.oppdater();
+    return l;
+  },
+  /* handskannar i søkjefeltet med «+1 per skanning» */
+  plussFraKode(it, code){
+    const d = newDraft(route.id, {item:it, code});
+    if (d.modus === 'vekt') return false;
+    let mva = d.mva == null || d.mva === '' ? null : +d.mva;
+    if (mva == null){ const tidl = this.plussLinje(d); if (tidl) mva = +tidl.mva; else if (d.key && this.mvaMem[d.key] != null) mva = this.mvaMem[d.key]; }
+    if (mva == null) return false;
+    if (!curTellar()){ velTellar(() => handleCode(code)); return true; }
+    const was = {item:this.item, mva:this.mva};
+    this.item = d; this.mva = mva;
+    const l = this.pluss();
+    this.item = was.item; this.mva = was.mva;
+    const k = $('#kode'); if (k){ k.value = ''; k.focus({preventScroll:true}); }
+    toast(`+1 ${l.namn} = ${qty(parseNum(l.antal))} ${l.eining}`, 'ok', {label:'Angre', fn:() => { this.sist = {id:l.id, pluss:true}; this.angre(); }});
+    return true;
+  },
+  angre(){
+    const s = this.sist; if (!s) return; const l = T.linjer[s.id]; if (!l || l.deleted) { this.sist = null; this.panel(); return; }
+    if (s.pluss && parseNum(l.antal) > 1){ l.antal = round2(parseNum(l.antal) - 1); l.updatedAt = nowISO(); saveLocal(); }
+    else { l.deleted = true; l.updatedAt = nowISO(); l.endraAv = curTellar(); saveLocal(); this.sist = null; }
+    this.panel(); this.oppdater(); this.msg(s.pluss && !l.deleted ? '−1 ' + l.namn : 'Linja er sletta', 'ok');
+  },
+  hopp(){ this.item = null; this.pause = false; this.panel(); },
+  tast(v){
+    if (!this.item) return;
+    let a = this.antal;
+    if (v === 'del') a = a.slice(0, -1);
+    else if (v === ',') { if (!a.includes(',')) a = (a || '0') + ','; }
+    else if (/^\d$/.test(v)) { if (a.replace(',', '').length < 7) a = (a === '0' ? '' : a) + v; }
+    this.antal = a;
+    const e = $('#hp-antal'); if (e) e.textContent = a || '0';
+    const s = $('#hp-sum'); if (s) s.innerHTML = this.sumTxt();
+  },
+  sumTxt(){
+    const d = this.item, a = parseNum(this.antal), p = parseNum(d.pris);
+    if (STAFF || !(a > 0) || isNaN(p)) return '';
+    return '= ' + kr(round2(a * p)) + ' kr';
+  },
+  velMva(v){ if (!this.item) return; this.mva = +v; if (hurtigModus() === 'pluss') this.pluss(); else this.panel(); },
+  msg(t, kind){
+    this.melding = t ? `<div class="hp-msg ${kind || ''}">${esc(t)}</div>` : '';
+    const e = $('#hp-msgwrap'); if (e) e.innerHTML = this.melding;
+    clearTimeout(this.meldingT); if (t) this.meldingT = setTimeout(() => { this.melding = ''; const e2 = $('#hp-msgwrap'); if (e2) e2.innerHTML = ''; }, 3500);
+  },
+  oppdater(){ if (route.v === 'sek'){ const a = $('#sek-live'); if (a) a.innerHTML = sekLiveHTML(route.id); const hd = $('#sek-status'); if (hd) hd.innerHTML = sekStatusHTML(route.id); } },
+  panel(){
+    const p = $('#hurtig-panel'); if (!p || !this.on) return;
+    const s = sekById(route.id), m = hurtigModus(), sc = $('#scanner');
+    sc.classList.toggle('vare', !!this.item);
+    const head = `<div class="hp-sek"><span class="code">${esc(route.id || '')}</span><b>${esc(s ? s.namn : '')}</b><button type="button" class="hp-who" data-act="hurtig-tellar" title="Byt tellar">👤 ${esc((curTellar() || '').split(' ')[0])}</button><button type="button" class="hp-x" data-act="scan-close" aria-label="Lukk kameraet">✕</button></div>`;
+    if (!this.item){
+      const l = this.sist && T.linjer[this.sist.id];
+      const sist = l && !l.deleted ? `<div class="hp-sist"><span>✓ ${this.sist.pluss ? '+1 ' : ''}<b>${esc(l.namn)}</b> = ${qty(parseNum(l.antal))} ${esc(l.eining)}</span><button type="button" class="btn" data-act="hurtig-angre">${this.sist.pluss && parseNum(l.antal) > 1 ? '−1' : 'Angre'}</button></div>` : '';
+      p.innerHTML = `<div class="hp-kort">${head}
+        <div class="seg small hp-seg"><button type="button" data-act="hurtig-modus" data-v="tal" class="${m === 'tal' ? 'on' : ''}">Skriv tal</button><button type="button" data-act="hurtig-modus" data-v="pluss" class="${m === 'pluss' ? 'on' : ''}">+1 per skanning</button></div>
+        ${sist || `<div class="hp-hint">${m === 'pluss' ? 'Skann kvar eining for seg. Kvar skanning blir +1.' : 'Skann ei vare, skriv kor mange og trykk Lagre.'} Skann reol-koden på tellelista for å byte reol.</div>`}
+        <div id="hp-msgwrap">${this.melding}</div></div>`;
+      return;
+    }
+    const d = this.item;
+    const gk = d.key ? 'K:' + d.key : (d.ean ? 'E:' + String(d.ean).replace(/\s+/g, '') : null);
+    const dup = gk ? activeLines().filter(l => grpKey(l) === gk) : [];
+    const pris = parseNum(d.pris);
+    const meta = [STAFF ? '' : (isNaN(pris) ? '<b style="color:#B3261E">manglar pris</b>' : kr(pris) + ' kr'), this.mva != null ? this.mva + ' % mva' : '', esc(d.eining || 'stk')].filter(Boolean).join(' · ');
+    const mvaVal = this.mva == null || m === 'tal' ? `<div class="hp-lbl">${this.mva == null ? '<b>Vel mva-sats</b> (15 % mat og drikke, 25 % anna)' : 'Mva-sats'}</div><div class="chips hp-chips">${MVA_SATSAR.map(x => `<button type="button" class="chip ${this.mva === x ? 'on' : ''}" data-act="hurtig-mva" data-v="${x}">${x} %</button>`).join('')}</div>` : '';
+    const pad = m === 'tal' ? `<div class="hp-tal"><span id="hp-antal">${esc(this.antal || '0')}</span> <small>${esc(d.eining || 'stk')}</small><span id="hp-sum" class="hp-sum">${this.sumTxt()}</span></div>
+      <div class="hp-pad">${['7','8','9','4','5','6','1','2','3',',','0','del'].map(k => `<button type="button" data-act="hurtig-tast" data-v="${k}">${k === 'del' ? '⌫' : k}</button>`).join('')}</div>
+      <div class="btnrow hp-btns"><button type="button" class="btn big" data-act="hurtig-hopp">Hopp over</button><button type="button" class="btn primary big" data-act="hurtig-ok" style="flex:2">✓ Lagre</button></div>`
+      : `<div class="btnrow hp-btns"><button type="button" class="btn big" data-act="hurtig-hopp">Hopp over</button></div>`;
+    p.innerHTML = `<div class="hp-kort hp-vare">${head}
+      <div class="hp-namn">${esc(d.namn)}</div><div class="hp-meta">${meta}</div>
+      ${dup.length ? `<div class="hp-dup">⚠ Alt talt: ${dup.slice(0, 3).map(l => `<b>${l.sek}</b> ${qty(parseNum(l.antal))} ${esc(l.eining)} (${esc((l.tellar || '').split(' ')[0])} ${fmtKl(l.tid)})`).join(' · ')}${dup.length > 3 ? ' …' : ''}</div>` : ''}
+      ${mvaVal}${pad}<div id="hp-msgwrap">${this.melding}</div></div>`;
   }
 };
 
@@ -1430,7 +1655,8 @@ function viewSek(){
   else if (ferdig) h += `<div class="banner ok">Seksjonen er merka ferdig. <button class="btn" data-act="sek-opne" style="min-height:36px;margin-left:6px">Opne att for å legge til</button></div>`;
   else {
     h += `<div class="card" id="addcard"><h2>Legg til vare</h2>
-      <button class="btn ochre big wide" data-act="scan-vare">📷 Skann strekkode</button>
+      <div class="btnrow" style="margin:0"><button class="btn ochre big" data-act="hurtig" style="flex:3">⚡ Hurtigteljing</button><button class="btn big" data-act="scan-vare" style="flex:2">📷 Skann éin</button></div>
+      ${hurtigModusHTML()}
       <div class="search" style="margin-top:10px"><input id="kode" type="text" placeholder="${STAFF ? 'Strekkode eller namn på vara' : 'Strekkode, varenr. eller namn'}" autocomplete="off" autocapitalize="off" spellcheck="false" enterkeyhint="search"><button class="btn primary" data-act="kode-ok">Finn</button></div>
       <div class="tiny muted" style="margin-top:4px">Handskannar fungerer òg: skann rett inn i feltet.</div>
       <div id="forslag"></div><div id="formwrap">${draft && draft.sek === s.id ? formHTML(draft) : ''}</div></div>`;
@@ -1553,6 +1779,7 @@ function handleCode(raw){
   if (route.v !== 'sek'){ toast('Vel seksjon først – skann koden på tellelista eller trykk på kartet', 'err'); return; }
   const it = lookupCode(code);
   const k = $('#kode'); if (k) k.value = '';
+  if (it && hurtigModus() === 'pluss' && Hurtig.plussFraKode(it, code)) return true;
   if (it) showForm(newDraft(route.id, {item:it, code}));
   else {
     const hits = /^\d{6,14}$/.test(code) ? [] : searchCat(code, 8);
@@ -2456,6 +2683,10 @@ function hjSeksjon(id){
 <li><b>Handskannar:</b> skann rett inn i søkefeltet.</li>
 <li><b>Søk:</b> skriv namn${STAFF ? '' : ' eller varenummer'}, og vel vara i lista.</li></ul>
 <p>Finst vara i varelista, kjem namn, pris og mva-sats fram av seg sjølv, merkt «Frå kassa».</p>
+<h3>Hurtigteljing</h3><p>Trykk <b>⚡ Hurtigteljing</b> i seksjonen. Kameraet står på heile tida, så du slepp å trykkje «Skann» for kvar vare. Vel korleis skanningane skal teljast:</p><ul>
+<li><b>Skriv tal:</b> skann vara, skriv kor mange på talknappane og trykk <b>✓ Lagre</b>. Kameraet er klart for neste vare med ein gong.</li>
+<li><b>+1 per skanning:</b> skann kvar eining for seg. Kvar skanning legg 1 til på same linje, så sju skanningar av same vare blir 7 stk. Passar når det står få av kvar vare. Valet gjeld òg for handskannar og «📷 Skann éin».</li></ul>
+<p>Same strekkode blir ikkje lesen på nytt før han har vore ute av biletet ei lita stund. Skann reol-koden på tellelista for å byte reol utan å lukke kameraet. <b>Angre</b> eller <b>−1</b> tek bort det siste. Deler de telefon, trykk på namnet ditt i kameravisinga for å byte tellar. Varer som ikkje finst i varelista, og varer som blir talde med vekt, opnar det vanlege skjemaet.</p>
 <h3>Legg inn ei ny vare</h3><ol>
 <li>Skriv <b>varenamnet</b>, gjerne med storleik, t.d. «Skrue 4x40 forsinka».</li>
 <li>Har vara strekkode, trykk <b>📷 Skann</b> ved feltet «Strekkode». Utan strekkode lar du feltet stå tomt.</li>
@@ -3115,6 +3346,14 @@ const ACT = {
   'scan-reol':() => Scanner.open(code => handleCode(code)),
   'scan-vare':() => Scanner.open(code => handleCode(code), '#kode'),
   'scan-close':() => Scanner.close(),
+  'hurtig':() => Hurtig.start(),
+  'hurtig-modus':el => Hurtig.setModus(el.dataset.v),
+  'hurtig-ok':() => Hurtig.lagre(),
+  'hurtig-hopp':() => Hurtig.hopp(),
+  'hurtig-tast':el => Hurtig.tast(el.dataset.v),
+  'hurtig-mva':el => Hurtig.velMva(el.dataset.v),
+  'hurtig-angre':() => Hurtig.angre(),
+  'hurtig-tellar':() => { Scanner.close(); velTellar(() => Hurtig.start()); },
   'scan-torch':() => Scanner.torch(),
   'scan-cam':() => Scanner.nextCam(),
   'scan-manual':() => Scanner.skrivInn(),
@@ -3259,6 +3498,13 @@ document.addEventListener('input', e => {
 });
 document.addEventListener('change', e => { const t = e.target; if (t.dataset && t.dataset.f === 'eining' && draft){ draft.eining = t.value; if (draft.modus === 'vekt') showForm(draft, '#f-total'); else updateCalc(); } });
 document.addEventListener('keydown', e => {
+  if (Hurtig.on && Hurtig.item && !$('#scanner').hidden){
+    if (/^[0-9]$/.test(e.key)){ e.preventDefault(); Hurtig.tast(e.key); return; }
+    if (e.key === ',' || e.key === '.'){ e.preventDefault(); Hurtig.tast(','); return; }
+    if (e.key === 'Backspace'){ e.preventDefault(); Hurtig.tast('del'); return; }
+    if (e.key === 'Enter'){ e.preventDefault(); if (hurtigModus() === 'tal') Hurtig.lagre(); return; }
+    if (e.key === 'Escape'){ e.preventDefault(); Hurtig.hopp(); return; }
+  }
   if (e.key === 'Escape'){ if ($('#modal-root').innerHTML) closeModal(); else if (!$('#scanner').hidden) Scanner.close(); else if (document.body.classList.contains('preview')) closePreview(); return; }
   if (e.key !== 'Enter') return;
   const t = e.target;
