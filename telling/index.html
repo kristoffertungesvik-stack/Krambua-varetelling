@@ -321,7 +321,7 @@ body.preview #app,body.preview #nav{display:none}
    Krambua Varetelling – éi fil, køyrer på GitHub Pages.
    Data: lokalt i nettlesaren + (valfritt) delt via GitHub-repoet.
    ===================================================================== */
-const APP_VER = '2.8';
+const APP_VER = '2.9';
 const MODUS = 'admin';
 const STAFF = MODUS === 'tilsett';
 const NAV_ITEMS = STAFF ? ['kart','oppsett'] : ['kart','rapport','analyse','lister','varer','oppsett'];
@@ -2925,6 +2925,8 @@ function romEditorHTML(){
     }).join('')}
     <div class="btnrow"><button class="btn primary" data-act="rom-ny" ${L ? 'disabled' : ''}>+ Nytt rom</button><button class="btn ochre" data-act="ke-open" ${L || !Object.values(T.seksjonar).some(x => !x.deleted) && !Object.values(T.rom || {}).some(x => !x.deleted) ? 'disabled' : ''}>🗺 Plasser på kartet</button></div>
     <p class="tiny muted">Med «Plasser på kartet» dreg du romma og reolane dit dei faktisk står. Det som ikkje er plassert, blir vist ved sida av bygget.</p>
+    <div class="btnrow"><a class="btn" href="../plan/" target="_blank" rel="noopener">🏗 Planverktøy – teikn heile bedrifta</a></div>
+    <p class="tiny muted">Planverktøyet er ei eiga side for å teikne butikkar og bedrifter med éin eller fleire hallar: reolar, pallreolar, kjøl/frys, kasse, dører, nødutgangar og brannslokkarar i rett mål. Planen blir lagra i nettlesaren og kan eksporterast som fil.</p>
     ${L ? '<p class="tiny muted">Teljinga er avslutta. Opne ho att under Rapport for å endre rom og reolar.</p>' : ''}</div>`;
 }
 const mvaSel = (id, v) => `<select id="${id}"><option value="" ${v == null || v === '' ? 'selected' : ''}>Blanda – vel for kvar vare</option>${MVA_SATSAR.map(m => `<option value="${m}" ${v != null && v !== '' && +v === m ? 'selected' : ''}>${m} %</option>`).join('')}</select>`;
